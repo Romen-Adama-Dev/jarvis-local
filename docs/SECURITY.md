@@ -23,3 +23,4 @@
 * [ ] Confirmar acceso SSH por clave y desactivar `PasswordAuthentication`.
 * [ ] Revocar `/etc/sudoers.d/jarvis-temp` al finalizar el despliegue inicial (Fase 15).
 * [ ] Rotación del token de Telegram documentada en `docs/TELEGRAM.md` (Fase 9).
+* [ ] Cuando este repositorio pase a construir su propia imagen Docker (API/worker contenerizados, aún no existe `Dockerfile` — hoy corren nativos vía systemd, ver `infra/systemd/`), revisar su exposición en red igual que el resto de servicios: sin `ports:` publicados salvo `127.0.0.1`, sin `--network host`, sin ejecutar como root dentro del contenedor, y conectada solo a `jarvis_internal`.

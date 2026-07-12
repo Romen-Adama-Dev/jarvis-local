@@ -31,7 +31,8 @@ class Settings(BaseSettings):
     jarvis_logs_dir: Path = Path("/srv/jarvis/logs")
 
     ollama_host: str = "http://127.0.0.1:11434"
-    ollama_primary_model: str = "llama3.1:8b-instruct-q4_K_M"
+    ollama_primary_model: str = "qwen2.5:7b-instruct-q4_K_M"
+    ollama_powerful_model: str = "llama3.1:8b-instruct-q4_K_M"
     ollama_embedding_model: str = "nomic-embed-text"
 
     airllm_service_url: str = "http://127.0.0.1:11500"
