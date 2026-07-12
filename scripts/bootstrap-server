@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ $EUID -eq 0 ]]; then
+    echo "No ejecutes este script como root directamente; usa un usuario con sudo." >&2
+    exit 1
+fi
+
+SERVICE_USER="${JARVIS_SERVICE_USER:-jarvis-svc}"
+HUMAN_USER="${SUDO_USER:-$USER}"
+SRV_ROOT="/srv/jarvis"
+
+echo "== Usuario de servicio: ${SERVICE_USER} =="
+if ! id "${SERVICE_USER}" >/dev/null 2>&1; then
+    sudo useradd --system --no-create-home --shell /usr/sbin/nologin "${SERVICE_USER}"
+    echo "Usuario ${SERVICE_USER} creado."
+else
+    echo "Usuario ${SERVICE_USER} ya existe, se omite."
+fi
+
+echo "== Estructura ${SRV_ROOT} =="
+sudo mkdir -p \
+    "${SRV_ROOT}/data" \
+    "${SRV_ROOT}/documents" \
+    "${SRV_ROOT}/models/ollama" \
+    "${SRV_ROOT}/models/airllm" \
+    "${SRV_ROOT}/backups" \
+    "${SRV_ROOT}/logs"
+sudo chown -R "${SERVICE_USER}:${SERVICE_USER}" "${SRV_ROOT}"
+sudo chmod 750 "${SRV_ROOT}" "${SRV_ROOT}"/data "${SRV_ROOT}"/documents "${SRV_ROOT}"/models "${SRV_ROOT}"/backups "${SRV_ROOT}"/logs
+sudo chmod 750 "${SRV_ROOT}"/models/ollama "${SRV_ROOT}"/models/airllm
+
+echo "== Grupo ${SERVICE_USER} para ${HUMAN_USER} =="
+if ! id -nG "${HUMAN_USER}" | tr ' ' '\n' | grep -qx "${SERVICE_USER}"; then
+    sudo usermod -aG "${SERVICE_USER}" "${HUMAN_USER}"
+    echo "Añadido ${HUMAN_USER} al grupo ${SERVICE_USER} (relogin necesario para que surta efecto)."
+else
+    echo "${HUMAN_USER} ya pertenece al grupo ${SERVICE_USER}."
+fi
+
+echo "== UFW =="
+sudo ufw default deny incoming
+sudo ufw default allow outgoing
+sudo ufw allow 22/tcp comment 'SSH'
+sudo ufw --force enable
+sudo ufw status verbose
+
+echo "Bootstrap completado."
