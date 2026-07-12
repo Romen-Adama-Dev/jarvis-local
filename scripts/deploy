@@ -37,6 +37,23 @@ echo "== Aplicando migraciones de base de datos =="
 sudo -u "${SERVICE_USER}" env HOME="${DEPLOY_DIR}" UV_CACHE_DIR=/srv/jarvis/data/uv-cache \
     bash -c "cd '${DEPLOY_DIR}' && set -a && source .env && set +a && /usr/local/bin/uv run alembic upgrade head"
 
+echo "== Precalentando caché de modelos de embeddings (requiere Internet la primera vez) =="
+sudo mkdir -p /srv/jarvis/models/fastembed /srv/jarvis/data/.cache
+sudo chown -R "${SERVICE_USER}:${SERVICE_USER}" /srv/jarvis/models/fastembed /srv/jarvis/data/.cache
+sudo -u "${SERVICE_USER}" env HOME=/srv/jarvis/data UV_CACHE_DIR=/srv/jarvis/data/uv-cache \
+    bash -c "cd '${DEPLOY_DIR}' && /usr/local/bin/uv run --frozen python -c '
+import asyncio
+from packages.rag.embeddings import FastEmbedProvider
+
+async def main():
+    provider = FastEmbedProvider(cache_dir=\"/srv/jarvis/models/fastembed\")
+    await provider.embed_dense([\"calentamiento de cache\"])
+    await provider.embed_sparse([\"calentamiento de cache\"])
+    print(\"embeddings cache OK (dense + sparse materializados)\")
+
+asyncio.run(main())
+'"
+
 echo "== Recargando systemd y (re)iniciando servicios =="
 sudo cp "${REPO_DIR}/infra/systemd/jarvis-api.service" /etc/systemd/system/jarvis-api.service
 sudo cp "${REPO_DIR}/infra/systemd/jarvis-worker.service" /etc/systemd/system/jarvis-worker.service
