@@ -1,0 +1,26 @@
+[Unit]
+Description=Jarvis Local API (FastAPI)
+After=network-online.target docker.service
+Wants=network-online.target docker.service
+
+[Service]
+Type=simple
+User=jarvis-svc
+Group=jarvis-svc
+WorkingDirectory=/srv/jarvis/app
+Environment=HOME=/srv/jarvis/app
+Environment=UV_CACHE_DIR=/srv/jarvis/data/uv-cache
+EnvironmentFile=/srv/jarvis/app/.env
+ExecStart=/usr/local/bin/uv run --frozen uvicorn apps.api.jarvis_api.main:app --host 127.0.0.1 --port 8000
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/srv/jarvis/data /srv/jarvis/documents /srv/jarvis/logs
+StandardOutput=append:/srv/jarvis/logs/jarvis-api.log
+StandardError=append:/srv/jarvis/logs/jarvis-api.error.log
+
+[Install]
+WantedBy=multi-user.target

@@ -19,6 +19,8 @@ dependencies = [
     "structlog>=24.4,<25",
     "python-multipart>=0.0.17",
     "tiktoken>=0.8,<0.9",
+    "prometheus-client>=0.25.0",
+    "python-magic>=0.4.27",
 ]
 
 [dependency-groups]
@@ -34,9 +36,13 @@ dev = [
 [tool.ruff]
 line-length = 100
 target-version = "py312"
+extend-exclude = ["migrations/versions"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = ["fastapi.Depends", "fastapi.Query", "fastapi.Body", "fastapi.Path"]
 
 [tool.pyright]
 pythonVersion = "3.12"

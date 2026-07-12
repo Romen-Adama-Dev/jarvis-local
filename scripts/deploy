@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+DEPLOY_DIR="${JARVIS_DEPLOY_DIR:-/srv/jarvis/app}"
+SERVICE_USER="${JARVIS_SERVICE_USER:-jarvis-svc}"
+
+echo "== Repo: ${REPO_DIR} -> Deploy: ${DEPLOY_DIR} =="
+
+if [[ ! -f "${REPO_DIR}/.env" ]]; then
+    echo "ERROR: falta ${REPO_DIR}/.env (copia .env.example y rellena los valores reales)." >&2
+    exit 1
+fi
+
+sudo mkdir -p "${DEPLOY_DIR}"
+sudo rsync -a --delete \
+    --exclude '.git' \
+    --exclude '.venv' \
+    --exclude '.local' \
+    --exclude '__pycache__' \
+    --exclude '.pytest_cache' \
+    --exclude '.ruff_cache' \
+    --exclude '.claude' \
+    "${REPO_DIR}/" "${DEPLOY_DIR}/"
+
+sudo chown -R "${SERVICE_USER}:${SERVICE_USER}" "${DEPLOY_DIR}"
+sudo chmod 600 "${DEPLOY_DIR}/.env"
+
+sudo mkdir -p /srv/jarvis/data/uv-cache
+sudo chown -R "${SERVICE_USER}:${SERVICE_USER}" /srv/jarvis/data/uv-cache
+
+echo "== Sincronizando entorno Python con uv (como ${SERVICE_USER}) =="
+sudo -u "${SERVICE_USER}" env HOME="${DEPLOY_DIR}" UV_CACHE_DIR=/srv/jarvis/data/uv-cache \
+    bash -c "cd '${DEPLOY_DIR}' && /usr/local/bin/uv sync --frozen"
+
+echo "== Aplicando migraciones de base de datos =="
+sudo -u "${SERVICE_USER}" env HOME="${DEPLOY_DIR}" UV_CACHE_DIR=/srv/jarvis/data/uv-cache \
+    bash -c "cd '${DEPLOY_DIR}' && set -a && source .env && set +a && /usr/local/bin/uv run alembic upgrade head"
+
+echo "== Recargando systemd y (re)iniciando servicios =="
+sudo cp "${REPO_DIR}/infra/systemd/jarvis-api.service" /etc/systemd/system/jarvis-api.service
+sudo cp "${REPO_DIR}/infra/systemd/jarvis-worker.service" /etc/systemd/system/jarvis-worker.service
+sudo systemctl daemon-reload
+sudo systemctl enable --now jarvis-api.service
+sudo systemctl enable --now jarvis-worker.service
+sudo systemctl restart jarvis-api.service
+sudo systemctl restart jarvis-worker.service
+
+echo "Despliegue completado."
+sudo systemctl --no-pager status jarvis-api.service jarvis-worker.service
