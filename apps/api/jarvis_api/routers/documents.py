@@ -48,9 +48,11 @@ async def upload_document(
     sha256 = hashlib.sha256(content).hexdigest()
 
     existing = (
-        await session.execute(select(Document).where(Document.sha256 == sha256))
+        await session.execute(
+            select(Document).where(Document.sha256 == sha256, Document.deleted_at.is_(None))
+        )
     ).scalar_one_or_none()
-    if existing is not None and existing.deleted_at is None:
+    if existing is not None:
         raise ConflictError(
             "El documento ya existe (duplicado por hash SHA-256)",
             details={"document_id": str(existing.id), "filename": existing.filename},

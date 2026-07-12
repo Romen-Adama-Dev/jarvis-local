@@ -1,17 +1,110 @@
 import datetime
 import uuid
+from pathlib import Path
 from typing import Any
 
-from packages.core.db.models import Document, Job
-from packages.core.jobs import mark_completed, mark_failed, mark_running
+from sqlalchemy import delete
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from packages.core.db.models import Chunk, Document, Job
+from packages.core.jobs import mark_completed, mark_failed, mark_progress, mark_running
 from packages.core.logging import get_logger
+from packages.documents.parsers import parse_document
+from packages.rag.chunking import chunk_blocks
+from packages.rag.store import (
+    ChunkPoint,
+    delete_by_document,
+    ensure_collection,
+    new_point_id,
+    upsert_chunks,
+)
 
 logger = get_logger(__name__)
 
-PENDING_PHASE_MESSAGE = (
-    "Pipeline de ingesta pendiente de la Fase 6 (parsers, chunking, embeddings, Qdrant). "
-    "El trabajo queda registrado pero no se ha procesado todavía."
-)
+
+async def _remove_existing_vectors(
+    ctx: dict[str, Any], session: AsyncSession, document_id: uuid.UUID
+) -> None:
+    await delete_by_document(ctx["qdrant_client"], ctx["qdrant_collection"], str(document_id))
+    await session.execute(delete(Chunk).where(Chunk.document_id == document_id))
+    await session.commit()
+
+
+async def _run_ingestion(
+    ctx: dict[str, Any], session: AsyncSession, document: Document, job: Job
+) -> None:
+    content = Path(document.storage_path).read_bytes()
+
+    parsed = parse_document(content, document.content_type, document.filename)
+    if not parsed.blocks:
+        await mark_failed(
+            session, job, "No se pudo extraer contenido del documento (vacío o ilegible)"
+        )
+        document.status = "failed"
+        await session.commit()
+        return
+    await mark_progress(session, job, 20)
+
+    chunks = chunk_blocks(parsed.blocks)
+    if not chunks:
+        await mark_failed(session, job, "El documento no produjo fragmentos indexables")
+        document.status = "failed"
+        await session.commit()
+        return
+
+    embeddings = ctx["embedding_provider"]
+    texts = [c.text for c in chunks]
+    dense_vectors = await embeddings.embed_dense(texts, is_query=False)
+    sparse_vectors = await embeddings.embed_sparse(texts)
+    await mark_progress(session, job, 60)
+
+    await ensure_collection(
+        ctx["qdrant_client"], ctx["qdrant_collection"], embeddings.dense_dimension
+    )
+    await _remove_existing_vectors(ctx, session, document.id)
+
+    now = datetime.datetime.now(datetime.UTC).isoformat()
+    points = []
+    chunk_rows = []
+    for chunk in chunks:
+        point_id = new_point_id()
+        points.append(
+            ChunkPoint(
+                point_id=point_id,
+                document_id=str(document.id),
+                chunk_id=point_id,
+                filename=document.filename,
+                content_type=document.content_type,
+                page=chunk.page,
+                section=chunk.section,
+                text=chunk.text,
+                created_at=now,
+                tags=[],
+            )
+        )
+        chunk_rows.append(
+            Chunk(
+                document_id=document.id,
+                qdrant_point_id=point_id,
+                section=chunk.section,
+                page=chunk.page,
+                content_hash=chunk.content_hash,
+                char_count=len(chunk.text),
+            )
+        )
+
+    await upsert_chunks(
+        ctx["qdrant_client"], ctx["qdrant_collection"], points, dense_vectors, sparse_vectors
+    )
+    await mark_progress(session, job, 90)
+
+    session.add_all(chunk_rows)
+    document.page_count = parsed.page_count
+    document.status = "indexed"
+    await session.commit()
+
+    await mark_completed(session, job, {"chunks_indexed": len(chunks)})
+    logger.info("ingest_document_completed", document_id=str(document.id), chunks=len(chunks))
 
 
 async def ingest_document(ctx: dict[str, Any], document_id: str, job_id: str) -> None:
@@ -23,8 +116,19 @@ async def ingest_document(ctx: dict[str, Any], document_id: str, job_id: str) ->
             logger.error("ingest_document_missing_row", document_id=document_id, job_id=job_id)
             return
         await mark_running(session, job)
-        logger.info("ingest_document_pending_phase6", document_id=document_id, job_id=job_id)
-        await mark_failed(session, job, PENDING_PHASE_MESSAGE)
+        try:
+            await _run_ingestion(ctx, session, document, job)
+        except Exception as exc:
+            logger.error(
+                "ingest_document_failed", document_id=document_id, job_id=job_id, error=str(exc)
+            )
+            await mark_failed(session, job, f"Error de ingesta: {exc}")
+            document.status = "failed"
+            await session.commit()
+
+
+async def reindex_document(ctx: dict[str, Any], document_id: str, job_id: str) -> None:
+    await ingest_document(ctx, document_id, job_id)
 
 
 async def delete_document(ctx: dict[str, Any], document_id: str, job_id: str) -> None:
@@ -36,21 +140,16 @@ async def delete_document(ctx: dict[str, Any], document_id: str, job_id: str) ->
             logger.error("delete_document_missing_row", document_id=document_id, job_id=job_id)
             return
         await mark_running(session, job)
-        document.deleted_at = datetime.datetime.now(datetime.UTC)
-        document.status = "deleted"
-        await session.commit()
-        await mark_completed(session, job, {"deleted_document_id": document_id})
-        logger.info("delete_document_completed", document_id=document_id, job_id=job_id)
-
-
-async def reindex_document(ctx: dict[str, Any], document_id: str, job_id: str) -> None:
-    session_factory = ctx["session_factory"]
-    async with session_factory() as session:
-        job = await session.get(Job, uuid.UUID(job_id))
-        document = await session.get(Document, uuid.UUID(document_id))
-        if job is None or document is None:
-            logger.error("reindex_document_missing_row", document_id=document_id, job_id=job_id)
-            return
-        await mark_running(session, job)
-        logger.info("reindex_document_pending_phase6", document_id=document_id, job_id=job_id)
-        await mark_failed(session, job, PENDING_PHASE_MESSAGE)
+        try:
+            await delete_by_document(ctx["qdrant_client"], ctx["qdrant_collection"], document_id)
+            await session.execute(delete(Chunk).where(Chunk.document_id == document.id))
+            document.deleted_at = datetime.datetime.now(datetime.UTC)
+            document.status = "deleted"
+            await session.commit()
+            await mark_completed(session, job, {"deleted_document_id": document_id})
+            logger.info("delete_document_completed", document_id=document_id, job_id=job_id)
+        except Exception as exc:
+            logger.error(
+                "delete_document_failed", document_id=document_id, job_id=job_id, error=str(exc)
+            )
+            await mark_failed(session, job, f"Error al eliminar: {exc}")
