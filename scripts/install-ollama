@@ -1,0 +1,77 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ $EUID -eq 0 ]]; then
+    echo "No ejecutes este script como root directamente; usa un usuario con sudo." >&2
+    exit 1
+fi
+
+SERVICE_GROUP="${JARVIS_SERVICE_USER:-jarvis-svc}"
+MODELS_DIR="/srv/jarvis/models/ollama"
+REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+REVIEWED_SCRIPT="${REPO_DIR}/infra/systemd/vendor/ollama-install.sh"
+
+echo "== Comprobando GPU NVIDIA =="
+if ! command -v nvidia-smi >/dev/null 2>&1 || ! nvidia-smi >/dev/null 2>&1; then
+    echo "ERROR: nvidia-smi no responde. El driver NVIDIA debe estar cargado (tras el reinicio) antes de instalar Ollama con soporte GPU." >&2
+    exit 1
+fi
+nvidia-smi --query-gpu=name,driver_version,memory.total --format=csv,noheader
+
+if command -v ollama >/dev/null 2>&1; then
+    echo "Ollama ya está instalado ($(ollama --version 2>&1 | head -1)), se omite descarga del instalador."
+else
+    echo "== Instalando Ollama =="
+    echo "Se usa el instalador oficial ya revisado y versionado en ${REVIEWED_SCRIPT}."
+    echo "Si ollama.com/install.sh cambia de forma relevante, debe volver a revisarse y actualizar esa copia antes de continuar."
+    [[ -f "${REVIEWED_SCRIPT}" ]] || {
+        echo "ERROR: falta la copia revisada del instalador en ${REVIEWED_SCRIPT}." >&2
+        exit 1
+    }
+    sh "${REVIEWED_SCRIPT}"
+fi
+
+echo "== Grupo de servicio para el usuario 'ollama' =="
+if ! id ollama >/dev/null 2>&1; then
+    echo "ERROR: el usuario 'ollama' no existe; la instalación de systemd del script oficial falló o systemd no está disponible." >&2
+    exit 1
+fi
+if ! id -nG ollama | tr ' ' '\n' | grep -qx "${SERVICE_GROUP}"; then
+    sudo usermod -aG "${SERVICE_GROUP}" ollama
+    echo "Añadido usuario 'ollama' al grupo ${SERVICE_GROUP}."
+fi
+
+echo "== Directorio de modelos ${MODELS_DIR} =="
+sudo mkdir -p "${MODELS_DIR}"
+sudo chown "${SERVICE_GROUP}:${SERVICE_GROUP}" "${MODELS_DIR}"
+sudo chmod 770 "${MODELS_DIR}"
+
+echo "== Configurando systemd override (GPU, host loopback, directorio de modelos) =="
+sudo mkdir -p /etc/systemd/system/ollama.service.d
+sudo tee /etc/systemd/system/ollama.service.d/10-jarvis.conf >/dev/null <<EOF
+[Service]
+Environment="OLLAMA_HOST=127.0.0.1:11434"
+Environment="OLLAMA_MODELS=${MODELS_DIR}"
+Environment="OLLAMA_MAX_LOADED_MODELS=1"
+Environment="OLLAMA_NUM_PARALLEL=1"
+Environment="OLLAMA_KEEP_ALIVE=5m"
+EOF
+
+sudo systemctl daemon-reload
+sudo systemctl enable ollama
+sudo systemctl restart ollama
+
+echo "== Esperando a que Ollama responda =="
+for _ in $(seq 1 30); do
+    if curl -fsS http://127.0.0.1:11434/api/version >/dev/null 2>&1; then
+        break
+    fi
+    sleep 1
+done
+curl -fsS http://127.0.0.1:11434/api/version && echo
+sudo systemctl status ollama --no-pager | head -10
+
+echo "== Verificación de exposición de red =="
+ss -tlnp 2>/dev/null | grep 11434 || echo "(ss requiere privilegios para mostrar el proceso; se listará el puerto sin propietario)"
+
+echo "Ollama instalado y en ejecución en 127.0.0.1:11434, modelos en ${MODELS_DIR}."

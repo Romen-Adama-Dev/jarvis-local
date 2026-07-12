@@ -4,7 +4,12 @@ from contextlib import asynccontextmanager
 from fastapi import Depends, FastAPI, Request
 from fastapi.responses import JSONResponse
 
-from apps.api.jarvis_api.deps import get_inference_router, get_qdrant, set_rag_orchestrator
+from apps.api.jarvis_api.deps import (
+    get_inference_router,
+    get_qdrant,
+    set_inference_router,
+    set_rag_orchestrator,
+)
 from apps.api.jarvis_api.middleware import CorrelationIdMiddleware
 from apps.api.jarvis_api.routers import chat, conversations, documents, jobs, models, rag, system
 from apps.api.jarvis_api.security import require_internal_token
@@ -12,6 +17,8 @@ from packages.core.errors import JarvisError
 from packages.core.ids import get_correlation_id
 from packages.core.logging import configure_logging, get_logger
 from packages.core.settings import get_settings
+from packages.inference.ollama import OllamaProvider
+from packages.inference.router import InferenceMode, InferenceRouter
 from packages.rag.embeddings import FastEmbedProvider
 from packages.rag.orchestrator import HybridRagOrchestrator
 
@@ -21,14 +28,24 @@ logger = get_logger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     settings = get_settings()
+
+    ollama_provider = OllamaProvider(settings.ollama_host, settings.ollama_primary_model)
+    set_inference_router(InferenceRouter(providers={InferenceMode.NORMAL: ollama_provider}))
+    logger.info("inference_router_ready", ollama_model=settings.ollama_primary_model)
+
     cache_dir = str(settings.jarvis_models_dir / "fastembed")
     embedding_provider = await asyncio.to_thread(FastEmbedProvider, cache_dir=cache_dir)
     orchestrator = HybridRagOrchestrator(
-        get_qdrant(), settings.qdrant_collection, embedding_provider, get_inference_router()
+        get_qdrant(),
+        settings.qdrant_collection,
+        embedding_provider,
+        get_inference_router(),
+        powerful_model=settings.ollama_powerful_model,
     )
     set_rag_orchestrator(orchestrator)
     logger.info("rag_orchestrator_ready")
     yield
+    await ollama_provider.aclose()
 
 
 def create_app() -> FastAPI:

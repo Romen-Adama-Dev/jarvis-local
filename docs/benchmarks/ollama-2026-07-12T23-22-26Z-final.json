@@ -1,0 +1,252 @@
+[
+  {
+    "model": "llama3.1:8b-instruct-q4_K_M",
+    "pulled": true,
+    "vram_idle_mib": 11,
+    "vram_loaded_mib": 5137,
+    "processor": "GB 100%",
+    "prompts": [
+      {
+        "prompt_id": "instrucciones_es",
+        "ttft_ms": 365.5,
+        "total_ms": 7147.1,
+        "prompt_tokens": 45,
+        "completion_tokens": 212,
+        "tokens_per_second": 31.3,
+        "tool_call_emitted": false,
+        "response_preview": "A continuación, te expongo la explicación sobre la diferencia entre un riesgo y un problema (issue) en la gestión de proyectos según el PMBOK en tres puntos:\n\n*   **Riesgos**: Un riesgo es una amenaza"
+      },
+      {
+        "prompt_id": "extraccion_estructurada",
+        "ttft_ms": 401.1,
+        "total_ms": 6959.5,
+        "prompt_tokens": 69,
+        "completion_tokens": 206,
+        "tokens_per_second": 31.4,
+        "tool_call_emitted": false,
+        "response_preview": "Aquí te dejo la respuesta en formato JSON:\n```\n[\n    {\n        \"nombre\": \"Iniciación\",\n        \"descripcion\": \"Define el alcance, objetivos e integridad del proyecto\"\n    },\n    {\n        \"nombre\": \"P"
+      },
+      {
+        "prompt_id": "contexto_rag_con_evidencia",
+        "ttft_ms": 595.2,
+        "total_ms": 3935.0,
+        "prompt_tokens": 158,
+        "completion_tokens": 105,
+        "tokens_per_second": 31.4,
+        "tool_call_emitted": false,
+        "response_preview": "No hay suficiente información sobre los valores utilizados para calcular el Índice de Desempeño del Cronograma (SPI) en la descripción proporcionada, ya que no se menciona el Valor Planificado (PV). S"
+      },
+      {
+        "prompt_id": "contexto_rag_sin_evidencia",
+        "ttft_ms": 604.0,
+        "total_ms": 8460.5,
+        "prompt_tokens": 191,
+        "completion_tokens": 244,
+        "tokens_per_second": 31.1,
+        "tool_call_emitted": false,
+        "response_preview": "Lo siento, pero no tengo información sobre el \"triple constraint extendido\" o \"restricciones dobles\" en el PMBOK 7. Sin embargo, puedo mencionar que las tres restricciones tradicionales (Triple Constr"
+      },
+      {
+        "prompt_id": "tool_calling",
+        "ttft_ms": 2070.1,
+        "total_ms": 2070.1,
+        "prompt_tokens": 249,
+        "completion_tokens": 41,
+        "tokens_per_second": 31.2,
+        "tool_call_emitted": true,
+        "response_preview": ""
+      }
+    ],
+    "error": null
+  },
+  {
+    "model": "qwen2.5:7b-instruct-q4_K_M",
+    "pulled": false,
+    "vram_idle_mib": 5147,
+    "vram_loaded_mib": 4639,
+    "processor": "GB 100%",
+    "prompts": [
+      {
+        "prompt_id": "instrucciones_es",
+        "ttft_ms": 278.7,
+        "total_ms": 6141.4,
+        "prompt_tokens": 63,
+        "completion_tokens": 186,
+        "tokens_per_second": 31.7,
+        "tool_call_emitted": false,
+        "response_preview": "1. **Riesgo**: Representa una incertidumbre que puede tener un impacto positivo o negativo en uno o más objetivos del proyecto. Un riesgo es potencial, ya que puede surgir y afectar el proyecto a meno"
+      },
+      {
+        "prompt_id": "extraccion_estructurada",
+        "ttft_ms": 316.7,
+        "total_ms": 1764.6,
+        "prompt_tokens": 88,
+        "completion_tokens": 47,
+        "tokens_per_second": 32.5,
+        "tool_call_emitted": false,
+        "response_preview": "```json\n{\n  \"grupos_de_procesos\": [\n    \"inicio\",\n    \"planificación\",\n    \"ejecución\",\n    \"monitoreo_y_control\",\n    \"cierre\"\n  ]\n}\n```"
+      },
+      {
+        "prompt_id": "contexto_rag_con_evidencia",
+        "ttft_ms": 500.3,
+        "total_ms": 2379.5,
+        "prompt_tokens": 156,
+        "completion_tokens": 60,
+        "tokens_per_second": 31.9,
+        "tool_call_emitted": false,
+        "response_preview": "Un SPI menor que 1, en este caso 0.8, indica que el proyecto está retrasado respecto al cronograma planificado. Específicamente, significa que se ha completado solo el 80% del trabajo programado para "
+      },
+      {
+        "prompt_id": "contexto_rag_sin_evidencia",
+        "ttft_ms": 497.9,
+        "total_ms": 3216.9,
+        "prompt_tokens": 188,
+        "completion_tokens": 87,
+        "tokens_per_second": 32.0,
+        "tool_call_emitted": false,
+        "response_preview": "Según el contexto proporcionado, no se mencionan las seis restricciones dobles del PMBOK 7 ni su relación con la gestión de interesados. El texto solo describe brevemente los conceptos de Valor Ganado"
+      },
+      {
+        "prompt_id": "tool_calling",
+        "ttft_ms": 1987.2,
+        "total_ms": 1987.2,
+        "prompt_tokens": 240,
+        "completion_tokens": 43,
+        "tokens_per_second": 31.9,
+        "tool_call_emitted": true,
+        "response_preview": ""
+      }
+    ],
+    "error": null
+  },
+  {
+    "model": "mistral:7b-instruct-q4_K_M",
+    "pulled": false,
+    "vram_idle_mib": 11,
+    "vram_loaded_mib": 4829,
+    "processor": "GB 100%",
+    "prompts": [
+      {
+        "prompt_id": "instrucciones_es",
+        "ttft_ms": 201.1,
+        "total_ms": 10532.9,
+        "prompt_tokens": 52,
+        "completion_tokens": 354,
+        "tokens_per_second": 34.3,
+        "tool_call_emitted": false,
+        "response_preview": "\n1. El Riesgo es una posible amenaza o evento que puede o no ocurrir durante el Proyecto, cuyo impacto se desconoce hasta su ocurrencia y puede resultar en la pérdida de tiempo, recursos o valor para ",
+        "error": null
+      },
+      {
+        "prompt_id": "extraccion_estructurada",
+        "ttft_ms": 288.4,
+        "total_ms": 1775.4,
+        "prompt_tokens": 80,
+        "completion_tokens": 52,
+        "tokens_per_second": 35.0,
+        "tool_call_emitted": false,
+        "response_preview": "```json\r\n{\r\n    \"grupos_de_procesos\": [\"Inicio\", \"Planificación\", \"Ejecución\", \"Monitoreo y Control\", \"Cierre\"]\r\n}\r\n```",
+        "error": null
+      },
+      {
+        "prompt_id": "contexto_rag_con_evidencia",
+        "ttft_ms": 442.5,
+        "total_ms": 2129.9,
+        "prompt_tokens": 189,
+        "completion_tokens": 59,
+        "tokens_per_second": 35.0,
+        "tool_call_emitted": false,
+        "response_preview": "\nUn SPI de 0.8 indica que el proyecto ha completado el 80% del trabajo planificado en el tiempo presupuestado, por lo que el proyecto se está desarrollando con un ritmo superior al planeado.",
+        "error": null
+      },
+      {
+        "prompt_id": "contexto_rag_sin_evidencia",
+        "ttft_ms": 450.4,
+        "total_ms": 12797.9,
+        "prompt_tokens": 226,
+        "completion_tokens": 420,
+        "tokens_per_second": 34.0,
+        "tool_call_emitted": false,
+        "response_preview": "\nLa triple restricción extendida del PMBOK es la integración de los tres métodos de gestión de proyectos: costo, tiempo y calidad. La restricción doble en cada uno de estos métodos se relaciona con la",
+        "error": null
+      },
+      {
+        "prompt_id": "tool_calling",
+        "ttft_ms": 0.0,
+        "total_ms": 0.0,
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "tokens_per_second": 0.0,
+        "tool_call_emitted": false,
+        "response_preview": "",
+        "error": "Client error '400 Bad Request' for url 'http://127.0.0.1:11434/api/chat'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/400"
+      }
+    ],
+    "error": null
+  },
+  {
+    "model": "gemma2:9b-instruct-q4_K_M",
+    "pulled": false,
+    "vram_idle_mib": 4833,
+    "vram_loaded_mib": 7057,
+    "processor": "GB 100%",
+    "prompts": [
+      {
+        "prompt_id": "instrucciones_es",
+        "ttft_ms": 474.5,
+        "total_ms": 5766.6,
+        "prompt_tokens": 39,
+        "completion_tokens": 122,
+        "tokens_per_second": 23.1,
+        "tool_call_emitted": false,
+        "response_preview": "Aquí tienes las diferencias clave entre riesgos y problemas según el PMBOK:\n\n* **Riesgos:** Eventos futuros con una probabilidad e impacto potencial sobre los objetivos del proyecto. Se gestionan medi",
+        "error": null
+      },
+      {
+        "prompt_id": "extraccion_estructurada",
+        "ttft_ms": 527.8,
+        "total_ms": 2236.5,
+        "prompt_tokens": 61,
+        "completion_tokens": 40,
+        "tokens_per_second": 23.4,
+        "tool_call_emitted": false,
+        "response_preview": "```json\n{\n  \"grupos_de_procesos\": [\"Inicio\", \"Planificación\", \"Ejecución\", \"Monitoreo y Control\", \"Cierre\"]\n}\n```",
+        "error": null
+      },
+      {
+        "prompt_id": "contexto_rag_con_evidencia",
+        "ttft_ms": 733.5,
+        "total_ms": 1740.2,
+        "prompt_tokens": 134,
+        "completion_tokens": 24,
+        "tokens_per_second": 23.8,
+        "tool_call_emitted": false,
+        "response_preview": "Un SPI de 0.8 indica que el proyecto va retrasado respecto al cronograma planificado. \n",
+        "error": null
+      },
+      {
+        "prompt_id": "contexto_rag_sin_evidencia",
+        "ttft_ms": 821.9,
+        "total_ms": 5712.0,
+        "prompt_tokens": 160,
+        "completion_tokens": 115,
+        "tokens_per_second": 23.3,
+        "tool_call_emitted": false,
+        "response_preview": "<Contexto>Según el PMBOK, el Valor Ganado (Earned Value, EV) es la medida del trabajo completado expresada en términos del presupuesto autorizado para ese trabajo. El Índice de Desempeño del Cronogram",
+        "error": null
+      },
+      {
+        "prompt_id": "tool_calling",
+        "ttft_ms": 0.0,
+        "total_ms": 0.0,
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "tokens_per_second": 0.0,
+        "tool_call_emitted": false,
+        "response_preview": "",
+        "error": "Client error '400 Bad Request' for url 'http://127.0.0.1:11434/api/chat'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/400"
+      }
+    ],
+    "error": null
+  }
+]

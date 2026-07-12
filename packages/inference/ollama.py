@@ -1,0 +1,139 @@
+import time
+
+import httpx
+import tiktoken
+
+from packages.core.logging import get_logger
+from packages.inference.base import (
+    ChatMessage,
+    InferenceResult,
+    ModelInfo,
+    ProviderCapabilities,
+    ProviderHealth,
+    Role,
+)
+
+logger = get_logger(__name__)
+
+_TOKENIZER = tiktoken.get_encoding("cl100k_base")
+
+# La API /api/tags de Ollama no expone si una familia de modelo soporta el
+# campo "tools" del endpoint /api/chat: se determina empíricamente (ver
+# docs/BENCHMARKS.md) probando una llamada real con "tools". Este conjunto
+# refleja las familias verificadas como compatibles en ese benchmark.
+_TOOL_CAPABLE_FAMILIES = {"llama", "qwen2"}
+
+
+class OllamaProvider:
+    name = "ollama"
+
+    def __init__(
+        self,
+        host: str,
+        default_model: str,
+        *,
+        timeout_seconds: float = 120.0,
+        transport: httpx.AsyncBaseTransport | None = None,
+    ) -> None:
+        self._host = host.rstrip("/")
+        self._default_model = default_model
+        self._client = httpx.AsyncClient(
+            base_url=self._host, timeout=timeout_seconds, transport=transport
+        )
+
+    async def aclose(self) -> None:
+        await self._client.aclose()
+
+    async def generate(
+        self, prompt: str, *, model: str | None = None, **kwargs: object
+    ) -> InferenceResult:
+        return await self.chat(
+            [ChatMessage(role=Role.USER, content=prompt)],
+            model=model,
+            **kwargs,
+        )
+
+    async def chat(
+        self, messages: list[ChatMessage], *, model: str | None = None, **kwargs: object
+    ) -> InferenceResult:
+        target_model = model or self._default_model
+        payload: dict[str, object] = {
+            "model": target_model,
+            "messages": [{"role": m.role.value, "content": m.content} for m in messages],
+            "stream": False,
+        }
+        options = {k: v for k, v in kwargs.items() if k in {"temperature", "num_ctx", "top_p"}}
+        if options:
+            payload["options"] = options
+
+        start = time.perf_counter()
+        try:
+            response = await self._client.post("/api/chat", json=payload)
+            response.raise_for_status()
+        except httpx.HTTPError as exc:
+            logger.error("ollama_chat_failed", model=target_model, error=str(exc))
+            raise
+        latency_ms = (time.perf_counter() - start) * 1000
+        data = response.json()
+
+        message = data.get("message", {})
+        text = message.get("content", "")
+        prompt_tokens = int(data.get("prompt_eval_count", 0))
+        completion_tokens = int(data.get("eval_count", 0))
+        finish_reason = "stop" if data.get("done", True) else "length"
+
+        return InferenceResult(
+            text=text,
+            model=target_model,
+            provider=self.name,
+            prompt_tokens=prompt_tokens,
+            completion_tokens=completion_tokens,
+            latency_ms=latency_ms,
+            finish_reason=finish_reason,
+            raw=data,
+        )
+
+    async def health(self) -> ProviderHealth:
+        try:
+            response = await self._client.get("/api/version")
+            response.raise_for_status()
+        except httpx.HTTPError as exc:
+            return ProviderHealth(healthy=False, provider=self.name, detail=str(exc))
+        return ProviderHealth(
+            healthy=True, provider=self.name, detail=response.json().get("version", "")
+        )
+
+    async def list_models(self) -> list[ModelInfo]:
+        response = await self._client.get("/api/tags")
+        response.raise_for_status()
+        data = response.json()
+        models: list[ModelInfo] = []
+        for item in data.get("models", []):
+            details = item.get("details", {})
+            families = set(details.get("families") or [])
+            family = details.get("family")
+            supports_tools = (
+                bool(families & _TOOL_CAPABLE_FAMILIES) or family in _TOOL_CAPABLE_FAMILIES
+            )
+            models.append(
+                ModelInfo(
+                    name=item.get("name", ""),
+                    provider=self.name,
+                    size_bytes=item.get("size"),
+                    supports_tools=supports_tools,
+                )
+            )
+        return models
+
+    def count_tokens(self, text: str) -> int:
+        return len(_TOKENIZER.encode(text))
+
+    def capabilities(self) -> ProviderCapabilities:
+        return ProviderCapabilities(
+            provider=self.name,
+            supports_chat=True,
+            supports_tools=True,
+            supports_streaming=True,
+            max_context_tokens=8192,
+            typical_latency_class="fast",
+        )

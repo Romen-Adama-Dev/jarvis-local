@@ -11,6 +11,7 @@ from packages.rag.store import RetrievedChunk, hybrid_search
 
 MAX_CONTEXT_CHARS = 6000
 MIN_EVIDENCE_SCORE = 0.01
+POWERFUL_MODEL_CONTEXT_THRESHOLD_CHARS = 3000
 
 _SYSTEM_PROMPT = (
     "Eres Jarvis, un asistente que responde EXCLUSIVAMENTE con la información delimitada "
@@ -100,6 +101,23 @@ def _build_context_block(chunks: list[RetrievedChunk]) -> str:
     return "<contexto>\n" + "\n\n".join(parts) + "\n</contexto>"
 
 
+def select_normal_model(
+    context_block: str,
+    *,
+    powerful_model: str | None,
+    threshold_chars: int = POWERFUL_MODEL_CONTEXT_THRESHOLD_CHARS,
+) -> str | None:
+    """Elige, dentro del modo NORMAL (Ollama), entre el modelo rápido por defecto
+    del provider (devuelve None) y un modelo más potente configurado aparte, según
+    el volumen de contexto recuperado: más contexto implica una síntesis más
+    compleja, donde el modelo más grande rinde mejor. El modo DEEP (AirLLM) es un
+    eje independiente y no se ve afectado por esta heurística.
+    """
+    if powerful_model and len(context_block) >= threshold_chars:
+        return powerful_model
+    return None
+
+
 class HybridRagOrchestrator:
     def __init__(
         self,
@@ -110,6 +128,7 @@ class HybridRagOrchestrator:
         *,
         min_evidence_score: float = MIN_EVIDENCE_SCORE,
         max_context_chars: int = MAX_CONTEXT_CHARS,
+        powerful_model: str | None = None,
     ) -> None:
         self._qdrant = qdrant_client
         self._collection = collection_name
@@ -117,6 +136,7 @@ class HybridRagOrchestrator:
         self._inference = inference_router
         self._min_evidence_score = min_evidence_score
         self._max_context_chars = max_context_chars
+        self._powerful_model = powerful_model
 
     async def query(
         self,
@@ -155,12 +175,18 @@ class HybridRagOrchestrator:
 
         context_block = _build_context_block(budgeted)
         mode = InferenceMode.DEEP if deep else InferenceMode.NORMAL
+        model = (
+            None
+            if deep
+            else select_normal_model(context_block, powerful_model=self._powerful_model)
+        )
         result = await self._inference.chat(
             mode,
             [
                 ChatMessage(role=Role.SYSTEM, content=_SYSTEM_PROMPT),
                 ChatMessage(role=Role.USER, content=f"{context_block}\n\nPregunta: {query}"),
             ],
+            model=model,
         )
 
         confidence = min(1.0, budgeted[0].score / (self._min_evidence_score * 3))
