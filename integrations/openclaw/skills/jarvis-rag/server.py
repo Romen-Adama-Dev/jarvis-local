@@ -82,6 +82,44 @@ def jarvis_disk() -> str:
     )
 
 
+UPLOAD_ALLOWED_ROOTS = (
+    Path.home() / ".openclaw" / "workspace-jarvis" / "media",
+    Path.home() / ".openclaw" / "media",
+    Path.home() / "jarvis-inbox",
+    JARVIS_DATA_ROOT / "documents",
+)
+UPLOAD_ALLOWED_SUFFIXES = {".pdf", ".docx", ".txt", ".md", ".html", ".csv", ".xlsx"}
+UPLOAD_MAX_BYTES = 50 * 1024 * 1024
+
+
+@mcp.tool()
+def jarvis_upload(file_path: str) -> str:
+    """Sube un documento al RAG de Jarvis para indexarlo. Acepta la ruta de un adjunto
+    de Telegram (media/inbound) o de /srv/jarvis/documents. Devuelve el trabajo de
+    indexación; consulta su progreso con jarvis_jobs."""
+    path = Path(file_path).expanduser().resolve()
+    if not any(path.is_relative_to(root) for root in UPLOAD_ALLOWED_ROOTS):
+        allowed = ", ".join(str(r) for r in UPLOAD_ALLOWED_ROOTS)
+        return f"Ruta no autorizada para subida. Directorios permitidos: {allowed}"
+    if not path.is_file():
+        return f"No existe el archivo: {path}"
+    if path.suffix.lower() not in UPLOAD_ALLOWED_SUFFIXES:
+        return f"Tipo no soportado ({path.suffix}). Soportados: {', '.join(sorted(UPLOAD_ALLOWED_SUFFIXES))}"
+    if path.stat().st_size > UPLOAD_MAX_BYTES:
+        return f"Archivo demasiado grande ({path.stat().st_size / 1024**2:.0f} MiB > 50 MiB)."
+
+    with path.open("rb") as fh:
+        response = _client.post("/v1/documents", files={"file": (path.name, fh)})
+    if response.status_code == 409:
+        return f"El documento {path.name} ya está indexado (duplicado por hash)."
+    response.raise_for_status()
+    job = response.json()
+    return (
+        f"Documento {path.name} aceptado. Trabajo de indexación {job['id']} "
+        f"({job['status']}). Sigue el progreso con jarvis_jobs."
+    )
+
+
 @mcp.tool()
 def jarvis_jobs() -> str:
     """Lista los trabajos de indexación/inferencia activos o recientes."""

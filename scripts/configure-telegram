@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+CONFIG="$HOME/.openclaw/openclaw.json"
+SECRETS_DIR="$HOME/.openclaw/secrets"
+TEMPLATE="$REPO_DIR/integrations/openclaw/config/openclaw.template.json"
+export PATH="$HOME/.npm-global/bin:$PATH"
+
+TELEGRAM_BOT_TOKEN="${TELEGRAM_BOT_TOKEN:-}"
+TELEGRAM_USER_ID="${TELEGRAM_USER_ID:-}"
+JARVIS_API_INTERNAL_TOKEN="${JARVIS_API_INTERNAL_TOKEN:-}"
+
+if [[ -z "$TELEGRAM_BOT_TOKEN" ]]; then
+  read -rsp "Token del bot de Telegram (BotFather): " TELEGRAM_BOT_TOKEN; echo
+fi
+if [[ -z "$TELEGRAM_USER_ID" ]]; then
+  read -rp "Telegram user ID autorizado (numérico): " TELEGRAM_USER_ID
+fi
+if [[ -z "$JARVIS_API_INTERNAL_TOKEN" ]]; then
+  JARVIS_API_INTERNAL_TOKEN=$(grep -oP '(?<=^JARVIS_API_INTERNAL_TOKEN=).*' "$REPO_DIR/.env" 2>/dev/null || true)
+fi
+if [[ -z "$JARVIS_API_INTERNAL_TOKEN" ]]; then
+  echo "Falta JARVIS_API_INTERNAL_TOKEN (defínelo en el entorno o en $REPO_DIR/.env)" >&2
+  exit 1
+fi
+
+echo "== Guardando token del bot fuera de Git =="
+mkdir -p "$SECRETS_DIR"
+chmod 700 "$SECRETS_DIR"
+printf '%s' "$TELEGRAM_BOT_TOKEN" > "$SECRETS_DIR/telegram_bot_token"
+chmod 600 "$SECRETS_DIR/telegram_bot_token"
+
+echo "== Generando openclaw.json desde la plantilla =="
+if [[ -f "$CONFIG" ]]; then
+  cp "$CONFIG" "$CONFIG.bak.$(date +%Y%m%d%H%M%S)"
+fi
+sed -e "s/__TELEGRAM_USER_ID__/${TELEGRAM_USER_ID}/g" \
+    -e "s/__JARVIS_API_INTERNAL_TOKEN__/${JARVIS_API_INTERNAL_TOKEN}/g" \
+    "$TEMPLATE" > "$CONFIG"
+chmod 600 "$CONFIG"
+
+echo "== Token del gateway y validación =="
+openclaw doctor --fix --non-interactive >/dev/null || true
+
+echo "== Política de ejecución (allowlist + aprobación en Telegram) =="
+openclaw exec-policy set --host gateway --security allowlist --ask on-miss --ask-fallback deny >/dev/null
+for c in /usr/bin/uptime /usr/bin/uname /usr/bin/df /usr/bin/free /usr/bin/date /usr/bin/whoami /usr/bin/ls /usr/bin/du /usr/bin/ps /usr/bin/nvidia-smi /usr/local/bin/ollama; do
+  openclaw approvals allowlist add --agent main "$c" >/dev/null 2>&1 || true
+done
+
+echo "== Reiniciando gateway =="
+systemctl --user restart openclaw-gateway.service
+sleep 5
+systemctl --user is-active openclaw-gateway.service
+
+echo "Telegram configurado. Escribe /start al bot desde la cuenta autorizada."

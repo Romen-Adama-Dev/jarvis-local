@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+NPM_PREFIX="$HOME/.npm-global"
+WHISPER_MODEL_DIR="/srv/jarvis/models/whisper"
+WHISPER_MODEL_URL="https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small-q5_1.bin"
+PIPER_MODEL_DIR="/srv/jarvis/models/piper"
+PIPER_VOICE_BASE="https://huggingface.co/rhasspy/piper-voices/resolve/main/es/es_ES/davefx/medium/es_ES-davefx-medium"
+
+echo "== OpenClaw: instalación global de npm =="
+npm config set prefix "$NPM_PREFIX"
+if ! command -v "$NPM_PREFIX/bin/openclaw" >/dev/null 2>&1; then
+  npm install -g openclaw@latest
+else
+  echo "openclaw ya instalado: $("$NPM_PREFIX/bin/openclaw" --version)"
+fi
+export PATH="$NPM_PREFIX/bin:$PATH"
+
+echo "== Plugin de búsqueda web (SearXNG) =="
+openclaw plugins list 2>/dev/null | grep -q searxng || openclaw plugins install @openclaw/searxng-plugin
+
+echo "== STT local: whisper.cpp =="
+command -v whisper-cli >/dev/null || sudo apt-get install -y whisper.cpp
+sudo mkdir -p "$WHISPER_MODEL_DIR"
+sudo chown "$USER:$USER" "$WHISPER_MODEL_DIR"
+if [[ ! -f "$WHISPER_MODEL_DIR/ggml-small-q5_1.bin" ]]; then
+  curl -sL -o "$WHISPER_MODEL_DIR/ggml-small-q5_1.bin" "$WHISPER_MODEL_URL"
+fi
+
+echo "== TTS local: Piper con voz es_ES =="
+command -v "$HOME/.local/bin/piper" >/dev/null || uv tool install piper-tts
+sudo mkdir -p "$PIPER_MODEL_DIR"
+sudo chown "$USER:$USER" "$PIPER_MODEL_DIR"
+for ext in onnx onnx.json; do
+  if [[ ! -f "$PIPER_MODEL_DIR/es_ES-davefx-medium.$ext" ]]; then
+    curl -sL -o "$PIPER_MODEL_DIR/es_ES-davefx-medium.$ext" "$PIPER_VOICE_BASE.$ext"
+  fi
+done
+install -m 755 "$REPO_DIR/integrations/openclaw/config/jarvis-tts" "$HOME/.local/bin/jarvis-tts"
+
+echo "== Workspace del agente =="
+WORKSPACE="$HOME/.openclaw/workspace-jarvis"
+mkdir -p "$WORKSPACE/memory"
+for f in AGENTS.md SOUL.md TOOLS.md IDENTITY.md USER.md HEARTBEAT.md; do
+  [[ -f "$WORKSPACE/$f" ]] || cp "$REPO_DIR/integrations/openclaw/workspace/$f" "$WORKSPACE/$f"
+done
+
+echo "== Daemon (systemd de usuario) =="
+loginctl enable-linger "$USER"
+systemctl --user list-unit-files | grep -q openclaw-gateway || openclaw gateway install
+
+echo "== Watchdog =="
+install -m 644 "$REPO_DIR/infra/systemd/jarvis-watchdog.service" "$HOME/.config/systemd/user/"
+install -m 644 "$REPO_DIR/infra/systemd/jarvis-watchdog.timer" "$HOME/.config/systemd/user/"
+systemctl --user daemon-reload
+systemctl --user enable --now jarvis-watchdog.timer
+
+echo "Instalación completada. Ejecuta ahora scripts/configure-telegram."
