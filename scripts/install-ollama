@@ -55,6 +55,7 @@ Environment="OLLAMA_MODELS=${MODELS_DIR}"
 Environment="OLLAMA_MAX_LOADED_MODELS=1"
 Environment="OLLAMA_NUM_PARALLEL=1"
 Environment="OLLAMA_KEEP_ALIVE=5m"
+Environment="OLLAMA_CONTEXT_LENGTH=32768"
 EOF
 
 sudo systemctl daemon-reload
