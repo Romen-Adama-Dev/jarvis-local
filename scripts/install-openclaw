@@ -46,6 +46,13 @@ for f in AGENTS.md SOUL.md TOOLS.md IDENTITY.md USER.md HEARTBEAT.md; do
   [[ -f "$WORKSPACE/$f" ]] || cp "$REPO_DIR/integrations/openclaw/workspace/$f" "$WORKSPACE/$f"
 done
 
+echo "== Hook de bienvenida en /new y /reset =="
+mkdir -p "$HOME/.openclaw/hooks/nueva-sesion-ayuda"
+cp "$REPO_DIR/integrations/openclaw/hooks/nueva-sesion-ayuda/HOOK.md" \
+   "$REPO_DIR/integrations/openclaw/hooks/nueva-sesion-ayuda/handler.js" \
+   "$HOME/.openclaw/hooks/nueva-sesion-ayuda/"
+openclaw hooks enable nueva-sesion-ayuda >/dev/null 2>&1 || true
+
 echo "== Daemon (systemd de usuario) =="
 loginctl enable-linger "$USER"
 systemctl --user list-unit-files | grep -q openclaw-gateway || openclaw gateway install

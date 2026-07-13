@@ -117,6 +117,10 @@ La herramienta MCP `jarvis_upload` (en `integrations/openclaw/skills/jarvis-rag/
 * `scripts/install-openclaw`: npm global, plugin SearXNG, whisper.cpp + modelo, Piper + voz es_ES, wrapper TTS, workspace, daemon systemd con linger y watchdog. Idempotente (verificado en segunda ejecución).
 * `scripts/configure-telegram`: guarda el token del bot en `~/.openclaw/secrets/` (fuera de Git), genera `openclaw.json` desde `integrations/openclaw/config/openclaw.template.json` (plantilla sin secretos), aplica la política de exec approvals con su allowlist y reinicia el gateway.
 
+## Guía de bienvenida en /new y /reset
+
+Hook interno gestionado `nueva-sesion-ayuda` (`~/.openclaw/hooks/`, fuente en `integrations/openclaw/hooks/`): al ejecutar `/new` o `/reset`, empuja un mensaje largo con todas las herramientas, usos y comandos disponibles (`event.messages.push`), que Telegram entrega junto al aviso de sesión nueva. El handler debe ser `.js` (el loader de hooks gestionados no acepta `.ts`). Se habilita con `openclaw hooks enable nueva-sesion-ayuda`; nota: al activar hooks internos, el gateway también carga los hooks bundled (p. ej. `session-memory`, que guarda contexto de sesión en `memory/` al hacer `/new`).
+
 ## Daemon
 
 Instalado como servicio de usuario systemd (`~/.config/systemd/user/openclaw-gateway.service`, generado por `openclaw gateway install`), con `loginctl enable-linger jarvis` para que sobreviva a un reinicio sin sesión interactiva abierta. Escucha únicamente en `127.0.0.1:18789` (websocket del gateway).
