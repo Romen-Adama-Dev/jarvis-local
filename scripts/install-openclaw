@@ -20,7 +20,8 @@ export PATH="$NPM_PREFIX/bin:$PATH"
 echo "== Plugin de búsqueda web (SearXNG) =="
 openclaw plugins list 2>/dev/null | grep -q searxng || openclaw plugins install @openclaw/searxng-plugin
 
-echo "== STT local: whisper.cpp =="
+echo "== STT local: whisper.cpp (+ffmpeg para convertir el opus de Telegram) =="
+command -v ffmpeg >/dev/null || sudo apt-get install -y ffmpeg
 command -v whisper-cli >/dev/null || sudo apt-get install -y whisper.cpp
 sudo mkdir -p "$WHISPER_MODEL_DIR"
 sudo chown "$USER:$USER" "$WHISPER_MODEL_DIR"

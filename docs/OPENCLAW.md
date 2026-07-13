@@ -103,6 +103,18 @@ docker compose --profile assistant up -d searxng
 * **Notas de voz entrantes**: `tools.media.audio` ejecuta `whisper-cli` (whisper.cpp, paquete de Ubuntu) con `ggml-small-q5_1` desde `/srv/jarvis/models/whisper` (~5 s por nota en CPU, detección automática de idioma). `echoTranscript` devuelve la transcripción al chat antes de procesarla; los comandos `/ask` etc. funcionan también dictados.
 * **Respuestas con voz**: `messages.tts` con proveedor CLI local — wrapper `jarvis-tts` que invoca Piper (voz `es_ES-davefx-medium`, en `/srv/jarvis/models/piper`). Modo `inbound`: Jarvis responde con audio solo cuando el mensaje llegó como nota de voz; `/tts on|off` lo cambia por chat.
 * Validado con round-trip local: audio generado por Piper transcrito correctamente por whisper.cpp.
+* **ffmpeg es imprescindible**: las notas de voz de Telegram llegan en ogg/opus, que whisper.cpp no decodifica; OpenClaw las convierte con ffmpeg antes de invocar el CLI. Sin ffmpeg, el log muestra `media-understanding audio: failed reason=ffmpeg not found` y la voz "no funciona" (incidente 2026-07-13, resuelto con `apt install ffmpeg`).
+
+## Correo y calendario (gog) — pendiente de autorización
+
+`gog` v0.34.0 (CLI MIT de Google Workspace del propio proyecto OpenClaw: Gmail, Calendar, Drive, Contactos) está instalado en `~/.local/bin/gog`. Estado deliberado: **no** está en la allowlist de exec ni habilitada su skill — cada uso pedirá aprobación con botones en Telegram, y las reglas del agente (workspace `AGENTS.md`) exigen además resumen + confirmación explícita antes de cualquier envío de correo o cambio de calendario. Para activarlo hace falta que el propietario:
+
+1. Cree un cliente OAuth "Desktop app" en Google Cloud Console (APIs Gmail + Calendar habilitadas) y descargue `client_secret.json`.
+2. `gog auth credentials <ruta al client_secret.json>`
+3. `gog auth add <su-gmail> --services gmail,calendar --remote` (flujo headless: imprime URL para autorizar desde el móvil/PC y se pega el código).
+4. Decida si añade `~/.local/bin/gog` a la allowlist de exec (`openclaw approvals allowlist add --agent main ~/.local/bin/gog`) para lecturas sin fricción, o lo deja todo tras aprobación.
+
+Los tokens OAuth quedan en el home del usuario, fuera del repositorio.
 
 ## Subida de documentos al RAG desde Telegram
 
