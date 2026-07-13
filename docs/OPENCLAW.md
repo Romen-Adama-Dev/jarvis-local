@@ -46,6 +46,18 @@ Registrado en `mcp.servers.jarvis-rag` de `openclaw.json`, lanzado vía `uv run 
 * Reinicio de servicios permitidos (`ollama`, `jarvis-api`, `jarvis-worker`) — requiere conectar `packages/security/confirmation.py` (`ConfirmationService`, ya implementado en la Fase 5) a un flujo de confirmación de dos pasos antes de exponerlo como herramienta.
 * Subida de documentos (`/v1/documents`) y reindexación — Telegram permite adjuntar archivos; falta implementar la recepción del adjunto en la skill.
 
+## Tamaño del prompt y modelos pequeños
+
+Incidente real (2026-07-13): con la configuración por defecto, el system prompt compilado por OpenClaw medía ~34.500 caracteres (~9-10k tokens): ~6.800 de la lista `<available_skills>` (18 skills irrelevantes: notion, weather, meme-maker, tmux…) y ~14.600 de las plantillas por defecto del workspace (`AGENTS.md`/`SOUL.md`/`TOOLS.md` con secciones de heartbeat, group chats, ejemplos de cámaras/TTS…). Con ese volumen de instrucciones en inglés, `qwen2.5:7b-instruct-q4_K_M` colapsaba: escribía las llamadas a herramientas como texto plano en Telegram (`{name: web_search, arguments: …}`), mezclaba chino y se quedaba atascado respondiendo `NO_REPLY` (se auto-envenenaba: una alucinación con "responde solo NO_REPLY" entraba en su propio historial).
+
+Mitigación aplicada y verificada:
+
+* Todas las skills de OpenClaw deshabilitadas en `skills.entries` (47 entradas `enabled: false`) — las capacidades de Jarvis llegan por MCP, no por skills.
+* `AGENTS.md`, `SOUL.md` y `TOOLS.md` del workspace reescritos: solo reglas específicas de Jarvis, en español, sin plantilla.
+* Resultado: prompt de ~17.200 caracteres, tool calling nativo funcionando (verificado en trayectoria: `toolCall` reales a `jarvis_status`/`jarvis_models`) y respuestas en español sin fugas de formato.
+
+Regla general: cada sección añadida al prompt tiene coste real en un 7B cuantizado; ante síntomas de "tool calls como texto", idioma mezclado o `NO_REPLY` persistente, medir primero el tamaño del prompt en la trayectoria (`context.compiled`) antes de culpar al modelo. Tras un episodio así, resetear la sesión (`/new`), porque el historial contaminado perpetúa el fallo.
+
 ## Daemon
 
 Instalado como servicio de usuario systemd (`~/.config/systemd/user/openclaw-gateway.service`, generado por `openclaw gateway install`), con `loginctl enable-linger jarvis` para que sobreviva a un reinicio sin sesión interactiva abierta. Escucha únicamente en `127.0.0.1:18789` (websocket del gateway).
