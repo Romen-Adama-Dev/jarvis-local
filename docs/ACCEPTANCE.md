@@ -1,8 +1,8 @@
 # Criterios de aceptación — estado
 
-Estado a fecha de la Fase 7 (Ollama), 2026-07-12. Se actualizará al final de
-cada fase siguiente. Leyenda: ✅ verificado · ⏳ implementado, pendiente de
-verificación end-to-end · ❌ no implementado todavía.
+Estado a fecha de la Fase 9 (OpenClaw + Telegram), 2026-07-13. Se actualizará
+al final de cada fase siguiente. Leyenda: ✅ verificado · ⏳ implementado,
+pendiente de verificación end-to-end · ❌ no implementado todavía.
 
 | # | Criterio | Estado | Nota |
 |---|---|---|---|
@@ -14,17 +14,17 @@ verificación end-to-end · ❌ no implementado todavía.
 | 6 | Qdrant operativo | ✅ | `/ready` → `qdrant: healthy`. |
 | 7 | PostgreSQL operativo | ✅ | `/ready` → `postgres: healthy`. |
 | 8 | Redis operativo | ✅ | `/ready` → `redis: healthy`. |
-| 9 | OpenClaw operativo | ❌ | Pendiente de Fase 9. |
-| 10 | Telegram solo acepta al usuario autorizado | ❌ | Pendiente de Fase 9 (requiere token de bot y Telegram ID del usuario). |
-| 11 | Un PDF puede enviarse por Telegram | ❌ | Pendiente de Fase 9. |
+| 9 | OpenClaw operativo | ⏳ | Instalado, configurado y daemon systemd `--user` activo con `linger` habilitado. Bot de Telegram conectado y respondiendo. Pendiente de confirmar mañana que el reinicio final tras corregir el sandbox (ver `docs/OPENCLAW.md`) quedó aplicado. |
+| 10 | Telegram solo acepta al usuario autorizado | ✅ | `channels.telegram.dmPolicy: "allowlist"` con el ID numérico real del usuario (obtenido por emparejamiento), `commands.ownerAllowFrom` fijado al mismo ID. Ver `docs/TELEGRAM.md`. |
+| 11 | Un PDF puede enviarse por Telegram | ❌ | Pendiente: la skill `jarvis-rag` aún no maneja adjuntos entrantes (`/upload`). |
 | 12 | El PDF se indexa correctamente | ⏳ | Pipeline de ingestión implementado en Fase 6 (`packages/documents`, `packages/rag`); falta demostrarlo con un PDF real de punta a punta (Fase 13). |
 | 13 | Una pregunta sobre el PDF devuelve respuesta con página y fuente | ⏳ | `RagSource` incluye página/sección/chunk_id; falta la demostración end-to-end (Fase 13). |
 | 14 | Una pregunta sin evidencia se rechaza correctamente | ⏳ | Implementado (`insufficient_evidence` en `HybridRagOrchestrator`); falta prueba end-to-end con documento real (Fase 13). |
 | 15 | `/ask` utiliza Ollama | ✅ | Verificado en esta fase: `InferenceMode.NORMAL` → `OllamaProvider`, probado con `/v1/chat` real contra el servicio desplegado. |
 | 16 | `/deep` utiliza AirLLM | ❌ | Pendiente de Fase 8/9. |
 | 17 | Una tarea AirLLM no bloquea Telegram | ❌ | Pendiente de Fase 8/9. |
-| 18 | Los trabajos pueden cancelarse | ⏳ | `POST /v1/jobs/{id}/cancel` implementado en Fase 5; falta prueba con un trabajo real de indexación/AirLLM en curso. |
-| 19 | Las acciones administrativas requieren confirmación | ⏳ | `ConfirmationService` implementado en Fase 5; falta conectarlo a los comandos administrativos de OpenClaw (Fase 9/10). |
+| 18 | Los trabajos pueden cancelarse | ⏳ | `POST /v1/jobs/{id}/cancel` implementado en Fase 5 y expuesto como herramienta MCP `jarvis_cancel_job` (Fase 9); falta prueba con un trabajo real de indexación/AirLLM en curso. |
+| 19 | Las acciones administrativas requieren confirmación | ⏳ | `ConfirmationService` implementado en Fase 5; deliberadamente no se expone ninguna herramienta administrativa (reinicio de servicios, etc.) en la skill `jarvis-rag` todavía precisamente porque ese flujo de confirmación no está conectado (ver `docs/OPENCLAW.md`, Fase 10). |
 | 20 | Los logs no contienen secretos | ⏳ | Logging estructurado JSON sin volcar payloads completos; falta auditoría explícita (Fase 11). |
 | 21 | Los backups se crean | ❌ | Pendiente de Fase 12. |
 | 22 | Un backup se restaura correctamente | ❌ | Pendiente de Fase 12. |
@@ -40,4 +40,5 @@ verificación end-to-end · ❌ no implementado todavía.
 * **Fase 4** (infraestructura): Docker Engine, PostgreSQL, Redis, Qdrant con health checks, todo en loopback.
 * **Fase 5** (API y dominio): FastAPI, SQLAlchemy/Alembic, `arq`, autorización/auditoría/confirmación, API mínima.
 * **Fase 6** (RAG): ingestión (hash, dedup, parsing, chunking), embeddings locales (`fastembed`), recuperación híbrida en Qdrant.
-* **Fase 7** (Ollama, esta fase): instalación nativa con systemd y GPU confirmada, `OllamaProvider`, benchmark de 4 modelos, selección de modelo rápido (`qwen2.5:7b-instruct-q4_K_M`) y potente (`llama3.1:8b-instruct-q4_K_M`) con heurística de selección según el tamaño del contexto RAG.
+* **Fase 7** (Ollama): instalación nativa con systemd y GPU confirmada, `OllamaProvider`, benchmark de 4 modelos, selección de modelo rápido (`qwen2.5:7b-instruct-q4_K_M`) y potente (`llama3.1:8b-instruct-q4_K_M`) con heurística de selección según el tamaño del contexto RAG.
+* **Fase 9** (OpenClaw + Telegram, esta fase; se adelantó a la Fase 8/AirLLM por petición explícita del usuario para poder probar el asistente por Telegram cuanto antes): OpenClaw instalado como daemon systemd de usuario, conectado a Ollama vía endpoint OpenAI-compatible, skill `jarvis-rag` como servidor MCP propio (sin shell arbitrario), bot de Telegram emparejado y restringido al Telegram ID real del usuario. Ver `docs/OPENCLAW.md` y `docs/TELEGRAM.md`.
