@@ -1,0 +1,63 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+TOKEN_FILE="${JARVIS_TELEGRAM_TOKEN_FILE:-$HOME/.openclaw/secrets/telegram_bot_token}"
+CHAT_ID="${JARVIS_TELEGRAM_CHAT_ID:-6483749154}"
+STATE_FILE="${XDG_STATE_HOME:-$HOME/.local/state}/jarvis-watchdog.state"
+DISK_THRESHOLD="${JARVIS_DISK_THRESHOLD:-90}"
+
+mkdir -p "$(dirname "$STATE_FILE")"
+touch "$STATE_FILE"
+
+problems=()
+
+for svc in jarvis-api jarvis-worker ollama; do
+  if ! systemctl is-active --quiet "$svc"; then
+    problems+=("servicio ${svc} caído")
+  fi
+done
+
+if ! systemctl --user is-active --quiet openclaw-gateway.service; then
+  problems+=("openclaw-gateway caído")
+fi
+
+for c in postgres redis qdrant; do
+  status=$(docker inspect --format '{{.State.Health.Status}}' "jarvis-local-${c}-1" 2>/dev/null || echo "missing")
+  if [[ "$status" != "healthy" ]]; then
+    problems+=("contenedor ${c}: ${status}")
+  fi
+done
+
+if ! curl -sf -m 10 http://127.0.0.1:8000/ready | grep -q '"ready":[[:space:]]*true'; then
+  problems+=("Jarvis API /ready no responde o no está listo")
+fi
+
+usage=$(df --output=pcent /srv/jarvis | tail -1 | tr -dc '0-9')
+if [[ "$usage" -ge "$DISK_THRESHOLD" ]]; then
+  problems+=("disco de /srv/jarvis al ${usage}%")
+fi
+
+if command -v nvidia-smi >/dev/null && ! nvidia-smi >/dev/null 2>&1; then
+  problems+=("GPU no responde a nvidia-smi")
+fi
+
+current_state="ok"
+message=""
+if [[ ${#problems[@]} -gt 0 ]]; then
+  current_state=$(printf '%s;' "${problems[@]}")
+  message="⚠️ Jarvis watchdog: $(printf '%s. ' "${problems[@]}")"
+fi
+
+previous_state=$(cat "$STATE_FILE")
+
+if [[ "$current_state" != "$previous_state" ]]; then
+  if [[ "$current_state" == "ok" ]]; then
+    message="✅ Jarvis watchdog: todo recuperado y operativo."
+  fi
+  if [[ -n "$message" && -f "$TOKEN_FILE" ]]; then
+    curl -sf -m 15 "https://api.telegram.org/bot$(cat "$TOKEN_FILE")/sendMessage" \
+      -d chat_id="$CHAT_ID" \
+      --data-urlencode text="$message" >/dev/null || true
+  fi
+  printf '%s' "$current_state" > "$STATE_FILE"
+fi

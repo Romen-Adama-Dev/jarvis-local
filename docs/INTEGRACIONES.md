@@ -7,6 +7,10 @@ Investigación (2026-07-13) de proyectos autohosteados con licencia libre que Op
 | Proyecto | Licencia | Para qué | Estado |
 |---|---|---|---|
 | SearXNG | AGPL-3.0 | Búsqueda web sin API keys: da `web_search` a OpenClaw manteniendo las consultas en servidor propio | ✅ Perfil `assistant` de compose, plugin oficial configurado |
+| whisper.cpp | MIT | Transcripción local de notas de voz de Telegram (modelo small q5, español, ~5 s por nota en CPU) | ✅ Paquete de Ubuntu + modelo en `/srv/jarvis/models/whisper`, cableado en `tools.media.audio` |
+| Piper TTS | MIT | Respuestas con voz en español (es_ES-davefx-medium); modo `inbound`: responde con audio solo si le hablas | ✅ `uv tool install piper-tts` + wrapper `jarvis-tts`, cableado en `messages.tts` |
+| changedetection.io | Apache-2.0 | Vigilar páginas web (precios, convocatorias…) | ✅ Perfil `assistant`, `127.0.0.1:5000` |
+| Watchdog propio | (parte del repo) | Avisos proactivos a Telegram si cae un servicio, el disco pasa del 90% o la GPU no responde; sin coste de LLM | ✅ `scripts/jarvis-watchdog` + timer systemd cada 5 min |
 | n8n | Fair-code (Sustainable Use) | Automatizaciones y webhooks | Perfil `automation` (opcional, ya previsto) |
 | Open WebUI | BSD-3 | Interfaz web para Ollama (uso interno) | Perfil `webui` (opcional, ya previsto) |
 
@@ -14,10 +18,7 @@ Investigación (2026-07-13) de proyectos autohosteados con licencia libre que Op
 
 | Proyecto | Licencia | Para qué | Notas de encaje |
 |---|---|---|---|
-| faster-whisper | MIT | Transcribir notas de voz de Telegram (STT); OpenClaw lo soporta como backend de voz | Modelo `small`/`base` corre bien en CPU o comparte GPU; es la vía natural para hablarle a Jarvis |
-| Piper TTS | MIT | Respuestas de voz en español | Voces es-ES ligeras, corre en CPU; OpenClaw tiene skill `sherpa-onnx-tts` y soporte de TTS streaming (Piper/Kokoro) |
 | ClawHub (registro de skills de OpenClaw) | — (skills individuales, revisar cada una) | +5.400 skills comunitarias instalables | Instalar solo skills auditadas; cada skill añade tokens al prompt del sistema (ver incidente en OPENCLAW.md) |
-| changedetection.io | Apache-2.0 | Vigilar páginas web (precios, convocatorias, BOE…) y avisar a Telegram vía n8n o API | Muy ligero; complementa a SearXNG |
 
 ## Valorar más adelante
 

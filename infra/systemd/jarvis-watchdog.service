@@ -1,0 +1,6 @@
+[Unit]
+Description=Jarvis watchdog: comprueba servicios y avisa por Telegram
+
+[Service]
+Type=oneshot
+ExecStart=/home/jarvis/jarvis-local/scripts/jarvis-watchdog

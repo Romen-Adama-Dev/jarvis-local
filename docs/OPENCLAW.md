@@ -98,6 +98,25 @@ Riesgo aceptado y mitigación: un documento malicioso del RAG podría intentar i
 docker compose --profile assistant up -d searxng
 ```
 
+## Voz (STT y TTS locales)
+
+* **Notas de voz entrantes**: `tools.media.audio` ejecuta `whisper-cli` (whisper.cpp, paquete de Ubuntu) con `ggml-small-q5_1` desde `/srv/jarvis/models/whisper` (~5 s por nota en CPU, detección automática de idioma). `echoTranscript` devuelve la transcripción al chat antes de procesarla; los comandos `/ask` etc. funcionan también dictados.
+* **Respuestas con voz**: `messages.tts` con proveedor CLI local — wrapper `jarvis-tts` que invoca Piper (voz `es_ES-davefx-medium`, en `/srv/jarvis/models/piper`). Modo `inbound`: Jarvis responde con audio solo cuando el mensaje llegó como nota de voz; `/tts on|off` lo cambia por chat.
+* Validado con round-trip local: audio generado por Piper transcrito correctamente por whisper.cpp.
+
+## Subida de documentos al RAG desde Telegram
+
+La herramienta MCP `jarvis_upload` (en `integrations/openclaw/skills/jarvis-rag/server.py`) sube un archivo a `POST /v1/documents`. OpenClaw deja los adjuntos de Telegram en `media/inbound/` del workspace y el agente pasa esa ruta a la herramienta. Protecciones: allowlist de directorios de origen (media del workspace, `~/jarvis-inbox`, `/srv/jarvis/documents`), extensiones soportadas por el RAG, y límite de 50 MiB; la API además valida MIME real, tamaño y duplicados por SHA-256. Verificado end-to-end (criterios 11-14 de aceptación): subida → indexación (5 chunks) → respuesta citando documento y sección → rechazo sin evidencia.
+
+## Watchdog proactivo
+
+`scripts/jarvis-watchdog` + timer systemd de usuario (cada 5 min, unidades en `infra/systemd/`): comprueba `jarvis-api`, `jarvis-worker`, `ollama`, `openclaw-gateway`, salud de los contenedores (Postgres, Redis, Qdrant), `GET /ready`, disco ≥90% y GPU. Avisa por Telegram usando la API del bot directamente (sin pasar por el LLM) y **solo cuando el estado cambia** (avería o recuperación), guardando el último estado en `~/.local/state/jarvis-watchdog.state`.
+
+## Instalación reproducible
+
+* `scripts/install-openclaw`: npm global, plugin SearXNG, whisper.cpp + modelo, Piper + voz es_ES, wrapper TTS, workspace, daemon systemd con linger y watchdog. Idempotente (verificado en segunda ejecución).
+* `scripts/configure-telegram`: guarda el token del bot en `~/.openclaw/secrets/` (fuera de Git), genera `openclaw.json` desde `integrations/openclaw/config/openclaw.template.json` (plantilla sin secretos), aplica la política de exec approvals con su allowlist y reinicia el gateway.
+
 ## Daemon
 
 Instalado como servicio de usuario systemd (`~/.config/systemd/user/openclaw-gateway.service`, generado por `openclaw gateway install`), con `loginctl enable-linger jarvis` para que sobreviva a un reinicio sin sesión interactiva abierta. Escucha únicamente en `127.0.0.1:18789` (websocket del gateway).
