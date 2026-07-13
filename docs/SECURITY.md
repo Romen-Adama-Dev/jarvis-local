@@ -16,7 +16,7 @@
 
 * Cada documento subido al RAG se trata como entrada no confiable: se delimita el contexto recuperado, no se ejecutan instrucciones contenidas en documentos, y un documento no puede alterar reglas del sistema (ver `docs/RAG.md`, sección de protección contra prompt injection, y los tests en `tests/` correspondientes a la Fase 10).
 * Cada mensaje de Telegram se trata como entrada no confiable: solo el/los Telegram ID en la allowlist pueden interactuar (ver `docs/TELEGRAM.md`), y las órdenes administrativas requieren confirmación explícita con caducidad (ver `docs/OPERATIONS.md`).
-* No se permite ejecución de shell arbitrario desde Telegram/OpenClaw: solo una allowlist explícita de herramientas (ver `integrations/openclaw/skills/jarvis-rag`).
+* La ejecución de comandos desde Telegram/OpenClaw pasa por **exec approvals** (decisión del propietario, 2026-07-13, que sustituye a la prohibición total inicial): allowlist de comandos de solo lectura que corren directos; cualquier otro comando requiere aprobación explícita del propietario con botones nativos en Telegram, y se deniega si no hay interfaz disponible (`askFallback: deny`). Los comandos corren como usuario `jarvis`, nunca root. Detalle y análisis de riesgo en `docs/OPENCLAW.md`.
 
 ## Pendientes de esta fase
 

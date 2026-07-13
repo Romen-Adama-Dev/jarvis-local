@@ -76,6 +76,30 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  searxng:
+    image: searxng/searxng@sha256:11ffedd387dc9cf99e881250c67861470384e55194a86f76df76aa0034a28a1a
+    restart: unless-stopped
+    profiles: ["assistant"]
+    networks:
+      - jarvis_internal
+    ports:
+      - "127.0.0.1:${SEARXNG_PORT:-8888}:8080"
+    environment:
+      SEARXNG_BASE_URL: "http://127.0.0.1:${SEARXNG_PORT:-8888}/"
+      SEARXNG_SECRET: ${SEARXNG_SECRET:?falta SEARXNG_SECRET en .env}
+    volumes:
+      - ./infra/compose/searxng:/etc/searxng
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8080/healthz || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
   n8n:
     image: n8nio/n8n:1.71.0
     restart: unless-stopped

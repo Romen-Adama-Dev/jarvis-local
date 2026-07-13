@@ -58,6 +58,46 @@ Mitigación aplicada y verificada:
 
 Regla general: cada sección añadida al prompt tiene coste real en un 7B cuantizado; ante síntomas de "tool calls como texto", idioma mezclado o `NO_REPLY` persistente, medir primero el tamaño del prompt en la trayectoria (`context.compiled`) antes de culpar al modelo. Tras un episodio así, resetear la sesión (`/new`), porque el historial contaminado perpetúa el fallo.
 
+## Latencia (2026-07-13)
+
+Medición inicial: un turno trivial de Telegram tardaba ~34 s. Desglose real (trayectoria + journal de Ollama):
+
+* Cada turno envía ~11-13k tokens (prompt de sistema + esquemas de herramientas + historial) y Ollama los reprocesaba **enteros** (~28 s a ~400-500 tok/s de prefill en la GTX 1070).
+* OpenClaw compactaba la sesión **después de casi cada turno**: el umbral es `contextTokens > contextWindow − reserveTokens` y el *floor* por defecto de `reserveTokens` es 20.000 → con ventana de 32.768 compactaba a partir de ~12.7k tokens, es decir, siempre. Cada compactación es otra llamada al LLM con todo el transcript (15-16k tokens).
+* `OLLAMA_KEEP_ALIVE=5m` descargaba el modelo tras 5 min → arranque frío en la primera consulta.
+
+Cambios aplicados y medidos:
+
+| Cambio | Efecto medido |
+|---|---|
+| `agents.defaults.compaction: {reserveTokens: 6144, reserveTokensFloor: 0, keepRecentTokens: 8192}` | Compactación pasa de "cada turno" a rara (umbral ~26.6k tokens); desaparece el error `compaction failed: Already compacted` |
+| Modelo principal → `qwen3:4b-instruct-2507-q4_K_M` | Prefill 692 tok/s (vs 515), generación 41.7 tok/s (vs 28.7 con 17k de prompt); 5.2 GB VRAM (vs 6.2); la arquitectura qwen3 sí soporta flash attention en Ollama, qwen2.5 no |
+| `OLLAMA_FLASH_ATTENTION=1` + `OLLAMA_KV_CACHE_TYPE=q8_0` | KV cache a mitad de memoria; requisito para lo anterior |
+| `OLLAMA_KEEP_ALIVE=-1` | Sin descargas del modelo (servidor dedicado, un solo modelo cargado) |
+
+Con la compactación arreglada, la caché de prefijo de Ollama por fin actúa: en turnos consecutivos reutiliza ~12.9k tokens cacheados y solo procesa el delta (~40 tokens). Turno completo por CLI: 11-15 s, de los que ~6 s son el arranque del propio CLI de node — desde Telegram (gateway residente) quedan ~5-9 s por turno. `qwen2.5:7b` y `llama3.1:8b` siguen disponibles como modelos alternativos.
+
+## Ejecución de comandos desde Telegram (exec approvals)
+
+Decisión (2026-07-13, a petición del propietario): se habilita `exec` en el gateway, sustituyendo la prohibición total de shell por un **modelo de aprobación explícita**. Esto revisa el principio original "no shell arbitrario desde Telegram" de forma defendible:
+
+* Política: `openclaw exec-policy set --host gateway --security allowlist --ask on-miss --ask-fallback deny`.
+* Lista blanca (en `~/.openclaw/exec-approvals.json`, agente `main`): solo lectura — `uptime`, `uname`, `df`, `free`, `date`, `whoami`, `ls`, `du`, `ps`, `nvidia-smi`, `ollama`. Corren sin preguntar.
+* **Cualquier otro comando** queda retenido y Telegram muestra botones de aprobación nativos (`/approve`); sin interfaz disponible, se deniega (`askFallback: deny`). Verificado: un `touch` no listado no se ejecutó sin aprobación.
+* Los comandos corren como usuario `jarvis`, nunca root; una escalada `sudo` requeriría aprobación explícita del propietario en cada ocasión.
+* Sigue habiendo un único usuario de Telegram autorizado (allowlist por ID) y auditoría de sesión.
+* `write`/`edit` permiten crear y modificar documentos directamente (verificado con `ideas-tfm.md`).
+
+Riesgo aceptado y mitigación: un documento malicioso del RAG podría intentar inyectar comandos; la allowlist solo contiene lecturas inofensivas y todo lo demás pasa por confirmación humana del propietario.
+
+## Búsqueda web local (SearXNG)
+
+`web_search` está habilitado usando **SearXNG autohosteado** (perfil `assistant` de `compose.yml`, imagen fijada por digest, solo `127.0.0.1:8888`, formato JSON habilitado en `infra/compose/searxng/settings.yml`). OpenClaw lo usa mediante el plugin oficial `@openclaw/searxng-plugin` (`tools.web.search.provider: "searxng"`, `plugins.allow: ["searxng"]`). Las consultas de búsqueda salen a los buscadores agregados desde el servidor propio, sin API keys ni proveedores comerciales; la inferencia sigue siendo 100% local.
+
+```bash
+docker compose --profile assistant up -d searxng
+```
+
 ## Daemon
 
 Instalado como servicio de usuario systemd (`~/.config/systemd/user/openclaw-gateway.service`, generado por `openclaw gateway install`), con `loginctl enable-linger jarvis` para que sobreviva a un reinicio sin sesión interactiva abierta. Escucha únicamente en `127.0.0.1:18789` (websocket del gateway).
