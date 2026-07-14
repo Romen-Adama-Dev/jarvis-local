@@ -2,6 +2,7 @@ import os
 import shutil
 import threading
 import time
+import traceback
 from dataclasses import dataclass, field
 from enum import StrEnum
 from pathlib import Path
@@ -62,12 +63,17 @@ def estimate_remote_model_bytes(repo_id: str) -> int:
     from huggingface_hub import HfApi
 
     info = HfApi().model_info(repo_id, files_metadata=True)
-    total = 0
+    totals = {".safetensors": 0, ".bin": 0, ".pth": 0, ".gguf": 0}
     for sibling in info.siblings or []:
-        name = sibling.rfilename
-        if sibling.size and name.endswith((".safetensors", ".bin", ".pth", ".gguf")):
-            total += sibling.size
-    return total
+        if not sibling.size:
+            continue
+        for suffix, _ in totals.items():
+            if sibling.rfilename.endswith(suffix):
+                totals[suffix] += sibling.size
+    for suffix in (".safetensors", ".bin", ".pth", ".gguf"):
+        if totals[suffix]:
+            return totals[suffix]
+    return 0
 
 
 def build_prompt(tokenizer: Any, messages: list[dict[str, str]]) -> str:
@@ -166,7 +172,9 @@ class AirLLMEngine:
             from airllm import AutoModel
 
             dtype = torch.float16 if device.startswith("cuda") else torch.float32
-            layered_dir = self._settings.models_dir / "layered"
+            layered_dir = (
+                self._settings.models_dir / "layered" / self._settings.model.replace("/", "--")
+            )
             layered_dir.mkdir(parents=True, exist_ok=True)
             kwargs: dict[str, Any] = {
                 "device": device,
@@ -183,8 +191,8 @@ class AirLLMEngine:
                 self._state.load_seconds = round(elapsed, 1)
             self._set_status(EngineStatus.READY, f"modelo cargado en {elapsed:.0f}s")
         except Exception as exc:
-            logger.error("engine_load_failed", error=str(exc))
-            self._set_status(EngineStatus.ERROR, str(exc))
+            logger.error("engine_load_failed", error=str(exc), traceback=traceback.format_exc())
+            self._set_status(EngineStatus.ERROR, f"{type(exc).__name__}: {exc}")
 
     def generate(
         self,

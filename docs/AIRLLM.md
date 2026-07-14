@@ -51,7 +51,7 @@ Limitación conocida: una generación ya lanzada no puede abortarse (el bucle de
 | `AIRLLM_ENABLED` | habilita el modo profundo en API y worker |
 | `AIRLLM_MODEL` | repo de Hugging Face a servir por capas |
 | `AIRLLM_MODELS_DIR` | almacén de shards (`/srv/jarvis/models/airllm`) |
-| `AIRLLM_DEVICE` | `auto` (CUDA si existe), `cuda:0` o `cpu` |
+| `AIRLLM_DEVICE` | `cpu` en este equipo: la GTX 1070 la ocupa Ollama y el prefill de contextos RAG largos agota la VRAM (incidente documentado en `docs/BENCHMARKS.md`); el cuello de botella de AirLLM es el disco, no el cómputo |
 | `AIRLLM_COMPRESSION` | vacío, `4bit` u `8bit` (requiere bitsandbytes compatible; no soportado en Pascal — ver benchmark) |
 | `AIRLLM_MAX_SEQ_LEN` | contexto máximo del modelo cargado |
 | `AIRLLM_MIN_FREE_GB` / `AIRLLM_MAX_MODEL_DOWNLOAD_GB` | frenos de disco |
@@ -75,4 +75,4 @@ Procedimiento obligatorio antes de cambiar `AIRLLM_MODEL`:
 4. Probar primero con un modelo pequeño y medir con `scripts/benchmark-airllm`.
 5. Documentar el resultado en `docs/benchmarks/`.
 
-Estado actual del hardware (SSD raíz de 114 GiB, sin disco secundario): validado con un modelo pequeño (`TinyLlama/TinyLlama-1.1B-Chat-v1.0`). Los modelos realmente "profundos" (70B) exigen ~140 GiB solo de shards: **quedan bloqueados hasta montar un disco dedicado en `/srv/jarvis/models`**, tal como prevé el diseño. Los resultados medidos y las conclusiones honestas de latencia están en `docs/benchmarks/` y resumidos en `docs/BENCHMARKS.md`: AirLLM en este equipo **no** es interactivo y solo tiene sentido detrás de la cola.
+Estado actual del hardware (SSD raíz de 114 GiB, sin disco secundario): validado con `NousResearch/Meta-Llama-3.1-8B-Instruct` en fp16 (16 GiB, no cabe en los 8 GiB de VRAM: caso de uso legítimo de AirLLM). Requisitos de compatibilidad aprendidos por la vía dura: el checkpoint debe ser safetensors **multi-shard** con `model.safetensors.index.json` y **sin tied embeddings** (TinyLlama-1.1B falla por lo primero; Llama-3.2 1B/3B por lo segundo). Los modelos realmente "profundos" (70B) exigen ~140 GiB solo de shards: **quedan bloqueados hasta montar un disco dedicado en `/srv/jarvis/models`**, tal como prevé el diseño. Los resultados medidos y las conclusiones honestas de latencia están en `docs/benchmarks/` y resumidos en `docs/BENCHMARKS.md`: AirLLM en este equipo **no** es interactivo (~0.07 tok/s) y solo tiene sentido detrás de la cola.

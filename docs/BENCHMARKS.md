@@ -134,3 +134,56 @@ scripts/benchmark-models --models "llama3.1:8b-instruct-q4_K_M,qwen2.5:7b-instru
 
 Guarda un JSON con timestamp en `docs/benchmarks/`. Añadir o quitar modelos
 candidatos con `--models "modelo1,modelo2,..."`.
+
+## AirLLM (modo /deep) — 2026-07-14
+
+Medición del servicio `airllm-service` con `NousResearch/Meta-Llama-3.1-8B-Instruct`
+(fp16, 16 GiB, no cabe en los 8 GiB de VRAM de la GTX 1070) servido por capas
+desde el SSD raíz (LVM). Detalle en `docs/benchmarks/airllm-20260714.md`.
+
+| Métrica | Valor medido |
+|---|---|
+| Carga inicial (descarga 16 GiB + partición por capas) | ~42 min |
+| Recarga con shards ya particionados | 4-176 s |
+| Generación en GPU (3 tiradas × 32 tokens, prompt corto) | 0.076 tok/s constantes (~13 s/token) |
+| Generación en CPU (8 tokens, prompt corto) | ~15.3 s por pasada (0.065 tok/s) |
+| Variación entre tirada fría y caliente | ninguna (el barrido de 16 GiB no cabe en la page cache disponible) |
+| VRAM del proceso AirLLM en GPU | 2.5 GiB medidos con `nvidia-smi` durante prefill largo |
+| RSS del servicio tras generar | ~2 GiB |
+| Disco tras instalar el modelo | 80% usado (23 GiB libres) |
+
+La igualdad práctica entre GPU y CPU confirma que el cuello de botella es la
+lectura de capas desde disco (16 GiB por token generado, ~1.2 GiB/s), tal y
+como advierte la documentación de AirLLM.
+
+**Incidente de VRAM compartida**: con `AIRLLM_DEVICE=auto` (cuda), el prefill
+de una consulta RAG real (contexto de ~6.000 caracteres) provocó CUDA OOM
+porque Ollama —backend principal, siempre residente— ocupaba 5.2 de los 8 GiB
+de la GTX 1070. Decisión de producción: `AIRLLM_DEVICE=cpu`. Pierde ~15% de
+velocidad (irrelevante en un backend batch) y elimina por diseño la contención
+con Ollama.
+
+Conclusión honesta, como exige el diseño: **AirLLM en este hardware no es
+interactivo ni de lejos** (una respuesta de 96 tokens tarda ~25 min). Queda
+validado como backend batch detrás de la cola de trabajos (`/deep` responde al
+instante con un identificador y el worker recoge el resultado), que es
+exactamente el papel que le asigna la arquitectura. Su valor real aparecerá
+con un disco NVMe dedicado y/o modelos que de verdad justifiquen la espera
+(70B), ambos bloqueados hoy por el almacenamiento disponible.
+
+Limitaciones encontradas y documentadas:
+
+* `airllm==2.11.0` requiere checkpoints safetensors multi-shard con
+  `model.safetensors.index.json` y **no soporta modelos con tied embeddings**
+  (Llama 3.2 1B/3B fallan: no existe `lm_head` en el checkpoint).
+* Los shards por capas deben guardarse en un directorio por modelo: AirLLM
+  escribe siempre en `<ruta>/splitted_model` y mezcla capas de modelos
+  distintos si se comparte la ruta (corregido en `services/airllm`).
+* La compresión 4/8 bit de AirLLM necesita bitsandbytes con soporte de la GPU;
+  en Pascal (sm_61) no está soportada y queda deshabilitada.
+
+Reproducir:
+
+```bash
+AIRLLM_BENCH_RUNS=3 AIRLLM_BENCH_MAX_TOKENS=32 scripts/benchmark-airllm
+```
