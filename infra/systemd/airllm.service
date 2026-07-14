@@ -12,7 +12,7 @@ Environment=HOME=/srv/jarvis/data
 Environment=UV_CACHE_DIR=/srv/jarvis/data/uv-cache
 Environment=HF_HOME=/srv/jarvis/models/airllm/hf
 EnvironmentFile=/srv/jarvis/app/.env
-ExecStart=/usr/local/bin/uv run --frozen uvicorn airllm_service.app:app --host 127.0.0.1 --port 11500
+ExecStart=/usr/local/bin/uv run --frozen --no-sync uvicorn airllm_service.app:app --host 127.0.0.1 --port 11500
 Restart=on-failure
 RestartSec=10
 TimeoutStartSec=600
