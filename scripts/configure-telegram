@@ -49,6 +49,10 @@ for c in /usr/bin/uptime /usr/bin/uname /usr/bin/df /usr/bin/free /usr/bin/date 
   openclaw approvals allowlist add --agent main "$c" >/dev/null 2>&1 || true
 done
 
+echo "== Correo/calendario: wrapper gog de solo lectura en allowlist =="
+install -m 755 "$REPO_DIR/integrations/openclaw/config/gog-read" "$HOME/.local/bin/gog-read"
+openclaw approvals allowlist add --agent main "$HOME/.local/bin/gog-read" >/dev/null 2>&1 || true
+
 echo "== Reiniciando gateway =="
 systemctl --user restart openclaw-gateway.service
 sleep 5

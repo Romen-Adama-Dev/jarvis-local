@@ -105,16 +105,24 @@ docker compose --profile assistant up -d searxng
 * Validado con round-trip local: audio generado por Piper transcrito correctamente por whisper.cpp.
 * **ffmpeg es imprescindible**: las notas de voz de Telegram llegan en ogg/opus, que whisper.cpp no decodifica; OpenClaw las convierte con ffmpeg antes de invocar el CLI. Sin ffmpeg, el log muestra `media-understanding audio: failed reason=ffmpeg not found` y la voz "no funciona" (incidente 2026-07-13, resuelto con `apt install ffmpeg`).
 
-## Correo y calendario (gog) — pendiente de autorización
+## Correo y calendario (gog)
 
-`gog` v0.34.0 (CLI MIT de Google Workspace del propio proyecto OpenClaw: Gmail, Calendar, Drive, Contactos) está instalado en `~/.local/bin/gog`. Estado deliberado: **no** está en la allowlist de exec ni habilitada su skill — cada uso pedirá aprobación con botones en Telegram, y las reglas del agente (workspace `AGENTS.md`) exigen además resumen + confirmación explícita antes de cualquier envío de correo o cambio de calendario. Para activarlo hace falta que el propietario:
+`gog` v0.34.0 (CLI MIT de Google Workspace del propio proyecto OpenClaw: Gmail, Calendar, Drive, Contactos) está instalado en `~/.local/bin/gog`. Integración en dos niveles:
 
-1. Cree un cliente OAuth "Desktop app" en Google Cloud Console (APIs Gmail + Calendar habilitadas) y descargue `client_secret.json`.
+* **Lecturas sin fricción**: wrapper `~/.local/bin/gog-read` (fuente en `integrations/openclaw/config/gog-read`, instalado y allowlistado por `scripts/configure-telegram`). Fuerza `--readonly` (bloquea mutaciones a nivel de API de Google, no solo de prompt) y `--wrap-untrusted` (marca el contenido de correos como dato no confiable en la salida, mitigando prompt injection por email). El agente lo usa para buscar/leer correo y listar eventos sin pedir aprobación.
+* **Escrituras siempre confirmadas**: el binario `gog` completo **no** está en la allowlist — enviar correos, etiquetar, crear/mover/borrar eventos dispara los botones de aprobación de OpenClaw en Telegram, y las reglas del workspace (`AGENTS.md`) exigen además resumen previo (destinatario/asunto/cuerpo o título/fecha del evento) y "sí" explícito en el chat. Doble puerta: regla de prompt + aprobación de exec fuera del LLM.
+
+La skill `gog` de OpenClaw sigue deshabilitada a propósito: añadiría un bloque grande al prompt del sistema (ver incidente de prompt gigante con modelos 7B) y las reglas de `AGENTS.md` bastan.
+
+### Autorización OAuth (paso único del propietario)
+
+`gog auth list` debe mostrar la cuenta; si dice "No tokens stored", falta este paso, que solo puede hacer el propietario:
+
+1. Crear un cliente OAuth "Desktop app" en Google Cloud Console (con las APIs de Gmail y Calendar habilitadas) y descargar `client_secret.json`.
 2. `gog auth credentials <ruta al client_secret.json>`
-3. `gog auth add <su-gmail> --services gmail,calendar --remote` (flujo headless: imprime URL para autorizar desde el móvil/PC y se pega el código).
-4. Decida si añade `~/.local/bin/gog` a la allowlist de exec (`openclaw approvals allowlist add --agent main ~/.local/bin/gog`) para lecturas sin fricción, o lo deja todo tras aprobación.
+3. `gog auth add <su-gmail> --services gmail,calendar --remote` (flujo headless: imprime una URL para autorizar desde el móvil/PC y se pega el código de vuelta).
 
-Los tokens OAuth quedan en el home del usuario, fuera del repositorio.
+Los tokens OAuth quedan en el keyring/home del usuario, fuera del repositorio. Rotación: revocar el acceso en la cuenta de Google y repetir `gog auth add`.
 
 ## Subida de documentos al RAG desde Telegram
 
