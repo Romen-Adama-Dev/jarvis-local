@@ -1,6 +1,7 @@
 import asyncio
 import os
 import time
+import traceback
 import uuid
 from contextlib import asynccontextmanager
 
@@ -136,12 +137,14 @@ async def chat_completions(payload: ChatCompletionRequest) -> ChatCompletionResp
             timeout=settings.generation_timeout_seconds,
         )
     except TimeoutError as exc:
+        logger.error("generation_timeout", timeout=settings.generation_timeout_seconds)
         raise HTTPException(
             status_code=504,
             detail=f"Generación cancelada por timeout ({settings.generation_timeout_seconds}s)",
         ) from exc
     except RuntimeError as exc:
-        raise HTTPException(status_code=503, detail=str(exc)) from exc
+        logger.error("generation_failed", error=str(exc), traceback=traceback.format_exc())
+        raise HTTPException(status_code=503, detail=f"{type(exc).__name__}: {exc}") from exc
     finally:
         engine.state.pending -= 1
 

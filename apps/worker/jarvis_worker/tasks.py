@@ -164,8 +164,9 @@ async def deep_rag_query(
         try:
             answer = await orchestrator.query(query, deep=True, filters=filters, top_k=top_k)
         except Exception as exc:
-            logger.error("deep_rag_query_failed", job_id=job_id, error=str(exc))
-            await mark_failed(session, job, f"Error en consulta profunda: {exc}")
+            detail = f"{type(exc).__name__}: {exc}".rstrip(": ")
+            logger.error("deep_rag_query_failed", job_id=job_id, error=detail)
+            await mark_failed(session, job, f"Error en consulta profunda: {detail}")
             return
         await mark_completed(
             session,

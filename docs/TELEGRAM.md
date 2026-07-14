@@ -17,6 +17,8 @@ Un único bot, administrado íntegramente por OpenClaw (long polling, sin webhoo
 
 Los comandos base (`/status`, `/new`, `/reset`, `/think`, etc.) son nativos de OpenClaw. Los específicos de Jarvis (`/ask`, `/deep`, `/sources`, `/models`, `/disk`, `/jobs`) se resuelven mediante lenguaje natural invocando las herramientas MCP de la skill `jarvis-rag` (ver `docs/OPENCLAW.md`): no son comandos de barra registrados aparte, la skill instruye al agente para usarlas ante la intención correspondiente.
 
+`/deep` es asíncrono por diseño (criterio 17): `jarvis_deep` encola un trabajo y responde al momento con su identificador, el worker ejecuta la consulta contra AirLLM sin bloquear al bot, y la respuesta se recoge con `jarvis_job_result` (o se lista con `/jobs`). Ver `docs/AIRLLM.md`.
+
 **Pendiente**: `/upload` (adjuntar documentos desde Telegram) y `/cancel` de trabajos concretos aún no están conectados a la skill; `/jobs` y la cancelación por API sí funcionan vía `jarvis_jobs`/`jarvis_cancel_job`.
 
 ## Seguridad

@@ -67,6 +67,14 @@ class AirLLMProvider:
         try:
             response = await self._client.post("/v1/chat/completions", json=payload)
             response.raise_for_status()
+        except httpx.HTTPStatusError as exc:
+            logger.error(
+                "airllm_chat_failed",
+                model=target_model,
+                status=exc.response.status_code,
+                body=exc.response.text[:500],
+            )
+            raise
         except httpx.HTTPError as exc:
             logger.error("airllm_chat_failed", model=target_model, error=str(exc))
             raise
