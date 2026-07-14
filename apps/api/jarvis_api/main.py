@@ -17,6 +17,8 @@ from packages.core.errors import JarvisError
 from packages.core.ids import get_correlation_id
 from packages.core.logging import configure_logging, get_logger
 from packages.core.settings import get_settings
+from packages.inference.airllm import AirLLMProvider
+from packages.inference.base import InferenceProvider
 from packages.inference.ollama import OllamaProvider
 from packages.inference.router import InferenceMode, InferenceRouter
 from packages.rag.embeddings import FastEmbedProvider
@@ -30,8 +32,21 @@ async def lifespan(app: FastAPI):
     settings = get_settings()
 
     ollama_provider = OllamaProvider(settings.ollama_host, settings.ollama_primary_model)
-    set_inference_router(InferenceRouter(providers={InferenceMode.NORMAL: ollama_provider}))
-    logger.info("inference_router_ready", ollama_model=settings.ollama_primary_model)
+    providers: dict[InferenceMode, InferenceProvider] = {InferenceMode.NORMAL: ollama_provider}
+    airllm_provider = None
+    if settings.airllm_enabled:
+        airllm_provider = AirLLMProvider(
+            settings.airllm_service_url,
+            settings.airllm_model,
+            timeout_seconds=settings.airllm_timeout_seconds,
+        )
+        providers[InferenceMode.DEEP] = airllm_provider
+    set_inference_router(InferenceRouter(providers=providers))
+    logger.info(
+        "inference_router_ready",
+        ollama_model=settings.ollama_primary_model,
+        airllm_enabled=settings.airllm_enabled,
+    )
 
     cache_dir = str(settings.jarvis_models_dir / "fastembed")
     embedding_provider = await asyncio.to_thread(FastEmbedProvider, cache_dir=cache_dir)
@@ -46,6 +61,8 @@ async def lifespan(app: FastAPI):
     logger.info("rag_orchestrator_ready")
     yield
     await ollama_provider.aclose()
+    if airllm_provider is not None:
+        await airllm_provider.aclose()
 
 
 def create_app() -> FastAPI:

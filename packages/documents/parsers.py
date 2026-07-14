@@ -105,9 +105,7 @@ def _parse_csv(content: bytes, filename: str) -> ParsedDocument:
         ]
         if not pairs:
             continue
-        blocks.append(
-            ParsedBlock(text=" | ".join(pairs), page=None, section=f"fila {i}", order=i)
-        )
+        blocks.append(ParsedBlock(text=" | ".join(pairs), page=None, section=f"fila {i}", order=i))
     return ParsedDocument(blocks=blocks, page_count=None)
 
 

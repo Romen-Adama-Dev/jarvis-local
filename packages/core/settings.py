@@ -35,9 +35,11 @@ class Settings(BaseSettings):
     ollama_powerful_model: str = "llama3.1:8b-instruct-q4_K_M"
     ollama_embedding_model: str = "nomic-embed-text"
 
+    airllm_enabled: bool = False
     airllm_service_url: str = "http://127.0.0.1:11500"
     airllm_model: str = "unset-hasta-benchmark"
     airllm_max_concurrency: int = 1
+    airllm_timeout_seconds: float = 1800.0
 
     telegram_bot_token: str = ""
     telegram_authorized_user_ids: str = ""

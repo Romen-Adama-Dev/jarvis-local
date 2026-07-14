@@ -1,3 +1,4 @@
+import dataclasses
 import datetime
 import uuid
 from pathlib import Path
@@ -7,7 +8,13 @@ from sqlalchemy import delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.core.db.models import Chunk, Document, Job
-from packages.core.jobs import mark_completed, mark_failed, mark_progress, mark_running
+from packages.core.jobs import (
+    mark_cancelled,
+    mark_completed,
+    mark_failed,
+    mark_progress,
+    mark_running,
+)
 from packages.core.logging import get_logger
 from packages.documents.parsers import parse_document
 from packages.rag.chunking import chunk_blocks
@@ -129,6 +136,50 @@ async def ingest_document(ctx: dict[str, Any], document_id: str, job_id: str) ->
 
 async def reindex_document(ctx: dict[str, Any], document_id: str, job_id: str) -> None:
     await ingest_document(ctx, document_id, job_id)
+
+
+async def deep_rag_query(
+    ctx: dict[str, Any],
+    job_id: str,
+    query: str,
+    filters: dict | None = None,
+    top_k: int = 8,
+) -> None:
+    session_factory = ctx["session_factory"]
+    async with session_factory() as session:
+        job = await session.get(Job, uuid.UUID(job_id))
+        if job is None:
+            logger.error("deep_rag_query_missing_job", job_id=job_id)
+            return
+        if job.status == "cancelling":
+            await mark_cancelled(session, job)
+            return
+        orchestrator = ctx.get("deep_orchestrator")
+        if orchestrator is None:
+            await mark_failed(
+                session, job, "AirLLM está deshabilitado en el worker (AIRLLM_ENABLED=false)"
+            )
+            return
+        await mark_running(session, job)
+        try:
+            answer = await orchestrator.query(query, deep=True, filters=filters, top_k=top_k)
+        except Exception as exc:
+            logger.error("deep_rag_query_failed", job_id=job_id, error=str(exc))
+            await mark_failed(session, job, f"Error en consulta profunda: {exc}")
+            return
+        await mark_completed(
+            session,
+            job,
+            {
+                "query": query,
+                "answer": answer.answer,
+                "sources": [dataclasses.asdict(s) for s in answer.sources],
+                "confidence": answer.confidence,
+                "insufficient_evidence": answer.insufficient_evidence,
+                "warning": answer.warning,
+            },
+        )
+        logger.info("deep_rag_query_completed", job_id=job_id)
 
 
 async def delete_document(ctx: dict[str, Any], document_id: str, job_id: str) -> None:

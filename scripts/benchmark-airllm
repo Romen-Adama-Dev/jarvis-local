@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SERVICE_URL="${AIRLLM_SERVICE_URL:-http://127.0.0.1:11500}"
+RUNS="${AIRLLM_BENCH_RUNS:-3}"
+MAX_TOKENS="${AIRLLM_BENCH_MAX_TOKENS:-64}"
+REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+OUT_DIR="${REPO_DIR}/docs/benchmarks"
+OUT_FILE="${OUT_DIR}/airllm-$(date +%Y%m%d).md"
+
+command -v jq >/dev/null || { echo "ERROR: jq es necesario" >&2; exit 1; }
+
+health=$(curl -sf -m 10 "${SERVICE_URL}/health") || { echo "ERROR: airllm-service no responde en ${SERVICE_URL}" >&2; exit 1; }
+status=$(echo "$health" | jq -r .status)
+model=$(echo "$health" | jq -r .model)
+if [[ "$status" != "ready" ]]; then
+    echo "ERROR: el servicio no está listo (status=${status}: $(echo "$health" | jq -r .detail))" >&2
+    exit 1
+fi
+
+echo "== Benchmark AirLLM: ${model} (${RUNS} ejecuciones, ${MAX_TOKENS} tokens) =="
+mkdir -p "$OUT_DIR"
+
+payload=$(jq -n --arg m "$model" --argjson t "$MAX_TOKENS" '{
+  model: $m,
+  max_tokens: $t,
+  messages: [
+    {role: "system", content: "Responde en español, de forma breve y clara."},
+    {role: "user", content: "Explica en un párrafo qué es la gestión del alcance según el PMBOK."}
+  ]
+}')
+
+results=()
+for i in $(seq 1 "$RUNS"); do
+    start=$(date +%s.%N)
+    response=$(curl -sf -m 1800 -X POST "${SERVICE_URL}/v1/chat/completions" \
+        -H 'Content-Type: application/json' -d "$payload")
+    end=$(date +%s.%N)
+    wall=$(echo "$end $start" | awk '{printf "%.1f", $1-$2}')
+    completion=$(echo "$response" | jq -r .usage.completion_tokens)
+    prompt_tokens=$(echo "$response" | jq -r .usage.prompt_tokens)
+    tps=$(echo "$completion $wall" | awk '{printf "%.3f", $1/$2}')
+    echo "run ${i}: ${wall}s de pared, ${prompt_tokens} tokens de prompt, ${completion} generados (${tps} tok/s)"
+    results+=("| ${i} | ${wall} | ${prompt_tokens} | ${completion} | ${tps} |")
+done
+
+health=$(curl -sf "${SERVICE_URL}/health")
+
+{
+    echo "# Benchmark AirLLM — $(date +%Y-%m-%d)"
+    echo
+    echo "* Modelo: \`${model}\`"
+    echo "* Dispositivo: $(echo "$health" | jq -r .device)"
+    echo "* Carga del modelo: $(echo "$health" | jq -r .load_seconds) s"
+    echo "* RSS tras generar: $(echo "$health" | jq -r .last_generation.rss_gb) GiB"
+    echo "* Disco de modelos: $(echo "$health" | jq -c .disk)"
+    echo "* GPU: $(nvidia-smi --query-gpu=name,memory.used --format=csv,noheader 2>/dev/null || echo 'n/d')"
+    echo "* max_tokens por petición: ${MAX_TOKENS}"
+    echo
+    echo "| run | s (pared) | tokens prompt | tokens generados | tok/s |"
+    echo "|---|---|---|---|---|"
+    printf '%s\n' "${results[@]}"
+    echo
+    echo "La primera ejecución incluye calentamiento de cachés del SO; las siguientes reflejan el régimen estable. AirLLM relee las capas del modelo desde disco en cada token: estos números NO son extrapolables a modelos mayores de forma lineal (más capas = más lecturas por token)."
+} > "$OUT_FILE"
+
+echo "Resultados escritos en ${OUT_FILE}"
