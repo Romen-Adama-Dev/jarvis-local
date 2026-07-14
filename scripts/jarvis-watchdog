@@ -17,6 +17,11 @@ for svc in jarvis-api jarvis-worker ollama; do
   fi
 done
 
+if systemctl is-enabled --quiet airllm.service 2>/dev/null \
+  && ! systemctl is-active --quiet airllm.service; then
+  problems+=("servicio airllm caído")
+fi
+
 if ! systemctl --user is-active --quiet openclaw-gateway.service; then
   problems+=("openclaw-gateway caído")
 fi

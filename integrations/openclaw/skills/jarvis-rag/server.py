@@ -39,15 +39,44 @@ def jarvis_ask(query: str) -> str:
 
 @mcp.tool()
 def jarvis_deep(query: str) -> str:
-    """Consulta el RAG de Jarvis en modo profundo (AirLLM, para tareas sin urgencia)."""
+    """Encola una consulta RAG en modo profundo (AirLLM, lenta, para tareas sin urgencia).
+    Devuelve un identificador de trabajo; recoge el resultado con jarvis_job_result."""
     response = _client.post("/v1/rag/deep-query", json={"query": query})
+    if response.status_code == 503:
+        detail = response.json()
+        return detail.get("message") or "El modo profundo (AirLLM) no está disponible."
     response.raise_for_status()
-    return _format_answer(response.json())
+    job = response.json()
+    return (
+        f"Consulta profunda encolada como trabajo {job['id']} ({job['status']}). "
+        "AirLLM es lento por diseño (carga el modelo por capas desde disco): "
+        "consulta el resultado en unos minutos con jarvis_job_result."
+    )
+
+
+@mcp.tool()
+def jarvis_job_result(job_id: str) -> str:
+    """Recoge el estado o el resultado de un trabajo (consulta profunda, indexación...)."""
+    response = _client.get(f"/v1/jobs/{job_id}")
+    response.raise_for_status()
+    job = response.json()
+    status = job["status"]
+    if status == "failed":
+        return f"Trabajo {job_id} FALLÓ: {job.get('error') or 'sin detalle'}"
+    if status != "completed":
+        return (
+            f"Trabajo {job_id}: {status} ({job.get('progress', 0)}%). Vuelve a consultar más tarde."
+        )
+    result = job.get("result") or {}
+    if job.get("job_type") == "deep_query" and "answer" in result:
+        return _format_answer(result)
+    return f"Trabajo {job_id} completado: {result}"
 
 
 @mcp.tool()
 def jarvis_status() -> str:
-    """Consulta la salud de Jarvis API y sus dependencias (Postgres, Redis, Qdrant, Ollama, AirLLM)."""
+    """Consulta la salud de Jarvis API y sus dependencias (Postgres, Redis, Qdrant,
+    Ollama, AirLLM)."""
     health = _client.get("/health").json()
     ready = _client.get("/ready").json()
     lines = [f"API: {health['status']} (v{health['version']})", f"Listo: {ready['ready']}"]
@@ -104,7 +133,8 @@ def jarvis_upload(file_path: str) -> str:
     if not path.is_file():
         return f"No existe el archivo: {path}"
     if path.suffix.lower() not in UPLOAD_ALLOWED_SUFFIXES:
-        return f"Tipo no soportado ({path.suffix}). Soportados: {', '.join(sorted(UPLOAD_ALLOWED_SUFFIXES))}"
+        supported = ", ".join(sorted(UPLOAD_ALLOWED_SUFFIXES))
+        return f"Tipo no soportado ({path.suffix}). Soportados: {supported}"
     if path.stat().st_size > UPLOAD_MAX_BYTES:
         return f"Archivo demasiado grande ({path.stat().st_size / 1024**2:.0f} MiB > 50 MiB)."
 
@@ -129,7 +159,9 @@ def jarvis_jobs() -> str:
     active = [j for j in jobs if j["status"] not in {"completed", "failed", "cancelled"}]
     if not active:
         return "No hay trabajos activos."
-    return "\n".join(f"- {j['id']} [{j['job_type']}] {j['status']} ({j['progress']}%)" for j in active)
+    return "\n".join(
+        f"- {j['id']} [{j['job_type']}] {j['status']} ({j['progress']}%)" for j in active
+    )
 
 
 @mcp.tool()

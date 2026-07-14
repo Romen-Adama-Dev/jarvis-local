@@ -1,0 +1,29 @@
+[Unit]
+Description=Jarvis AirLLM Service (inferencia profunda por capas)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=jarvis-svc
+Group=jarvis-svc
+WorkingDirectory=/srv/jarvis/app/services/airllm
+Environment=HOME=/srv/jarvis/data
+Environment=UV_CACHE_DIR=/srv/jarvis/data/uv-cache
+Environment=HF_HOME=/srv/jarvis/models/airllm/hf
+EnvironmentFile=/srv/jarvis/app/.env
+ExecStart=/usr/local/bin/uv run --frozen uvicorn airllm_service.app:app --host 127.0.0.1 --port 11500
+Restart=on-failure
+RestartSec=10
+TimeoutStartSec=600
+TimeoutStopSec=30
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/srv/jarvis/data /srv/jarvis/models /srv/jarvis/logs
+StandardOutput=append:/srv/jarvis/logs/airllm.log
+StandardError=append:/srv/jarvis/logs/airllm.error.log
+
+[Install]
+WantedBy=multi-user.target

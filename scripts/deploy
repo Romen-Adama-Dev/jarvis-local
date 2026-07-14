@@ -63,5 +63,14 @@ sudo systemctl enable --now jarvis-worker.service
 sudo systemctl restart jarvis-api.service
 sudo systemctl restart jarvis-worker.service
 
+if systemctl is-enabled --quiet airllm.service 2>/dev/null; then
+    echo "== AirLLM habilitado: sincronizando su entorno y reiniciando =="
+    sudo -u "${SERVICE_USER}" env HOME=/srv/jarvis/data UV_CACHE_DIR=/srv/jarvis/data/uv-cache \
+        bash -c "cd '${DEPLOY_DIR}/services/airllm' && /usr/local/bin/uv sync --frozen --extra runtime --no-dev"
+    sudo cp "${REPO_DIR}/infra/systemd/airllm.service" /etc/systemd/system/airllm.service
+    sudo systemctl daemon-reload
+    sudo systemctl restart airllm.service
+fi
+
 echo "Despliegue completado."
 sudo systemctl --no-pager status jarvis-api.service jarvis-worker.service

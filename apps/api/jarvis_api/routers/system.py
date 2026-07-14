@@ -56,7 +56,7 @@ async def ready(
             )
         )
 
-    all_healthy = all(dep.healthy for dep in dependencies)
+    all_healthy = all(dep.healthy for dep in dependencies if dep.name != "inference:deep")
     return ReadyResponse(ready=all_healthy, dependencies=dependencies)
 
 
