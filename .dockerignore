@@ -1,0 +1,12 @@
+.git
+.env
+.venv
+**/.venv
+**/__pycache__
+**/.pytest_cache
+**/.ruff_cache
+.claude
+infra/compose/n8n_data
+infra/compose/changedetection
+infra/compose/webui_data
+infra/monitoring/grafana
