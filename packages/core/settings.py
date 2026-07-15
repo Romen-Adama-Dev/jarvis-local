@@ -40,6 +40,7 @@ class Settings(BaseSettings):
     airllm_model: str = "unset-hasta-benchmark"
     airllm_max_concurrency: int = 1
     airllm_timeout_seconds: float = 1800.0
+    airllm_release_ollama_vram: bool = True
 
     telegram_bot_token: str = ""
     telegram_authorized_user_ids: str = ""

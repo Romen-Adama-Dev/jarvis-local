@@ -161,7 +161,9 @@ de una consulta RAG real (contexto de ~6.000 caracteres) provocó CUDA OOM
 porque Ollama —backend principal, siempre residente— ocupaba 5.2 de los 8 GiB
 de la GTX 1070. Decisión de producción: `AIRLLM_DEVICE=cpu`. Pierde ~15% de
 velocidad (irrelevante en un backend batch) y elimina por diseño la contención
-con Ollama.
+con Ollama. **Superada el 2026-07-15**: la equivalencia CPU≈GPU solo vale con
+prompts cortos; con prompts RAG reales la decisión `cpu` hacía fallar todos
+los `/deep` por timeout (ver revisión más abajo).
 
 Conclusión honesta, como exige el diseño: **AirLLM en este hardware no es
 interactivo ni de lejos** (una respuesta de 96 tokens tarda ~25 min). Queda
@@ -170,6 +172,50 @@ instante con un identificador y el worker recoge el resultado), que es
 exactamente el papel que le asigna la arquitectura. Su valor real aparecerá
 con un disco NVMe dedicado y/o modelos que de verdad justifiquen la espera
 (70B), ambos bloqueados hoy por el almacenamiento disponible.
+
+## AirLLM (modo /deep) — revisión 2026-07-15: cpu → cuda
+
+Dos consultas `/deep` reales fallaron con `504 Generación cancelada por
+timeout (3300s)` (2026-07-14 19:12 y 2026-07-15 07:16, `jarvis-worker.log`).
+Diagnóstico: con `AIRLLM_DEVICE=cpu` el prefill de un prompt RAG real
+(~1.800 tokens) no es una pasada barata como con los prompts cortos del
+benchmark anterior, sino que domina el coste total en fp32 sobre CPU.
+Detalle en `docs/benchmarks/airllm-20260715.md`.
+
+| Medición (prompt RAG real: 1.759 tokens, 8 de salida) | CPU | GPU (cuda:0) |
+|---|---|---|
+| Duración total | 4.031 s (0.011 tok/s, > timeout 3.300 s) | 218 s |
+| VRAM pico del proceso AirLLM | — | 3.391 MiB |
+| Extrapolación a 128 tokens de respuesta | ~7.700 s (imposible) | ~1.780 s (~30 min) ✓ |
+
+Decisión de producción: `AIRLLM_DEVICE=cuda:0` + gestión explícita de la
+contención de VRAM (3.391 MiB de prefill + 5.314 MiB de Ollama residente
+superan los 8.192 MiB de la GTX 1070):
+
+* El worker descarga los modelos de Ollama de la VRAM antes de cada
+  generación deep y los recarga al terminar (`AIRLLM_RELEASE_OLLAMA_VRAM`).
+* Un guardián en el worker desaloja cada 20 s los modelos que Ollama cargue
+  durante la generación, y si aun así la generación muere, el worker la
+  reintenta una vez (`job_timeout` de arq subido a 7500 s para cubrir dos
+  intentos). Motivo, medido en dos E2E reales: AirLLM asigna VRAM
+  incrementalmente durante toda la generación (~30 min, picos de ~900 MiB
+  para los logits) y un `/ask` concurrente que cargó un modelo de Ollama
+  (5,1 GiB) provocó `CUDA out of memory` y un 503 en ambos intentos. Se
+  descartó "reservar" el pico vía caching allocator: AirLLM ejecuta
+  `torch.cuda.empty_cache()` en su propio bucle de capas (`airllm/utils.py`)
+  y la reserva se devuelve al driver en el primer barrido (verificado:
+  43 MiB "reserved but unallocated" en el momento del OOM pese a reservar
+  4 GiB al inicio).
+* El servicio AirLLM libera su caché CUDA tras cada generación (retiene
+  ~106 MiB en reposo, medido con `nvidia-smi`).
+* `warm()` detecta y repara recargas degradadas de Ollama (offload parcial
+  CPU/GPU observado dos veces durante las pruebas: sin reparación, un modelo
+  cargado con `keep_alive=-1` mientras AirLLM ocupaba VRAM quedaba al
+  20 %/80 % CPU/GPU indefinidamente).
+
+`AIRLLM_MAX_NEW_TOKENS_DEFAULT` sube de 64 a 128: con 64 las respuestas se
+cortaban a mitad de frase y en GPU el coste extra (~14 min) cabe con holgura
+en los timeouts escalonados (3.300/3.500/3.600 s).
 
 Limitaciones encontradas y documentadas:
 

@@ -93,6 +93,40 @@ class OllamaProvider:
             raw=data,
         )
 
+    async def release_vram(self) -> list[str]:
+        response = await self._client.get("/api/ps")
+        response.raise_for_status()
+        released: list[str] = []
+        for item in response.json().get("models", []):
+            name = item.get("name")
+            if not name:
+                continue
+            unload = await self._client.post("/api/generate", json={"model": name, "keep_alive": 0})
+            unload.raise_for_status()
+            released.append(name)
+        if released:
+            logger.info("ollama_vram_released", models=released)
+        return released
+
+    async def warm(self, models: list[str] | None = None) -> None:
+        targets = models or [self._default_model]
+        ps = await self._client.get("/api/ps")
+        ps.raise_for_status()
+        loaded = {item.get("name"): item for item in ps.json().get("models", [])}
+        for name in targets:
+            entry = loaded.get(name)
+            degraded = entry is not None and entry.get("size_vram", 0) < entry.get("size", 0)
+            if degraded:
+                unload = await self._client.post(
+                    "/api/generate", json={"model": name, "keep_alive": 0}
+                )
+                unload.raise_for_status()
+            response = await self._client.post(
+                "/api/generate", json={"model": name, "keep_alive": -1}
+            )
+            response.raise_for_status()
+        logger.info("ollama_warmed", models=targets)
+
     async def health(self) -> ProviderHealth:
         try:
             response = await self._client.get("/api/version")
