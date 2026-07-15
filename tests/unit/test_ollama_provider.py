@@ -127,6 +127,100 @@ async def test_list_models_maps_tool_support():
     await provider.aclose()
 
 
+@pytest.mark.asyncio
+async def test_release_vram_unloads_loaded_models_and_returns_names():
+    unloaded = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/api/ps":
+            return httpx.Response(
+                200,
+                json={
+                    "models": [
+                        {"name": "qwen3:4b-instruct-2507-q4_K_M", "size_vram": 5314193653},
+                        {"name": "llama3.1:8b-instruct-q4_K_M", "size_vram": 5137000000},
+                    ]
+                },
+            )
+        assert request.url.path == "/api/generate"
+        body = json.loads(request.content)
+        assert body["keep_alive"] == 0
+        unloaded.append(body["model"])
+        return httpx.Response(200, json={"done": True, "done_reason": "unload"})
+
+    provider = _provider(handler)
+    released = await provider.release_vram()
+
+    assert released == ["qwen3:4b-instruct-2507-q4_K_M", "llama3.1:8b-instruct-q4_K_M"]
+    assert unloaded == released
+    await provider.aclose()
+
+
+@pytest.mark.asyncio
+async def test_release_vram_returns_empty_when_nothing_loaded():
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.path == "/api/ps"
+        return httpx.Response(200, json={"models": []})
+
+    provider = _provider(handler)
+    assert await provider.release_vram() == []
+    await provider.aclose()
+
+
+@pytest.mark.asyncio
+async def test_warm_reloads_given_models_with_infinite_keep_alive():
+    warmed = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/api/ps":
+            return httpx.Response(200, json={"models": []})
+        assert request.url.path == "/api/generate"
+        body = json.loads(request.content)
+        assert body["keep_alive"] == -1
+        warmed.append(body["model"])
+        return httpx.Response(200, json={"done": True})
+
+    provider = _provider(handler)
+    await provider.warm(["qwen3:4b-instruct-2507-q4_K_M"])
+    assert warmed == ["qwen3:4b-instruct-2507-q4_K_M"]
+
+    await provider.warm()
+    assert warmed[-1] == "qwen2.5:7b-instruct-q4_K_M"
+    await provider.aclose()
+
+
+@pytest.mark.asyncio
+async def test_warm_reloads_cleanly_a_model_loaded_with_partial_offload():
+    calls = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/api/ps":
+            return httpx.Response(
+                200,
+                json={
+                    "models": [
+                        {
+                            "name": "qwen3:4b-instruct-2507-q4_K_M",
+                            "size": 5413160619,
+                            "size_vram": 4309311814,
+                        }
+                    ]
+                },
+            )
+        body = json.loads(request.content)
+        calls.append((body["model"], body["keep_alive"]))
+        return httpx.Response(200, json={"done": True})
+
+    provider = _provider(handler)
+    await provider.warm(["qwen3:4b-instruct-2507-q4_K_M"])
+
+    assert calls == [
+        ("qwen3:4b-instruct-2507-q4_K_M", 0),
+        ("qwen3:4b-instruct-2507-q4_K_M", -1),
+    ]
+    await provider.aclose()
+
+
 def test_count_tokens_is_deterministic():
     provider = OllamaProvider("http://127.0.0.1:11434", "qwen2.5:7b-instruct-q4_K_M")
     assert provider.count_tokens("hola mundo") > 0

@@ -13,6 +13,7 @@ from packages.core.db.session import make_engine, make_session_factory
 from packages.core.logging import configure_logging, get_logger
 from packages.core.settings import get_settings
 from packages.inference.airllm import AirLLMProvider
+from packages.inference.ollama import OllamaProvider
 from packages.inference.router import InferenceMode, InferenceRouter
 from packages.rag.embeddings import FastEmbedProvider
 from packages.rag.orchestrator import HybridRagOrchestrator
@@ -43,6 +44,10 @@ async def on_startup(ctx: dict[str, Any]) -> None:
             ctx["embedding_provider"],
             InferenceRouter(providers={InferenceMode.DEEP: airllm_provider}),
         )
+        if settings.airllm_release_ollama_vram:
+            ctx["ollama_provider"] = OllamaProvider(
+                settings.ollama_host, settings.ollama_primary_model
+            )
     logger.info("worker_started", airllm_enabled=settings.airllm_enabled)
 
 
@@ -50,6 +55,9 @@ async def on_shutdown(ctx: dict[str, Any]) -> None:
     airllm_provider = ctx.get("airllm_provider")
     if airllm_provider is not None:
         await airllm_provider.aclose()
+    ollama_provider = ctx.get("ollama_provider")
+    if ollama_provider is not None:
+        await ollama_provider.aclose()
     await ctx["engine"].dispose()
     await ctx["qdrant_client"].close()
     logger.info("worker_stopped")
@@ -61,4 +69,4 @@ class WorkerSettings:
     on_shutdown = on_shutdown
     redis_settings = redis_settings()
     max_jobs = 1
-    job_timeout = 3600
+    job_timeout = 7500

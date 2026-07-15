@@ -209,8 +209,16 @@ class AirLLMEngine:
             try:
                 return self._generate_locked(messages, max_new_tokens, temperature)
             finally:
+                self._release_device_cache()
                 with self._state_lock:
                     self._state.busy = False
+
+    def _release_device_cache(self) -> None:
+        if not self._state.device.startswith("cuda"):
+            return
+        import torch
+
+        torch.cuda.empty_cache()
 
     def _generate_locked(
         self,
