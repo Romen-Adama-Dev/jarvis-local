@@ -21,6 +21,21 @@ docs/            Documentación obligatoria
 tests/           Unitarios, integración, API, evaluación RAG
 ```
 
+## Arranque rápido con Docker
+
+La aplicación (API + worker) está empaquetada en una única imagen que aplica
+las migraciones y arranca sola junto a Qdrant, PostgreSQL y Redis:
+
+```bash
+cp .env.example .env   # rellenar valores
+docker compose --profile app up -d --build
+curl http://127.0.0.1:8000/ready
+```
+
+Ollama (y opcionalmente AirLLM) corren nativos por GPU; ver `docs/DOCKER.md`
+para el diseño, los límites actuales y la advertencia de no mezclarlo con el
+despliegue systemd en la misma máquina.
+
 ## Requisitos
 
 * Ubuntu 26.04 LTS
