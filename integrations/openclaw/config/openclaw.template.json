@@ -147,6 +147,18 @@
       "allowFrom": [
         "__TELEGRAM_USER_ID__"
       ]
+    },
+    "msteams": {
+      "enabled": false,
+      "authType": "secret",
+      "dmPolicy": "allowlist",
+      "allowFrom": [
+        "__MSTEAMS_ALLOWED_AAD_OBJECT_ID__"
+      ],
+      "webhook": {
+        "port": 3978,
+        "path": "/api/messages"
+      }
     }
   },
   "commands": {

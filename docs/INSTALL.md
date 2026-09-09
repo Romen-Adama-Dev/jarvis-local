@@ -47,6 +47,10 @@ scripts/install-airllm
 scripts/configure-telegram
 scripts/install-openclaw
 
+# 6.1 Microsoft Teams (opcional, segundo canal; requiere Azure Bot ya
+#     registrado y túnel hacia el messaging endpoint; ver docs/TEAMS.md)
+scripts/configure-teams
+
 # 7. Sincroniza el código a /srv/jarvis/app, aplica migraciones y arranca
 #    jarvis-api.service / jarvis-worker.service (y airllm.service si aplica)
 scripts/deploy
