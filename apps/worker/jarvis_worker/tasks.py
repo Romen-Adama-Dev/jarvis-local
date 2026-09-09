@@ -1,6 +1,7 @@
 import asyncio
 import dataclasses
 import datetime
+import tempfile
 import uuid
 from pathlib import Path
 from typing import Any
@@ -17,6 +18,12 @@ from packages.core.jobs import (
     mark_running,
 )
 from packages.core.logging import get_logger
+from packages.docgen.render_docx import render_docx
+from packages.docgen.render_markdown import render_markdown
+from packages.docgen.render_pdf import render_pdf_via_pandoc
+from packages.docgen.render_pptx import render_pptx
+from packages.docgen.schema import DocSection, GeneratedDoc
+from packages.docgen.templates import build_sections_plan
 from packages.documents.parsers import parse_document
 from packages.rag.chunking import chunk_blocks
 from packages.rag.store import (
@@ -26,6 +33,8 @@ from packages.rag.store import (
     new_point_id,
     upsert_chunks,
 )
+
+DOCGEN_EXTENSIONS = {"md": "md", "docx": "docx", "pptx": "pptx", "pdf": "pdf"}
 
 logger = get_logger(__name__)
 
@@ -231,6 +240,100 @@ async def deep_rag_query(
             },
         )
         logger.info("deep_rag_query_completed", job_id=job_id)
+
+
+def _write_generated_document(doc: GeneratedDoc, fmt: str, out_path: Path) -> None:
+    if fmt == "md":
+        out_path.write_text(render_markdown(doc), encoding="utf-8")
+    elif fmt == "docx":
+        render_docx(doc, out_path)
+    elif fmt == "pptx":
+        render_pptx(doc, out_path)
+    elif fmt == "pdf":
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            markdown_path = Path(tmp_dir) / "source.md"
+            markdown_path.write_text(render_markdown(doc), encoding="utf-8")
+            render_pdf_via_pandoc(markdown_path, out_path)
+    else:
+        raise ValueError(f"Formato de documento no soportado: {fmt}")
+
+
+async def generate_document(
+    ctx: dict[str, Any],
+    job_id: str,
+    kind: str,
+    topic: str,
+    fmt: str,
+    filters: dict | None = None,
+) -> None:
+    session_factory = ctx["session_factory"]
+    async with session_factory() as session:
+        job = await session.get(Job, uuid.UUID(job_id))
+        if job is None:
+            logger.error("generate_document_missing_job", job_id=job_id)
+            return
+        if job.status == "cancelling":
+            await mark_cancelled(session, job)
+            return
+        if fmt not in DOCGEN_EXTENSIONS:
+            await mark_failed(session, job, f"Formato de documento no soportado: {fmt}")
+            return
+
+        orchestrator = ctx["rag_orchestrator"]
+        await mark_running(session, job)
+        try:
+            sections_plan = build_sections_plan(kind, topic)
+            sections: list[DocSection] = []
+            total = len(sections_plan)
+            for i, (title, question) in enumerate(sections_plan):
+                answer = await orchestrator.query(question, filters=filters, top_k=6)
+                sections.append(
+                    DocSection(
+                        title=title,
+                        answer=answer.answer,
+                        sources=list(answer.sources),
+                        insufficient_evidence=answer.insufficient_evidence,
+                    )
+                )
+                await mark_progress(session, job, int((i + 1) / total * 80))
+
+            doc = GeneratedDoc(
+                kind=kind,
+                topic=topic,
+                generated_at=datetime.datetime.now(datetime.UTC).isoformat(),
+                sections=sections,
+            )
+
+            settings = ctx["settings"]
+            generated_dir = settings.jarvis_data_dir / "generated"
+            generated_dir.mkdir(parents=True, exist_ok=True)
+            ext = DOCGEN_EXTENSIONS[fmt]
+            out_path = generated_dir / f"{job_id}.{ext}"
+
+            await asyncio.to_thread(_write_generated_document, doc, fmt, out_path)
+            await mark_progress(session, job, 100)
+        except Exception as exc:
+            detail = f"{type(exc).__name__}: {exc}".rstrip(": ")
+            logger.error("generate_document_failed", job_id=job_id, error=detail)
+            await mark_failed(session, job, f"Error al generar el documento: {detail}")
+            return
+
+        await mark_completed(
+            session,
+            job,
+            {
+                "kind": kind,
+                "topic": topic,
+                "format": fmt,
+                "storage_path": str(out_path),
+                "filename": out_path.name,
+                "sections": [
+                    {"title": s.title, "insufficient_evidence": s.insufficient_evidence}
+                    for s in doc.sections
+                ],
+            },
+        )
+        logger.info("generate_document_completed", job_id=job_id, kind=kind, format=fmt)
 
 
 async def delete_document(ctx: dict[str, Any], document_id: str, job_id: str) -> None:

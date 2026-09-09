@@ -6,6 +6,7 @@ from apps.worker.jarvis_worker.settings import redis_settings
 from apps.worker.jarvis_worker.tasks import (
     deep_rag_query,
     delete_document,
+    generate_document,
     ingest_document,
     reindex_document,
 )
@@ -25,6 +26,7 @@ logger = get_logger(__name__)
 async def on_startup(ctx: dict[str, Any]) -> None:
     settings = get_settings()
     configure_logging(settings.log_level)
+    ctx["settings"] = settings
     engine = make_engine(settings)
     ctx["engine"] = engine
     ctx["session_factory"] = make_session_factory(engine)
@@ -32,6 +34,21 @@ async def on_startup(ctx: dict[str, Any]) -> None:
     ctx["qdrant_collection"] = settings.qdrant_collection
     cache_dir = str(settings.jarvis_models_dir / "fastembed")
     ctx["embedding_provider"] = FastEmbedProvider(cache_dir=cache_dir)
+
+    docgen_ollama_provider = OllamaProvider(settings.ollama_host, settings.ollama_primary_model)
+    ctx["docgen_ollama_provider"] = docgen_ollama_provider
+    docgen_reranker = (
+        FastEmbedReranker(cache_dir=cache_dir) if settings.rag_reranker_enabled else None
+    )
+    ctx["rag_orchestrator"] = HybridRagOrchestrator(
+        ctx["qdrant_client"],
+        settings.qdrant_collection,
+        ctx["embedding_provider"],
+        InferenceRouter(providers={InferenceMode.NORMAL: docgen_ollama_provider}),
+        powerful_model=settings.ollama_powerful_model,
+        reranker=docgen_reranker,
+    )
+
     if settings.airllm_enabled:
         airllm_provider = AirLLMProvider(
             settings.airllm_service_url,
@@ -61,13 +78,22 @@ async def on_shutdown(ctx: dict[str, Any]) -> None:
     ollama_provider = ctx.get("ollama_provider")
     if ollama_provider is not None:
         await ollama_provider.aclose()
+    docgen_ollama_provider = ctx.get("docgen_ollama_provider")
+    if docgen_ollama_provider is not None:
+        await docgen_ollama_provider.aclose()
     await ctx["engine"].dispose()
     await ctx["qdrant_client"].close()
     logger.info("worker_stopped")
 
 
 class WorkerSettings:
-    functions = [ingest_document, delete_document, reindex_document, deep_rag_query]
+    functions = [
+        ingest_document,
+        delete_document,
+        reindex_document,
+        deep_rag_query,
+        generate_document,
+    ]
     on_startup = on_startup
     on_shutdown = on_shutdown
     redis_settings = redis_settings()
