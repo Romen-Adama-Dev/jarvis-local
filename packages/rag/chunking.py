@@ -47,6 +47,9 @@ def chunk_blocks(
         buffer_section = None
 
     for block in blocks:
+        if buffer and block.section != buffer_section:
+            flush()
+
         sentences = _SENTENCE_SPLIT_RE.split(block.text) if block.text else [block.text]
         for sentence in sentences:
             sentence = sentence.strip()

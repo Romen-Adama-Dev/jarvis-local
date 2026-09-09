@@ -1,5 +1,6 @@
 import csv
 import io
+import re
 from dataclasses import dataclass
 
 import openpyxl
@@ -8,6 +9,28 @@ from docx import Document as DocxDocument
 from pypdf import PdfReader
 
 from packages.core.errors import ValidationFailedError
+
+_HEADING_MAX_CHARS = 90
+_HEADING_NUMBERING_RE = re.compile(
+    r"^(chapter|part|section)?\s*\d+(\.\d+){0,3}\.?\s+\S", re.IGNORECASE
+)
+
+
+def _looks_like_heading(line: str) -> bool:
+    """Heurística sin metadatos de fuente (pypdf no expone tamaño de letra):
+    una línea corta, sin puntuación final de frase, que además esté numerada
+    ("1.2 Purpose...") o predominantemente en mayúsculas ("PART 1"), se trata
+    como encabezado de sección. Imperfecta por diseño para libros escaneados o
+    con maquetación compleja (ver ítem "docling-ingest" del roadmap)."""
+    stripped = line.strip()
+    if not stripped or len(stripped) > _HEADING_MAX_CHARS:
+        return False
+    if stripped.endswith((".", ",", ";", ":")) and not _HEADING_NUMBERING_RE.match(stripped):
+        return False
+    if _HEADING_NUMBERING_RE.match(stripped):
+        return True
+    letters = [c for c in stripped if c.isalpha()]
+    return len(letters) >= 4 and sum(1 for c in letters if c.isupper()) / len(letters) > 0.9
 
 
 @dataclass(frozen=True, slots=True)
@@ -180,13 +203,19 @@ def _parse_pdf(content: bytes, filename: str) -> ParsedDocument:
 
     blocks: list[ParsedBlock] = []
     order = 0
+    current_section: str | None = None
     for page_number, page in enumerate(reader.pages, start=1):
         text = page.extract_text() or ""
         for paragraph in text.split("\n\n"):
             cleaned = paragraph.strip()
             if not cleaned:
                 continue
-            blocks.append(ParsedBlock(text=cleaned, page=page_number, section=None, order=order))
+            if _looks_like_heading(cleaned):
+                current_section = cleaned
+                continue
+            blocks.append(
+                ParsedBlock(text=cleaned, page=page_number, section=current_section, order=order)
+            )
             order += 1
 
     return ParsedDocument(blocks=blocks, page_count=len(reader.pages))
