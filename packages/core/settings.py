@@ -20,6 +20,8 @@ class Settings(BaseSettings):
     qdrant_port: int = 6333
     qdrant_collection: str = "jarvis_documents"
 
+    rag_reranker_enabled: bool = True
+
     redis_host: str = "127.0.0.1"
     redis_port: int = 6379
     redis_db: int = 0
