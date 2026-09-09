@@ -125,10 +125,18 @@ más autónoma (no envía nada fuera) y la más lucida en demo.
 **Fase 3 — Correo (borrador + aprobación).**
 MCP de correo local. Flujo: leer → resumir → **redactar borrador** → confirmación
 por Telegram → enviar. Reutiliza tu patrón de confirmación/TTL.
+La base de autenticación OAuth2 compartida con Graph (Fase 3 y Fase 4) está
+**en marcha en `feature/mcp-msgraph-base`** (`packages/msgraph/`, ver
+`docs/MSGRAPH.md`): device code flow con MSAL + cliente HTTP genérico, sin
+herramientas de correo todavía. Las herramientas MCP de correo propiamente
+dichas se construyen encima, en `feature/mcp-email`.
 
 **Fase 4 — Calendario / reuniones.**
 MCP de calendario (CalDAV o Graph). Leer disponibilidad, **proponer** hueco, crear
 evento tras confirmación.
+Mismo comentario que en la Fase 3: reutiliza la base de `feature/mcp-msgraph-base`
+(`packages/msgraph/`); las herramientas MCP de calendario se construyen en
+`feature/mcp-calendar`, aparte.
 
 **Fase 5 — Segundo canal: Teams.**
 MCP/conector de Microsoft Teams además de Telegram. Mismo backend, otro transporte.
