@@ -49,6 +49,16 @@ class Settings(BaseSettings):
     openclaw_gateway_host: str = "127.0.0.1"
     openclaw_gateway_port: int = 8899
 
+    # Ver docs/MSGRAPH.md. Base compartida de OAuth2/HTTP para Microsoft
+    # Graph (correo y calendario, todavía sin herramientas MCP propias en
+    # esta rama). client_id/tenant_id vienen del registro de app Azure AD
+    # que hace el propietario a mano (scripts/configure-msgraph).
+    msgraph_client_id: str = ""
+    msgraph_tenant_id: str = ""
+    msgraph_token_cache_path: Path = (
+        Path.home() / ".openclaw" / "secrets" / "msgraph_token_cache.json"
+    )
+
     jarvis_api_host: str = "127.0.0.1"
     jarvis_api_port: int = 8000
     jarvis_api_internal_token: str = ""

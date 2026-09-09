@@ -1,0 +1,66 @@
+#!/usr/bin/env bash
+# Configura la base de Microsoft Graph (correo/calendario, ver docs/MSGRAPH.md):
+# guarda client_id/tenant_id de un registro de app Azure AD ya creado por el
+# propietario (paso manual, ver docs/MSGRAPH.md) y ejecuta el login
+# interactivo por código de dispositivo una vez, dejando la caché de tokens
+# de MSAL lista para que la API/worker la reutilicen en silencio.
+#
+# Requiere haber creado en Azure AD (Entra ID) un registro de aplicación
+# "Public client / native", con "Allow public client flows" habilitado y
+# consentimiento de administrador concedido para los permisos delegados
+# Mail.Read, Mail.Send, Calendars.Read, Calendars.ReadWrite (ver docs/MSGRAPH.md).
+set -euo pipefail
+
+REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+SECRETS_DIR="$HOME/.openclaw/secrets"
+SECRETS_FILE="$SECRETS_DIR/msgraph.env"
+
+MSGRAPH_CLIENT_ID="${MSGRAPH_CLIENT_ID:-}"
+MSGRAPH_TENANT_ID="${MSGRAPH_TENANT_ID:-}"
+
+if [[ -z "$MSGRAPH_CLIENT_ID" ]]; then
+  read -rp "Client ID (App ID) del registro Azure AD: " MSGRAPH_CLIENT_ID
+fi
+if [[ -z "$MSGRAPH_TENANT_ID" ]]; then
+  read -rp "Tenant ID (Entra ID) del registro Azure AD: " MSGRAPH_TENANT_ID
+fi
+
+if [[ -z "$MSGRAPH_CLIENT_ID" || -z "$MSGRAPH_TENANT_ID" ]]; then
+  echo "ERROR: MSGRAPH_CLIENT_ID y MSGRAPH_TENANT_ID son obligatorios." >&2
+  exit 1
+fi
+
+echo "== Guardando client_id/tenant_id fuera de Git =="
+mkdir -p "$SECRETS_DIR"
+chmod 700 "$SECRETS_DIR"
+cat >"$SECRETS_FILE" <<EOF
+MSGRAPH_CLIENT_ID=${MSGRAPH_CLIENT_ID}
+MSGRAPH_TENANT_ID=${MSGRAPH_TENANT_ID}
+EOF
+chmod 600 "$SECRETS_FILE"
+
+echo "== Login interactivo de Microsoft Graph (código de dispositivo) =="
+echo "Sigue las instrucciones: se abrirá un código para introducir en"
+echo "https://microsoft.com/devicelogin desde cualquier navegador."
+cd "$REPO_DIR"
+MSGRAPH_CLIENT_ID="$MSGRAPH_CLIENT_ID" MSGRAPH_TENANT_ID="$MSGRAPH_TENANT_ID" \
+  uv run --frozen python -c '
+import os
+
+from packages.msgraph.auth import MsGraphTokenStore, interactive_device_code_login
+
+client_id = os.environ["MSGRAPH_CLIENT_ID"]
+tenant_id = os.environ["MSGRAPH_TENANT_ID"]
+cache_path = os.environ.get("MSGRAPH_TOKEN_CACHE_PATH")
+scopes = ["Mail.Read", "Mail.Send", "Calendars.Read", "Calendars.ReadWrite"]
+
+from pathlib import Path
+
+store = MsGraphTokenStore(Path(cache_path)) if cache_path else MsGraphTokenStore()
+interactive_device_code_login(client_id, tenant_id, scopes, token_store=store)
+print(f"Caché de tokens guardada en {store.path}")
+'
+
+echo "Microsoft Graph configurado. La caché de tokens vive fuera del repo"
+echo "(permisos 600); la API/worker la reutilizarán en silencio a partir de"
+echo "ahora. Si expira o quieres rotarla, repite este script (ver docs/MSGRAPH.md)."
