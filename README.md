@@ -25,20 +25,20 @@ docs/            Documentación obligatoria
 tests/           Unitarios, integración, API, evaluación RAG
 ```
 
-## Arranque rápido con Docker
-
-La aplicación (API + worker) está empaquetada en una única imagen que aplica
-las migraciones y arranca sola junto a Qdrant, PostgreSQL y Redis:
+## Arranque rápido
 
 ```bash
-cp .env.example .env   # rellenar valores
-docker compose --profile app up -d --build
-curl http://127.0.0.1:8000/ready
+scripts/quickstart
 ```
 
-Ollama (y opcionalmente AirLLM) corren nativos por GPU; ver `docs/DOCKER.md`
-para el diseño, los límites actuales y la advertencia de no mezclarlo con el
-despliegue systemd en la misma máquina.
+Clona y arranca: prepara `.env` (genera los secretos locales que faltan,
+detecta la GPU y elige el modelo Ollama según `docs/BENCHMARKS.md`) y levanta
+la aplicación (API + worker, empaquetada en una única imagen que aplica
+migraciones y arranca sola) junto a Qdrant, PostgreSQL y Redis. Ollama (y
+opcionalmente AirLLM) corren nativos por GPU; ver `docs/DOCKER.md` para el
+diseño de ese perfil, sus límites actuales, y la advertencia de no mezclarlo
+con el despliegue systemd en la misma máquina. Ver `docs/INSTALL.md` para el
+camino completo de despliegue reproducible (bare-metal, systemd).
 
 ## Requisitos
 

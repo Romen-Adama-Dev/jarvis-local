@@ -47,10 +47,10 @@ Leyenda: ✅ hecho · 🟡 parcial · ⬜ por hacer
 | Capacidad / pieza | Memoria (TFM) describe | Repo `jarvis-local` tiene | Queremos añadir |
 |---|---|---|---|
 | **Ingesta + RAG** (PDF → chunks → embeddings → Qdrant → respuesta con fuente) | ✅ núcleo del proyecto | ✅ `packages/rag`, `packages/documents`, Qdrant | 🟡 mejor ingesta (Docling: escaneados/tablas) |
-| **Inferencia local** (Ollama normal, AirLLM `/deep`) | ✅ | ✅ Ollama en host por GPU; `services/airllm` | ✅ **auto-selección de modelo por hardware** (rama `feature/model-autoselect`) |
+| **Inferencia local** (Ollama normal, AirLLM `/deep`) | ✅ | ✅ Ollama en host por GPU; `services/airllm`; **auto-selección de modelo por VRAM detectada** (`packages/core/hardware.py`, cerrado en `feature/model-autoselect`) | — |
 | **Abstención sin evidencia** | ✅ | ✅ `packages/rag/orchestrator.py` | — |
 | **API + worker** | ✅ | ✅ FastAPI (`apps/api`) + arq (`apps/worker`) | — |
-| **Infra reproducible** (Postgres/Redis/Qdrant, Docker) | ✅ | ✅ `compose.yml` con profiles, `scripts/` idempotentes | ✅ `scripts/quickstart` "clona y arranca" |
+| **Infra reproducible** (Postgres/Redis/Qdrant, Docker) | ✅ | ✅ `compose.yml` con profiles, `scripts/` idempotentes, `scripts/quickstart` "clona y arranca" | — |
 | **Embeddings** | ✅ | ✅ FastEmbed (denso + disperso) | 🟡 reranker local (mejora recuperación) |
 | **Transporte Telegram** | 🟡 capa opcional | ✅ `integrations/openclaw`, config Telegram | 🟡 endurecer (borrador→confirmación) |
 | **Agente / orquestación** | 🟡 OpenClaw mencionado | ✅ OpenClaw + skill `jarvis-rag` | ⬜ **capa MCP** (estándar 2026) |
@@ -108,10 +108,10 @@ fuentes y aprobación humana en cada acción con efectos externos.
 
 ## 4. Plan por fases (roadmap accionable)
 
-**Fase 0 — Base reproducible (casi hecha).**
-Cerrar la rama `feature/model-autoselect` (auto-selección de modelo por hardware +
-`quickstart`). Añadir **LICENSE** (p. ej. Apache-2.0 o MIT) y **CONTRIBUTING.md**
-→ cierra el pendiente "open source formal" del TFM.
+**Fase 0 — Base reproducible (cerrada en `feature/model-autoselect`).**
+Auto-selección de modelo Ollama por VRAM detectada (`packages/core/hardware.py`,
+`docs/BENCHMARKS.md`) y `scripts/quickstart` "clona y arranca". **LICENSE** (MIT)
+y **CONTRIBUTING.md** → cierra el pendiente "open source formal" del TFM.
 
 **Fase 1 — Capa MCP (fundacional).**
 Introducir un cliente/host MCP en el worker o junto a OpenClaw. Primer servidor MCP
