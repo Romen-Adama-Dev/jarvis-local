@@ -136,3 +136,21 @@ class ConversationResponse(BaseModel):
 
 class ConversationListResponse(BaseModel):
     conversations: list[ConversationResponse]
+
+
+class EmailDraftRequest(BaseModel):
+    to: list[str]
+    subject: str
+    body: str
+    cc: list[str] = Field(default_factory=list)
+    telegram_user_id: int
+
+
+class EmailDraftResponse(BaseModel):
+    token: str
+    summary: str
+    expires_at: float
+
+
+class EmailConfirmRequest(BaseModel):
+    telegram_user_id: int
