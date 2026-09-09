@@ -136,3 +136,22 @@ class ConversationResponse(BaseModel):
 
 class ConversationListResponse(BaseModel):
     conversations: list[ConversationResponse]
+
+
+class CalendarDraftRequest(BaseModel):
+    subject: str
+    start: str
+    end: str
+    attendees: list[str] = Field(default_factory=list)
+    body: str = ""
+    telegram_user_id: int
+
+
+class CalendarDraftResponse(BaseModel):
+    token: str
+    summary: str
+    expires_at: float
+
+
+class CalendarConfirmRequest(BaseModel):
+    telegram_user_id: int

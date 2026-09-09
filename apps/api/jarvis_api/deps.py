@@ -12,10 +12,14 @@ from apps.api.jarvis_api.adapters.redis_confirmation import RedisConfirmationSto
 from packages.core.db.session import make_engine, make_session_factory
 from packages.core.settings import Settings, get_settings
 from packages.inference.router import InferenceMode, InferenceRouter
+from packages.msgraph.auth import MsGraphAuthenticator
+from packages.msgraph.client import MsGraphClient
 from packages.rag.orchestrator import NotConfiguredRagOrchestrator, RagOrchestrator
 from packages.security.audit import AuditService
 from packages.security.authz import TelegramAuthorizer
 from packages.security.confirmation import ConfirmationService
+
+MSGRAPH_CALENDAR_SCOPES = ["Calendars.Read", "Calendars.ReadWrite"]
 
 
 @lru_cache
@@ -54,6 +58,21 @@ def get_redis() -> redis_asyncio.Redis:
 
 def get_qdrant() -> AsyncQdrantClient:
     return _qdrant_client()
+
+
+@lru_cache
+def _msgraph_client() -> MsGraphClient:
+    settings = get_settings()
+    authenticator = MsGraphAuthenticator(
+        settings.msgraph_client_id,
+        settings.msgraph_tenant_id,
+        MSGRAPH_CALENDAR_SCOPES,
+    )
+    return MsGraphClient(authenticator.get_token)
+
+
+def get_msgraph_client() -> MsGraphClient:
+    return _msgraph_client()
 
 
 def get_authorizer(settings: Settings = Depends(get_settings_dep)) -> TelegramAuthorizer:
@@ -105,6 +124,7 @@ DbSession = Annotated[AsyncSession, Depends(get_db_session)]
 SettingsDep = Annotated[Settings, Depends(get_settings_dep)]
 RedisDep = Annotated[redis_asyncio.Redis, Depends(get_redis)]
 QdrantDep = Annotated[AsyncQdrantClient, Depends(get_qdrant)]
+MsGraphClientDep = Annotated[MsGraphClient, Depends(get_msgraph_client)]
 InferenceRouterDep = Annotated[InferenceRouter, Depends(get_inference_router)]
 RagOrchestratorDep = Annotated[RagOrchestrator, Depends(get_rag_orchestrator)]
 AuthorizerDep = Annotated[TelegramAuthorizer, Depends(get_authorizer)]
