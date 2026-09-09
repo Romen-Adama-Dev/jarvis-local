@@ -11,7 +11,16 @@ from apps.api.jarvis_api.deps import (
     set_rag_orchestrator,
 )
 from apps.api.jarvis_api.middleware import CorrelationIdMiddleware
-from apps.api.jarvis_api.routers import chat, conversations, documents, jobs, models, rag, system
+from apps.api.jarvis_api.routers import (
+    calendar,
+    chat,
+    conversations,
+    documents,
+    jobs,
+    models,
+    rag,
+    system,
+)
 from apps.api.jarvis_api.security import require_internal_token
 from packages.core.errors import JarvisError
 from packages.core.ids import get_correlation_id
@@ -85,6 +94,7 @@ def create_app() -> FastAPI:
     app.include_router(jobs.router, dependencies=protected)
     app.include_router(conversations.router, dependencies=protected)
     app.include_router(models.router, dependencies=protected)
+    app.include_router(calendar.router, dependencies=protected)
 
     @app.exception_handler(JarvisError)
     async def jarvis_error_handler(request: Request, exc: JarvisError) -> JSONResponse:

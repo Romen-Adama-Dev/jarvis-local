@@ -131,12 +131,18 @@ La base de autenticación OAuth2 compartida con Graph (Fase 3 y Fase 4) está
 herramientas de correo todavía. Las herramientas MCP de correo propiamente
 dichas se construyen encima, en `feature/mcp-email`.
 
-**Fase 4 — Calendario / reuniones.**
-MCP de calendario (CalDAV o Graph). Leer disponibilidad, **proponer** hueco, crear
-evento tras confirmación.
-Mismo comentario que en la Fase 3: reutiliza la base de `feature/mcp-msgraph-base`
-(`packages/msgraph/`); las herramientas MCP de calendario se construyen en
-`feature/mcp-calendar`, aparte.
+**Fase 4 — Calendario / reuniones.** **En marcha en `feature/mcp-calendar`**
+(ver `docs/CALENDAR.md`). Sobre la base de `feature/mcp-msgraph-base`
+(`packages/msgraph/calendar.py`: `get_calendar_view`/`create_event` vía Graph,
+scopes `Calendars.Read`/`Calendars.ReadWrite`), expone `/v1/calendar/events`
+(lectura) y el flujo **proponer → confirmar** de `/v1/calendar/draft` +
+`/v1/calendar/draft/{token}/confirm`, reutilizando el campo genérico
+`payload` de `ConfirmationService.request(...)` para guardar el evento
+propuesto hasta la confirmación. Nuevo servidor MCP `jarvis-calendar`
+(`jarvis_calendar_availability`, `jarvis_calendar_propose_event`,
+`jarvis_calendar_confirm_event`) con la misma advertencia que `gog`: **crear
+un evento nunca invita a terceros de forma autónoma**, solo tras confirmación
+explícita del propietario cuando la propuesta incluye invitados.
 
 **Fase 5 — Segundo canal: Teams.**
 MCP/conector de Microsoft Teams además de Telegram. Mismo backend, otro transporte.
