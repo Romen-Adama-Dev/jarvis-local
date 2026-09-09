@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "== Comprobando pandoc y xelatex =="
+NEED_INSTALL=0
+if ! command -v pandoc >/dev/null 2>&1; then
+    echo "pandoc no está instalado."
+    NEED_INSTALL=1
+else
+    echo "pandoc ya está instalado ($(pandoc --version | head -1))."
+fi
+if ! command -v xelatex >/dev/null 2>&1; then
+    echo "xelatex no está instalado."
+    NEED_INSTALL=1
+else
+    echo "xelatex ya está instalado ($(xelatex --version | head -1))."
+fi
+
+if [[ "${NEED_INSTALL}" -eq 0 ]]; then
+    echo "Nada que instalar: pandoc y xelatex ya están disponibles."
+    exit 0
+fi
+
+echo "== Instalando pandoc + TeXLive (xelatex) =="
+sudo apt-get update -qq
+sudo apt-get install -y pandoc texlive-xetex texlive-latex-recommended \
+    texlive-fonts-recommended fonts-dejavu
+
+echo "== Verificación =="
+pandoc --version | head -1
+xelatex --version | head -1
+echo "pandoc y xelatex instalados: la generación de documentos en PDF ya está disponible (ver docs/DOCGEN.md)."

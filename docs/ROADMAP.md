@@ -118,9 +118,19 @@ Introducir un cliente/host MCP en el worker o junto a OpenClaw. Primer servidor 
 de prueba (p. ej. filesystem o el propio RAG expuesto como MCP). Criterio de éxito:
 el agente llama a una herramienta MCP local y responde con trazabilidad.
 
-**Fase 2 — Generación de documentos.**
-*Skill* doc-gen: de una consulta RAG a un `.docx`/`.md` con fuentes citadas. Es la
-más autónoma (no envía nada fuera) y la más lucida en demo.
+**Fase 2 — Generación de documentos (en marcha en `feature/doc-generation`).**
+*Skill* doc-gen: DAFO o plan de coordinación, con secciones fijas por tipo de
+documento, cada una resuelta con una llamada independiente a
+`HybridRagOrchestrator.query(...)` (el mismo motor que `/ask`/`/deep`: sin
+prompt ni retrieval nuevos, sin superficie de alucinación adicional; una
+sección sin evidencia lo dice explícitamente en vez de inventar). Salida en
+`.md`/`.docx`/`.pptx` (python-docx/python-pptx, ya dependencias del proyecto)
+y `.pdf` (Pandoc + XeLaTeX vía subproceso, sin plantilla LaTeX vendorizada por
+licencia; `scripts/install-docgen` o la imagen Docker). Expuesta como trabajo
+asíncrono (`POST /v1/documents/generate`, igual que `/deep-query`) y como
+herramienta MCP `jarvis_generate_doc` en la skill `jarvis-rag`. Limitación
+conocida: el archivo generado no se envía aún por Telegram/Teams, queda en el
+servidor (ver `docs/DOCGEN.md`).
 
 **Fase 3 — Correo (borrador + aprobación).**
 MCP de correo local. Flujo: leer → resumir → **redactar borrador** → confirmación
@@ -176,7 +186,9 @@ TFM), y decisión OpenClaw vs. cliente MCP ligero (Hermes/ZeroClaw).
 
 Priorizadas por relación valor/esfuerzo para JARVIS-PMI:
 
-1. **doc-gen** — generar documentos (.docx/.pptx/.md) desde el corpus, con cita. *Alta / media.*
+1. **doc-gen** — generar documentos (.docx/.pptx/.md/.pdf) desde el corpus, con cita,
+   reutilizando `HybridRagOrchestrator` sección a sección (en marcha en
+   `feature/doc-generation`, ver `docs/DOCGEN.md`). *Alta / media.*
 2. **mcp-host** — capa MCP en el worker (habilita todo lo demás). *Alta / media.*
 3. **rag-as-mcp** — exponer tu propio RAG como servidor MCP (reutilizable por cualquier agente). *Alta / baja.*
 4. **email-draft** — MCP de correo con borrador+aprobación. *Alta / media.*

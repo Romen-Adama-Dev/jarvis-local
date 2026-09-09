@@ -3,16 +3,25 @@ import uuid
 
 import magic
 from fastapi import APIRouter, UploadFile
+from fastapi.responses import FileResponse
 from sqlalchemy import select
 
 from apps.api.jarvis_api.deps import DbSession, SettingsDep
 from apps.api.jarvis_api.queue import get_arq_pool
-from apps.api.jarvis_api.schemas import DocumentListResponse, DocumentResponse, JobResponse
+from apps.api.jarvis_api.schemas import (
+    DocumentListResponse,
+    DocumentResponse,
+    GenerateDocumentRequest,
+    JobResponse,
+)
 from packages.core.db.models import Document, Job
-from packages.core.errors import ConflictError, NotFoundError
+from packages.core.errors import ConflictError, NotFoundError, ValidationFailedError
 from packages.security.validation import validate_filename, validate_mime, validate_size
 
 router = APIRouter(prefix="/v1/documents", tags=["documents"])
+
+VALID_DOCGEN_KINDS = {"dafo", "plan"}
+VALID_DOCGEN_FORMATS = {"md", "docx", "pptx", "pdf"}
 
 
 @router.get("", response_model=DocumentListResponse)
@@ -119,3 +128,48 @@ async def reindex_document(document_id: uuid.UUID, session: DbSession) -> JobRes
     await pool.enqueue_job("reindex_document", str(document.id), str(job.id))
 
     return JobResponse.model_validate(job)
+
+
+@router.post("/generate", response_model=JobResponse, status_code=202)
+async def generate_document(payload: GenerateDocumentRequest, session: DbSession) -> JobResponse:
+    if payload.kind not in VALID_DOCGEN_KINDS:
+        valid = ", ".join(sorted(VALID_DOCGEN_KINDS))
+        raise ValidationFailedError(
+            f"Tipo de documento desconocido: '{payload.kind}'. Tipos válidos: {valid}."
+        )
+    if payload.format not in VALID_DOCGEN_FORMATS:
+        valid = ", ".join(sorted(VALID_DOCGEN_FORMATS))
+        raise ValidationFailedError(
+            f"Formato de documento desconocido: '{payload.format}'. Formatos válidos: {valid}."
+        )
+
+    job = Job(
+        job_type="generate_document", status="queued", requested_by=payload.telegram_user_id
+    )
+    session.add(job)
+    await session.commit()
+    await session.refresh(job)
+
+    pool = await get_arq_pool()
+    await pool.enqueue_job(
+        "generate_document",
+        str(job.id),
+        payload.kind,
+        payload.topic,
+        payload.format,
+        payload.filters,
+    )
+
+    return JobResponse.model_validate(job)
+
+
+@router.get("/generated/{job_id}")
+async def get_generated_document(job_id: uuid.UUID, session: DbSession) -> FileResponse:
+    job = await session.get(Job, job_id)
+    if job is None or job.job_type != "generate_document":
+        raise NotFoundError("Documento generado no encontrado")
+    if job.status != "completed":
+        raise ConflictError(f"El trabajo todavía no ha terminado: {job.status}")
+
+    result = job.result
+    return FileResponse(result["storage_path"], filename=result["filename"])

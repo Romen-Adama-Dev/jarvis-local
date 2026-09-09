@@ -83,6 +83,14 @@ class RagQueryResponse(BaseModel):
     warning: str | None = None
 
 
+class GenerateDocumentRequest(BaseModel):
+    kind: str
+    topic: str
+    format: str = "pdf"
+    filters: dict = Field(default_factory=dict)
+    telegram_user_id: int | None = None
+
+
 class DocumentResponse(BaseModel):
     id: uuid.UUID
     filename: str
