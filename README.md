@@ -6,7 +6,7 @@ Ver `docs/ARCHITECTURE.md` para el diseño completo y `docs/INSTALL.md` para la 
 
 ## Estado del proyecto
 
-En construcción por fases. Ver `docs/ACCEPTANCE.md` para el estado de los criterios de aceptación.
+En construcción por fases. Ver `docs/ACCEPTANCE.md` para el estado de los criterios de aceptación y `docs/ROADMAP.md` para el plan de evolución (capa MCP, correo, calendario, generación de documentos, Teams).
 
 ## Estructura
 
