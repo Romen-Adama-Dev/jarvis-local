@@ -8,6 +8,10 @@ Ver `docs/ARCHITECTURE.md` para el diseño completo y `docs/INSTALL.md` para la 
 
 En construcción por fases. Ver `docs/ACCEPTANCE.md` para el estado de los criterios de aceptación y `docs/ROADMAP.md` para el plan de evolución (capa MCP, correo, calendario, generación de documentos, Teams).
 
+## Contribuir
+
+Ver `CONTRIBUTING.md`. Proyecto bajo licencia MIT (`LICENSE`).
+
 ## Estructura
 
 ```text
