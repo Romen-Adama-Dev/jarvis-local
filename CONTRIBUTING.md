@@ -31,9 +31,14 @@ un PR. `ruff` aplica `E, F, I, UP, B, SIM`; `pyright` corre en modo `basic` sobr
 ## Convenciones
 
 * Python 3.12, gestionado con `uv` (no uses `pip`/`venv` a mano).
-* Los mensajes de commit siguen el formato `tipo(ámbito): descripción` en
-  presente (`feat`, `fix`, `docs`, `refactor`, `test`...), como en el historial
-  existente (`git log --oneline`).
+* Los mensajes de commit siguen **[Conventional Commits](https://www.conventionalcommits.org/)**:
+  `tipo(ámbito): descripción` en presente, ámbito opcional pero recomendado
+  cuando el cambio toca un área concreta (`feat(inference): ...`,
+  `fix(rag): ...`). Tipos habituales: `feat`, `fix`, `docs`, `refactor`,
+  `test`, `chore`, `perf`, `ci`. Un cambio incompatible añade un footer
+  `BREAKING CHANGE: <explicación>`. Coherente con el historial existente
+  (`git log --oneline`); esta es la convención definitiva del proyecto, no
+  solo una costumbre.
 * No añadas dependencias que llamen a APIs externas de inferencia (OpenAI,
   Anthropic, etc.) en el camino de producción. Ollama y AirLLM son los únicos
   proveedores de inferencia soportados.
