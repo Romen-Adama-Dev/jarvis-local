@@ -17,6 +17,7 @@ from packages.inference.ollama import OllamaProvider
 from packages.inference.router import InferenceMode, InferenceRouter
 from packages.rag.embeddings import FastEmbedProvider
 from packages.rag.orchestrator import HybridRagOrchestrator
+from packages.rag.reranker import FastEmbedReranker
 
 logger = get_logger(__name__)
 
@@ -38,11 +39,13 @@ async def on_startup(ctx: dict[str, Any]) -> None:
             timeout_seconds=settings.airllm_timeout_seconds,
         )
         ctx["airllm_provider"] = airllm_provider
+        reranker = FastEmbedReranker(cache_dir=cache_dir) if settings.rag_reranker_enabled else None
         ctx["deep_orchestrator"] = HybridRagOrchestrator(
             ctx["qdrant_client"],
             settings.qdrant_collection,
             ctx["embedding_provider"],
             InferenceRouter(providers={InferenceMode.DEEP: airllm_provider}),
+            reranker=reranker,
         )
         if settings.airllm_release_ollama_vram:
             ctx["ollama_provider"] = OllamaProvider(

@@ -23,6 +23,7 @@ from packages.inference.ollama import OllamaProvider
 from packages.inference.router import InferenceMode, InferenceRouter
 from packages.rag.embeddings import FastEmbedProvider
 from packages.rag.orchestrator import HybridRagOrchestrator
+from packages.rag.reranker import FastEmbedReranker
 
 logger = get_logger(__name__)
 
@@ -50,15 +51,19 @@ async def lifespan(app: FastAPI):
 
     cache_dir = str(settings.jarvis_models_dir / "fastembed")
     embedding_provider = await asyncio.to_thread(FastEmbedProvider, cache_dir=cache_dir)
+    reranker = None
+    if settings.rag_reranker_enabled:
+        reranker = await asyncio.to_thread(FastEmbedReranker, cache_dir=cache_dir)
     orchestrator = HybridRagOrchestrator(
         get_qdrant(),
         settings.qdrant_collection,
         embedding_provider,
         get_inference_router(),
         powerful_model=settings.ollama_powerful_model,
+        reranker=reranker,
     )
     set_rag_orchestrator(orchestrator)
-    logger.info("rag_orchestrator_ready")
+    logger.info("rag_orchestrator_ready", reranker_enabled=settings.rag_reranker_enabled)
     yield
     await ollama_provider.aclose()
     if airllm_provider is not None:
