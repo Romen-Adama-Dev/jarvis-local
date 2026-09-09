@@ -47,7 +47,11 @@ scripts/install-airllm
 scripts/configure-telegram
 scripts/install-openclaw
 
-# 7. Sincroniza el código a /srv/jarvis/app, aplica migraciones y arranca
+# 7. Generación de documentos en PDF (opcional; ver docs/DOCGEN.md). Sin este
+#    paso, la generación de documentos sigue funcionando en md/docx/pptx.
+scripts/install-docgen
+
+# 8. Sincroniza el código a /srv/jarvis/app, aplica migraciones y arranca
 #    jarvis-api.service / jarvis-worker.service (y airllm.service si aplica)
 scripts/deploy
 ```
