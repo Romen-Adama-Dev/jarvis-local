@@ -97,7 +97,7 @@ MCP (Hermes/ZeroClaw) es sencillo precisamente porque las capacidades ya serán 
 | **Contestar correos** | Servidor **MCP de correo** (IMAP/SMTP local, o `microsoft/local-email-agent`: Foundry Local + MCP + LangChain, 100% local) | **Nunca envío autónomo**: el modelo redacta borrador → confirmación humana (tu repo ya tiene `CONFIRMATION_TTL_SECONDS` y rate-limit) |
 | **Planificar reuniones** | Servidor **MCP de calendario** (CalDAV para privado; Microsoft Graph si usas Outlook/Teams) para leer huecos y crear eventos | Solo crear/proponer; confirmación antes de invitar a terceros |
 | **Generar documentos desde 0** | *Skill* de generación: el modelo produce contenido y lo materializa en **.docx/.pptx/.md** con plantillas (mismo enfoque que usas para el TFM) | Local; la fuente de datos es tu corpus RAG (con cita) |
-| **Todo desde Telegram / Teams** | **MCP de Telegram** (ya tienes transporte) + **MCP de Microsoft Teams** (Composio/Graph) como segundo canal | Lista blanca de usuarios (ya tienes `TELEGRAM_AUTHORIZED_USER_IDS`) |
+| **Todo desde Telegram / Teams** | Telegram ya es MCP-nativo vía la skill `jarvis-rag`. Para Teams, **no hace falta un servidor MCP nuevo**: OpenClaw tiene canal oficial `@openclaw/msteams` (plugin de primera parte desde 2026.1.15) que da conversación de bot igual que Telegram — la misma skill `jarvis-rag` sirve a ambos canales sin cambios. Ver `docs/TEAMS.md`. | Lista blanca de usuarios (Telegram: `TELEGRAM_AUTHORIZED_USER_IDS`; Teams: `allowFrom` por AAD object ID). **Importante**: a diferencia de Telegram (long polling, sin exposición), Teams exige un *messaging endpoint* HTTPS alcanzable por el conector Bot Framework de Microsoft — requiere un túnel saliente (no abrir UFW), detallado en `docs/TEAMS.md`. |
 
 **Idea de producto fuerte para el TFM/demo:** encadenar las cuatro en un flujo real de
 PM — *"resume las actas del proyecto X, redacta el correo de seguimiento, propón hueco
@@ -144,8 +144,20 @@ propuesto hasta la confirmación. Nuevo servidor MCP `jarvis-calendar`
 un evento nunca invita a terceros de forma autónoma**, solo tras confirmación
 explícita del propietario cuando la propuesta incluye invitados.
 
-**Fase 5 — Segundo canal: Teams.**
-MCP/conector de Microsoft Teams además de Telegram. Mismo backend, otro transporte.
+**Fase 5 — Segundo canal: Teams** (en marcha en `feature/mcp-teams-channel`).
+Canal oficial `@openclaw/msteams` (no un servidor MCP nuevo: la skill
+`jarvis-rag` ya sirve a cualquier canal). Mismo backend, otro transporte.
+Requiere registro de Azure Bot (paso único del propietario) y un túnel
+saliente hacia el *messaging endpoint*, ya que a diferencia de Telegram este
+canal necesita recibir llamadas entrantes. Detalle completo en
+`docs/TEAMS.md`.
+
+**Fase 5.1 — Web pública de demo para la defensa del TFM (aparcada).**
+Chat en vivo contra el RAG, con login privado (solo para la presentación),
+frontend estático en Vercel. Backend aún sin decidir (túnel temporal a la VM,
+endpoint permanente, o instancia separada) y corpus de demo pendiente de
+definir. Retomar cuando se acerque la fecha de defensa; no bloquea las fases
+1-5 de capacidades del agente.
 
 **Fase 6 — Endurecer y medir.**
 UAT con estos flujos, métricas de ahorro de tiempo (cierra el otro pendiente del
