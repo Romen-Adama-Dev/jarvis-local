@@ -1,0 +1,102 @@
+#!/usr/bin/env bash
+# Clona y arranca: prepara .env (secretos generados + modelo Ollama elegido
+# según la GPU detectada, ver packages/core/hardware.py y docs/BENCHMARKS.md)
+# y levanta el perfil `app` de Docker Compose (ver docs/DOCKER.md).
+set -euo pipefail
+
+REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "${REPO_DIR}"
+
+echo "== Jarvis Local · quickstart =="
+
+if [[ ! -f .env ]]; then
+    echo "-- Creando .env desde .env.example"
+    cp .env.example .env
+else
+    echo "-- .env ya existe, no se sobreescribe"
+fi
+
+set_env_var() {
+    local key="$1" value="$2"
+    if grep -q "^${key}=" .env; then
+        sed -i "s|^${key}=.*|${key}=${value}|" .env
+    else
+        printf '%s=%s\n' "${key}" "${value}" >>.env
+    fi
+}
+
+env_value() {
+    grep "^$1=" .env | head -1 | cut -d= -f2-
+}
+
+echo "-- Generando secretos locales pendientes (no se tocan valores ya rellenados)"
+for key in POSTGRES_PASSWORD JARVIS_API_INTERNAL_TOKEN; do
+    current="$(env_value "${key}")"
+    if [[ -z "${current}" || "${current}" == "change-me" ]]; then
+        set_env_var "${key}" "$(openssl rand -hex 24)"
+        echo "   ${key}: generado"
+    fi
+done
+current_searxng="$(env_value SEARXNG_SECRET)"
+if [[ -z "${current_searxng}" || "${current_searxng}" == "generar-con-openssl-rand-hex-32" ]]; then
+    set_env_var SEARXNG_SECRET "$(openssl rand -hex 32)"
+    echo "   SEARXNG_SECRET: generado"
+fi
+
+for key in TELEGRAM_BOT_TOKEN TELEGRAM_AUTHORIZED_USER_IDS; do
+    current="$(env_value "${key}")"
+    if [[ -z "${current}" || "${current}" == "change-me" ]]; then
+        echo "   AVISO: ${key} sigue en su valor de ejemplo. Telegram/OpenClaw no" >&2
+        echo "          funcionarán hasta que lo rellenes a mano (ver docs/TELEGRAM.md)." >&2
+    fi
+done
+
+echo "-- Detectando hardware para elegir modelos Ollama (docs/BENCHMARKS.md)"
+if command -v python3 >/dev/null 2>&1; then
+    RECOMMENDATION_JSON="$(python3 "${REPO_DIR}/packages/core/hardware.py" --format json)"
+    PRIMARY="$(python3 -c 'import json,sys; print(json.loads(sys.argv[1])["primary_model"])' "${RECOMMENDATION_JSON}")"
+    POWERFUL="$(python3 -c 'import json,sys; v=json.loads(sys.argv[1])["powerful_model"]; print(v or "")' "${RECOMMENDATION_JSON}")"
+    TIER="$(python3 -c 'import json,sys; print(json.loads(sys.argv[1])["tier"])' "${RECOMMENDATION_JSON}")"
+    RATIONALE="$(python3 -c 'import json,sys; print(json.loads(sys.argv[1])["rationale"])' "${RECOMMENDATION_JSON}")"
+
+    set_env_var OLLAMA_PRIMARY_MODEL "${PRIMARY}"
+    set_env_var OLLAMA_POWERFUL_MODEL "${POWERFUL}"
+
+    echo "   nivel detectado: ${TIER}"
+    echo "   OLLAMA_PRIMARY_MODEL=${PRIMARY}"
+    echo "   OLLAMA_POWERFUL_MODEL=${POWERFUL:-<desactivado>}"
+    echo "   motivo: ${RATIONALE}"
+else
+    echo "   AVISO: python3 no disponible; se mantienen los modelos ya presentes en .env" >&2
+fi
+
+if ! command -v ollama >/dev/null 2>&1; then
+    echo "AVISO: no se encontró 'ollama' en PATH. La API arrancará pero /ask fallará" >&2
+    echo "       hasta instalar Ollama de forma nativa: scripts/install-ollama" >&2
+    echo "       (requiere GPU NVIDIA para el rendimiento medido en docs/BENCHMARKS.md;" >&2
+    echo "       sin GPU, apunta OLLAMA_HOST a cualquier endpoint Ollama accesible)." >&2
+elif ! curl -sf "$(env_value OLLAMA_HOST)/api/version" >/dev/null 2>&1; then
+    echo "AVISO: ollama está instalado pero no responde en $(env_value OLLAMA_HOST)." >&2
+    echo "       Arráncalo (systemctl start ollama) antes de probar /ask." >&2
+fi
+
+if ! command -v docker >/dev/null 2>&1; then
+    echo "ERROR: docker no está instalado. Instálalo (scripts/install-docker) y repite." >&2
+    exit 1
+fi
+
+echo "-- Levantando perfil 'app': API + worker + Qdrant + PostgreSQL + Redis (docs/DOCKER.md)"
+docker compose --profile app up -d --build
+
+API_PORT="$(env_value JARVIS_API_PORT)"
+echo "-- Esperando a que la API esté healthy en el puerto ${API_PORT}"
+for _ in $(seq 1 30); do
+    if curl -sf "http://127.0.0.1:${API_PORT}/ready" >/dev/null 2>&1; then
+        echo "== Listo: http://127.0.0.1:${API_PORT} =="
+        exit 0
+    fi
+    sleep 2
+done
+
+echo "AVISO: la API no respondió /ready en 60s. Revisa: docker compose logs api" >&2
+exit 1
