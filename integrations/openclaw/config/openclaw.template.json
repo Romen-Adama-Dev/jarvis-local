@@ -99,6 +99,22 @@
           "JARVIS_API_INTERNAL_TOKEN": "__JARVIS_API_INTERNAL_TOKEN__",
           "JARVIS_OWNER_TELEGRAM_ID": "__TELEGRAM_USER_ID__"
         }
+      },
+      "jarvis-email": {
+        "command": "/home/jarvis/.local/bin/uv",
+        "args": [
+          "run",
+          "--frozen",
+          "--project",
+          "/home/jarvis/jarvis-local",
+          "python",
+          "/home/jarvis/jarvis-local/integrations/openclaw/skills/jarvis-email/server.py"
+        ],
+        "env": {
+          "JARVIS_API_URL": "http://127.0.0.1:8000",
+          "JARVIS_API_INTERNAL_TOKEN": "__JARVIS_API_INTERNAL_TOKEN__",
+          "JARVIS_OWNER_TELEGRAM_ID": "__TELEGRAM_USER_ID__"
+        }
       }
     }
   },
@@ -119,7 +135,8 @@
       "tools": {
         "alsoAllow": [
           "jarvis-rag__*",
-          "jarvis-calendar__*"
+          "jarvis-calendar__*",
+          "jarvis-email__*"
         ]
       }
     },

@@ -16,6 +16,7 @@ from apps.api.jarvis_api.routers import (
     chat,
     conversations,
     documents,
+    email,
     jobs,
     models,
     rag,
@@ -95,6 +96,7 @@ def create_app() -> FastAPI:
     app.include_router(conversations.router, dependencies=protected)
     app.include_router(models.router, dependencies=protected)
     app.include_router(calendar.router, dependencies=protected)
+    app.include_router(email.router, dependencies=protected)
 
     @app.exception_handler(JarvisError)
     async def jarvis_error_handler(request: Request, exc: JarvisError) -> JSONResponse:
