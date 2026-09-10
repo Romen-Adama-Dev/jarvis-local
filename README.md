@@ -1,6 +1,6 @@
 # Jarvis Local
 
-Asistente de IA privado y local: RAG sobre documentación propia, memoria por usuario, control por Telegram y Microsoft Teams vía OpenClaw, agente MCP (correo, calendario y generación de documentos sobre Microsoft Graph) e inferencia con Ollama (habitual) y AirLLM (`/deep`, modelos grandes). Ningún documento, embedding, prompt o respuesta sale del servidor hacia APIs de modelos en la nube. Telegram/Teams son los únicos transportes externos.
+Asistente de IA privado y local: RAG sobre documentación propia, memoria por usuario, control por Telegram y Microsoft Teams vía OpenClaw, agente MCP (correo, calendario y generación de documentos sobre Microsoft Graph) e inferencia con Ollama (habitual) y AirLLM (`/deep`, modelos grandes). El RAG y la inferencia son 100% locales: ningún documento, embedding, prompt o respuesta sale del servidor hacia APIs de modelos en la nube. Telegram y Teams son los transportes de conversación; el agente de correo/calendario sí sale además a Microsoft Graph con los datos propios de esa integración (ver `docs/MSGRAPH.md`).
 
 Ver `docs/ARCHITECTURE.md` para el diseño completo y `docs/INSTALL.md` para la instalación reproducible desde cero.
 
