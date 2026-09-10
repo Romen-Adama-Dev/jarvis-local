@@ -2,7 +2,7 @@
 
 Asistente de IA privado y local: RAG sobre documentación propia, memoria por usuario, control por Telegram y Microsoft Teams vía OpenClaw, agente MCP (correo, calendario y generación de documentos sobre Microsoft Graph) e inferencia con Ollama (habitual) y AirLLM (`/deep`, modelos grandes). Ningún documento, embedding, prompt o respuesta sale del servidor hacia APIs de modelos en la nube. Telegram/Teams son los únicos transportes externos.
 
-Ver `docs/ARCHITECTURE.md` para el diseño completo y `docs/INSTALL.md` para la instalación reproducible desde cero.
+Ver `docs/ARCHITECTURE.md` para el diseño completo y `docs/INSTALL.md` para la instalación reproducible desde cero. La elección automática de modelo Ollama según la VRAM disponible está en `docs/MODELS.md` (`scripts/select-models`).
 
 ## Estado del proyecto
 
@@ -41,7 +41,7 @@ scripts/quickstart
 ```
 
 Clona y arranca: prepara `.env` (genera los secretos locales que faltan,
-detecta la GPU y elige el modelo Ollama según `docs/BENCHMARKS.md`) y levanta
+detecta la GPU y elige el modelo Ollama según `docs/MODELS.md`) y levanta
 la aplicación (API + worker, empaquetada en una única imagen que aplica
 migraciones y arranca sola) junto a Qdrant, PostgreSQL y Redis. Ollama (y
 opcionalmente AirLLM) corren nativos por GPU; ver `docs/DOCKER.md` para el
