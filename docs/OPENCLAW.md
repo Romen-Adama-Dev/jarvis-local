@@ -10,7 +10,10 @@ npm install -g openclaw@latest
 export PATH=~/.npm-global/bin:$PATH   # añadido a ~/.bashrc
 ```
 
-Requiere Node.js 22.19+ (Ubuntu 26.04 trae 22.22.1 en sus repos oficiales, sin añadir NodeSource).
+Requiere Node.js ≥24.16 (mínimo de `openclaw@latest`, sube de vez en cuando —
+comprueba `engines.node` si `scripts/install-openclaw` falla con `EBADENGINE`).
+Ubuntu 22.04/24.04 no lo traen en sus repos oficiales: `scripts/install-openclaw`
+lo instala vía NodeSource automáticamente.
 
 ## Configuración
 

@@ -136,7 +136,12 @@
         "alsoAllow": [
           "jarvis-rag__*",
           "jarvis-calendar__*",
-          "jarvis-email__*"
+          "jarvis-email__*",
+          "wiki_apply",
+          "wiki_get",
+          "wiki_lint",
+          "wiki_search",
+          "wiki_status"
         ]
       }
     },
@@ -354,10 +359,40 @@
             "language": "es"
           }
         }
+      },
+      "memory-wiki": {
+        "enabled": true,
+        "config": {
+          "vaultMode": "bridge",
+          "vault": {
+            "scope": "global",
+            "renderMode": "obsidian"
+          },
+          "obsidian": {
+            "enabled": true,
+            "useOfficialCli": false
+          },
+          "bridge": {
+            "enabled": true,
+            "readMemoryArtifacts": true,
+            "indexDailyNotes": true,
+            "indexMemoryRoot": true,
+            "followMemoryEvents": true
+          },
+          "search": {
+            "corpus": "all"
+          },
+          "render": {
+            "preserveHumanBlocks": true,
+            "createBacklinks": true,
+            "createDashboards": true
+          }
+        }
       }
     },
     "allow": [
-      "searxng"
+      "searxng",
+      "memory-wiki"
     ]
   },
   "messages": {
