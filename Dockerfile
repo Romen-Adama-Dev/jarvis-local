@@ -14,7 +14,13 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 FROM python:3.12-slim-bookworm
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends libmagic1 \
+    && apt-get install -y --no-install-recommends \
+        libmagic1 \
+        pandoc \
+        texlive-xetex \
+        texlive-latex-recommended \
+        texlive-fonts-recommended \
+        fonts-dejavu \
     && rm -rf /var/lib/apt/lists/* \
     && useradd --system --uid 1000 --create-home jarvis \
     && mkdir -p /srv/jarvis/data /srv/jarvis/documents /srv/jarvis/models \

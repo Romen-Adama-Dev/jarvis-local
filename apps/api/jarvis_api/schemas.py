@@ -83,6 +83,14 @@ class RagQueryResponse(BaseModel):
     warning: str | None = None
 
 
+class GenerateDocumentRequest(BaseModel):
+    kind: str
+    topic: str
+    format: str = "pdf"
+    filters: dict = Field(default_factory=dict)
+    telegram_user_id: int | None = None
+
+
 class DocumentResponse(BaseModel):
     id: uuid.UUID
     filename: str
@@ -136,3 +144,40 @@ class ConversationResponse(BaseModel):
 
 class ConversationListResponse(BaseModel):
     conversations: list[ConversationResponse]
+
+
+class CalendarDraftRequest(BaseModel):
+    subject: str
+    start: str
+    end: str
+    attendees: list[str] = Field(default_factory=list)
+    body: str = ""
+    telegram_user_id: int
+
+
+class CalendarDraftResponse(BaseModel):
+    token: str
+    summary: str
+    expires_at: float
+
+
+class EmailDraftRequest(BaseModel):
+    to: list[str]
+    subject: str
+    body: str
+    cc: list[str] = Field(default_factory=list)
+    telegram_user_id: int
+
+
+class EmailDraftResponse(BaseModel):
+    token: str
+    summary: str
+    expires_at: float
+
+
+class CalendarConfirmRequest(BaseModel):
+    telegram_user_id: int
+
+
+class EmailConfirmRequest(BaseModel):
+    telegram_user_id: int

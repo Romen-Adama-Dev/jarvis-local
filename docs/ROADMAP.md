@@ -97,7 +97,7 @@ MCP (Hermes/ZeroClaw) es sencillo precisamente porque las capacidades ya serán 
 | **Contestar correos** | Servidor **MCP de correo** (IMAP/SMTP local, o `microsoft/local-email-agent`: Foundry Local + MCP + LangChain, 100% local) | **Nunca envío autónomo**: el modelo redacta borrador → confirmación humana (tu repo ya tiene `CONFIRMATION_TTL_SECONDS` y rate-limit) |
 | **Planificar reuniones** | Servidor **MCP de calendario** (CalDAV para privado; Microsoft Graph si usas Outlook/Teams) para leer huecos y crear eventos | Solo crear/proponer; confirmación antes de invitar a terceros |
 | **Generar documentos desde 0** | *Skill* de generación: el modelo produce contenido y lo materializa en **.docx/.pptx/.md** con plantillas (mismo enfoque que usas para el TFM) | Local; la fuente de datos es tu corpus RAG (con cita) |
-| **Todo desde Telegram / Teams** | **MCP de Telegram** (ya tienes transporte) + **MCP de Microsoft Teams** (Composio/Graph) como segundo canal | Lista blanca de usuarios (ya tienes `TELEGRAM_AUTHORIZED_USER_IDS`) |
+| **Todo desde Telegram / Teams** | Telegram ya es MCP-nativo vía la skill `jarvis-rag`. Para Teams, **no hace falta un servidor MCP nuevo**: OpenClaw tiene canal oficial `@openclaw/msteams` (plugin de primera parte desde 2026.1.15) que da conversación de bot igual que Telegram — la misma skill `jarvis-rag` sirve a ambos canales sin cambios. Ver `docs/TEAMS.md`. | Lista blanca de usuarios (Telegram: `TELEGRAM_AUTHORIZED_USER_IDS`; Teams: `allowFrom` por AAD object ID). **Importante**: a diferencia de Telegram (long polling, sin exposición), Teams exige un *messaging endpoint* HTTPS alcanzable por el conector Bot Framework de Microsoft — requiere un túnel saliente (no abrir UFW), detallado en `docs/TEAMS.md`. |
 
 **Idea de producto fuerte para el TFM/demo:** encadenar las cuatro en un flujo real de
 PM — *"resume las actas del proyecto X, redacta el correo de seguimiento, propón hueco
@@ -118,20 +118,63 @@ Introducir un cliente/host MCP en el worker o junto a OpenClaw. Primer servidor 
 de prueba (p. ej. filesystem o el propio RAG expuesto como MCP). Criterio de éxito:
 el agente llama a una herramienta MCP local y responde con trazabilidad.
 
-**Fase 2 — Generación de documentos.**
-*Skill* doc-gen: de una consulta RAG a un `.docx`/`.md` con fuentes citadas. Es la
-más autónoma (no envía nada fuera) y la más lucida en demo.
+**Fase 2 — Generación de documentos (en marcha en `feature/doc-generation`).**
+*Skill* doc-gen: DAFO o plan de coordinación, con secciones fijas por tipo de
+documento, cada una resuelta con una llamada independiente a
+`HybridRagOrchestrator.query(...)` (el mismo motor que `/ask`/`/deep`: sin
+prompt ni retrieval nuevos, sin superficie de alucinación adicional; una
+sección sin evidencia lo dice explícitamente en vez de inventar). Salida en
+`.md`/`.docx`/`.pptx` (python-docx/python-pptx, ya dependencias del proyecto)
+y `.pdf` (Pandoc + XeLaTeX vía subproceso, sin plantilla LaTeX vendorizada por
+licencia; `scripts/install-docgen` o la imagen Docker). Expuesta como trabajo
+asíncrono (`POST /v1/documents/generate`, igual que `/deep-query`) y como
+herramienta MCP `jarvis_generate_doc` en la skill `jarvis-rag`. Limitación
+conocida: el archivo generado no se envía aún por Telegram/Teams, queda en el
+servidor (ver `docs/DOCGEN.md`).
 
 **Fase 3 — Correo (borrador + aprobación).**
 MCP de correo local. Flujo: leer → resumir → **redactar borrador** → confirmación
 por Telegram → enviar. Reutiliza tu patrón de confirmación/TTL.
+La base de autenticación OAuth2 compartida con Graph (Fase 3 y Fase 4) está
+**en marcha en `feature/mcp-msgraph-base`** (`packages/msgraph/`, ver
+`docs/MSGRAPH.md`): device code flow con MSAL + cliente HTTP genérico, sin
+herramientas de correo todavía.
+Las herramientas MCP de correo propiamente dichas están **en marcha en
+`feature/mcp-email`** (ver `docs/EMAIL.md`): `packages/msgraph/mail.py`
+(`list_inbox`/`get_message`/`send_mail`), API interna `/v1/email` y el servidor
+MCP `jarvis-email` (`jarvis_email_inbox`, `jarvis_email_read`,
+`jarvis_email_draft`, `jarvis_email_confirm_send`). El borrador+confirmación
+reutiliza el `payload` genérico de `ConfirmationService` (añadido en
+`feature/mcp-msgraph-base`) en vez de un mecanismo nuevo; scopes de Graph
+necesarios: `Mail.Read`, `Mail.Send`.
 
-**Fase 4 — Calendario / reuniones.**
-MCP de calendario (CalDAV o Graph). Leer disponibilidad, **proponer** hueco, crear
-evento tras confirmación.
+**Fase 4 — Calendario / reuniones.** **En marcha en `feature/mcp-calendar`**
+(ver `docs/CALENDAR.md`). Sobre la base de `feature/mcp-msgraph-base`
+(`packages/msgraph/calendar.py`: `get_calendar_view`/`create_event` vía Graph,
+scopes `Calendars.Read`/`Calendars.ReadWrite`), expone `/v1/calendar/events`
+(lectura) y el flujo **proponer → confirmar** de `/v1/calendar/draft` +
+`/v1/calendar/draft/{token}/confirm`, reutilizando el campo genérico
+`payload` de `ConfirmationService.request(...)` para guardar el evento
+propuesto hasta la confirmación. Nuevo servidor MCP `jarvis-calendar`
+(`jarvis_calendar_availability`, `jarvis_calendar_propose_event`,
+`jarvis_calendar_confirm_event`) con la misma advertencia que `gog`: **crear
+un evento nunca invita a terceros de forma autónoma**, solo tras confirmación
+explícita del propietario cuando la propuesta incluye invitados.
 
-**Fase 5 — Segundo canal: Teams.**
-MCP/conector de Microsoft Teams además de Telegram. Mismo backend, otro transporte.
+**Fase 5 — Segundo canal: Teams** (en marcha en `feature/mcp-teams-channel`).
+Canal oficial `@openclaw/msteams` (no un servidor MCP nuevo: la skill
+`jarvis-rag` ya sirve a cualquier canal). Mismo backend, otro transporte.
+Requiere registro de Azure Bot (paso único del propietario) y un túnel
+saliente hacia el *messaging endpoint*, ya que a diferencia de Telegram este
+canal necesita recibir llamadas entrantes. Detalle completo en
+`docs/TEAMS.md`.
+
+**Fase 5.1 — Web pública de demo para la defensa del TFM (aparcada).**
+Chat en vivo contra el RAG, con login privado (solo para la presentación),
+frontend estático en Vercel. Backend aún sin decidir (túnel temporal a la VM,
+endpoint permanente, o instancia separada) y corpus de demo pendiente de
+definir. Retomar cuando se acerque la fecha de defensa; no bloquea las fases
+1-5 de capacidades del agente.
 
 **Fase 6 — Endurecer y medir.**
 UAT con estos flujos, métricas de ahorro de tiempo (cierra el otro pendiente del
@@ -143,7 +186,9 @@ TFM), y decisión OpenClaw vs. cliente MCP ligero (Hermes/ZeroClaw).
 
 Priorizadas por relación valor/esfuerzo para JARVIS-PMI:
 
-1. **doc-gen** — generar documentos (.docx/.pptx/.md) desde el corpus, con cita. *Alta / media.*
+1. **doc-gen** — generar documentos (.docx/.pptx/.md/.pdf) desde el corpus, con cita,
+   reutilizando `HybridRagOrchestrator` sección a sección (en marcha en
+   `feature/doc-generation`, ver `docs/DOCGEN.md`). *Alta / media.*
 2. **mcp-host** — capa MCP en el worker (habilita todo lo demás). *Alta / media.*
 3. **rag-as-mcp** — exponer tu propio RAG como servidor MCP (reutilizable por cualquier agente). *Alta / baja.*
 4. **email-draft** — MCP de correo con borrador+aprobación. *Alta / media.*

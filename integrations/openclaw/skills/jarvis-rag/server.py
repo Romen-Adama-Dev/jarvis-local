@@ -54,6 +54,50 @@ def jarvis_deep(query: str) -> str:
     )
 
 
+def _format_generated_document(job_id: str, result: dict) -> str:
+    lines = [
+        f"Documento generado (trabajo {job_id}):",
+        f"- Tipo: {result.get('kind')}",
+        f"- Tema: {result.get('topic')}",
+        f"- Formato: {result.get('format')}",
+        f"- Ruta en el servidor: {result.get('storage_path')}",
+    ]
+    missing = [
+        s["title"] for s in result.get("sections", []) if s.get("insufficient_evidence")
+    ]
+    if missing:
+        lines.append(
+            "- Secciones sin evidencia suficiente: " + ", ".join(missing)
+        )
+    else:
+        lines.append("- Todas las secciones tienen evidencia en la documentación indexada.")
+    lines.append(
+        "Nota: el archivo NO se envía automáticamente por Telegram/Teams todavía; "
+        "queda en el servidor (volumen jarvis_srv)."
+    )
+    return "\n".join(lines)
+
+
+@mcp.tool()
+def jarvis_generate_doc(kind: str, topic: str, format: str = "pdf") -> str:
+    """Genera un documento (DAFO o plan de coordinación) fundamentado en el RAG de Jarvis,
+    en formato md/docx/pptx/pdf. Encola un trabajo; recoge el resultado con
+    jarvis_job_result. El archivo NO se envía automáticamente por Telegram/Teams: queda
+    en el servidor."""
+    response = _client.post(
+        "/v1/documents/generate", json={"kind": kind, "topic": topic, "format": format}
+    )
+    if response.status_code == 422:
+        detail = response.json()
+        return detail.get("message") or "Petición de generación de documento inválida."
+    response.raise_for_status()
+    job = response.json()
+    return (
+        f"Generando {kind} sobre '{topic}' en {format} (trabajo {job['id']}). "
+        "Consulta el resultado con jarvis_job_result."
+    )
+
+
 @mcp.tool()
 def jarvis_job_result(job_id: str) -> str:
     """Recoge el estado o el resultado de un trabajo (consulta profunda, indexación...)."""
@@ -70,6 +114,8 @@ def jarvis_job_result(job_id: str) -> str:
     result = job.get("result") or {}
     if job.get("job_type") == "deep_query" and "answer" in result:
         return _format_answer(result)
+    if job.get("job_type") == "generate_document" and "storage_path" in result:
+        return _format_generated_document(job_id, result)
     return f"Trabajo {job_id} completado: {result}"
 
 

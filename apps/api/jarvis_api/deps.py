@@ -12,10 +12,21 @@ from apps.api.jarvis_api.adapters.redis_confirmation import RedisConfirmationSto
 from packages.core.db.session import make_engine, make_session_factory
 from packages.core.settings import Settings, get_settings
 from packages.inference.router import InferenceMode, InferenceRouter
+from packages.msgraph.auth import MsGraphAuthenticator, MsGraphTokenStore
+from packages.msgraph.client import MsGraphClient
 from packages.rag.orchestrator import NotConfiguredRagOrchestrator, RagOrchestrator
 from packages.security.audit import AuditService
 from packages.security.authz import TelegramAuthorizer
 from packages.security.confirmation import ConfirmationService
+
+MSGRAPH_CALENDAR_SCOPES = ["Calendars.Read", "Calendars.ReadWrite"]
+# Scopes de correo (Fase 3). Fijos por capacidad, no configurables por entorno:
+# ver docs/EMAIL.md y docs/MSGRAPH.md.
+MSGRAPH_MAIL_SCOPES = ["Mail.Read", "Mail.Send"]
+# Un único cliente MsGraph autenticado cubre ambas capacidades (calendar.py y
+# email.py comparten MsGraphClientDep), así que se solicita la unión de scopes
+# en un solo token en vez de mantener dos clientes/autenticadores separados.
+MSGRAPH_SCOPES = MSGRAPH_CALENDAR_SCOPES + MSGRAPH_MAIL_SCOPES
 
 
 @lru_cache
@@ -39,6 +50,18 @@ def _qdrant_client() -> AsyncQdrantClient:
     return AsyncQdrantClient(host=settings.qdrant_host, port=settings.qdrant_port)
 
 
+@lru_cache
+def _msgraph_client() -> MsGraphClient:
+    settings = get_settings()
+    authenticator = MsGraphAuthenticator(
+        settings.msgraph_client_id,
+        settings.msgraph_tenant_id,
+        MSGRAPH_SCOPES,
+        token_store=MsGraphTokenStore(settings.msgraph_token_cache_path),
+    )
+    return MsGraphClient(authenticator.get_token)
+
+
 async def get_db_session() -> AsyncIterator[AsyncSession]:
     async with _session_factory()() as session:
         yield session
@@ -54,6 +77,10 @@ def get_redis() -> redis_asyncio.Redis:
 
 def get_qdrant() -> AsyncQdrantClient:
     return _qdrant_client()
+
+
+def get_msgraph_client() -> MsGraphClient:
+    return _msgraph_client()
 
 
 def get_authorizer(settings: Settings = Depends(get_settings_dep)) -> TelegramAuthorizer:
@@ -105,6 +132,7 @@ DbSession = Annotated[AsyncSession, Depends(get_db_session)]
 SettingsDep = Annotated[Settings, Depends(get_settings_dep)]
 RedisDep = Annotated[redis_asyncio.Redis, Depends(get_redis)]
 QdrantDep = Annotated[AsyncQdrantClient, Depends(get_qdrant)]
+MsGraphClientDep = Annotated[MsGraphClient, Depends(get_msgraph_client)]
 InferenceRouterDep = Annotated[InferenceRouter, Depends(get_inference_router)]
 RagOrchestratorDep = Annotated[RagOrchestrator, Depends(get_rag_orchestrator)]
 AuthorizerDep = Annotated[TelegramAuthorizer, Depends(get_authorizer)]

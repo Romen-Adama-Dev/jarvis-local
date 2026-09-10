@@ -1,6 +1,6 @@
 import secrets
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Protocol
 
 from packages.core.errors import NotFoundError, ValidationFailedError
@@ -14,6 +14,7 @@ class PendingConfirmation:
     summary: str
     created_at: float
     expires_at: float
+    payload: dict = field(default_factory=dict)
 
 
 class ConfirmationStore(Protocol):
@@ -30,7 +31,11 @@ class ConfirmationService:
         self._ttl_seconds = ttl_seconds
 
     async def request(
-        self, telegram_user_id: int, action: str, summary: str
+        self,
+        telegram_user_id: int,
+        action: str,
+        summary: str,
+        payload: dict | None = None,
     ) -> PendingConfirmation:
         now = time.time()
         confirmation = PendingConfirmation(
@@ -40,6 +45,7 @@ class ConfirmationService:
             summary=summary,
             created_at=now,
             expires_at=now + self._ttl_seconds,
+            payload=payload or {},
         )
         await self._store.save(confirmation)
         return confirmation

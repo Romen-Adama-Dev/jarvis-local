@@ -14,7 +14,7 @@ class RedisConfirmationStore(ConfirmationStore):
 
     async def save(self, confirmation: PendingConfirmation) -> None:
         ttl = max(int(confirmation.expires_at - time.time()), 1)
-        payload = json.dumps(
+        serialized = json.dumps(
             {
                 "token": confirmation.token,
                 "telegram_user_id": confirmation.telegram_user_id,
@@ -22,15 +22,17 @@ class RedisConfirmationStore(ConfirmationStore):
                 "summary": confirmation.summary,
                 "created_at": confirmation.created_at,
                 "expires_at": confirmation.expires_at,
+                "payload": confirmation.payload,
             }
         )
-        await self._client.set(_KEY_PREFIX + confirmation.token, payload, ex=ttl)
+        await self._client.set(_KEY_PREFIX + confirmation.token, serialized, ex=ttl)
 
     async def get(self, token: str) -> PendingConfirmation | None:
         raw = await self._client.get(_KEY_PREFIX + token)
         if raw is None:
             return None
         data = json.loads(raw)
+        data.setdefault("payload", {})
         return PendingConfirmation(**data)
 
     async def delete(self, token: str) -> None:
