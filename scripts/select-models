@@ -1,0 +1,142 @@
+#!/usr/bin/env bash
+# Auto-selección de modelos Ollama según la VRAM total de la GPU (nvidia-smi
+# --query-gpu=memory.total; sin GPU NVIDIA = 0 = nivel "cpu"). Escribe de
+# forma idempotente en .env: OLLAMA_PRIMARY_MODEL, OLLAMA_POWERFUL_MODEL,
+# OLLAMA_CONTEXT_LENGTH y JARVIS_MODEL_TIER.
+#
+# Solo el nivel "vram_7000" (>=7000 MiB, <11000 MiB) está benchmarkeado
+# (ver docs/BENCHMARKS.md, GTX 1070 8192 MiB): NO cambiar su par de modelos
+# sin repetir el benchmark. El resto de niveles son una extrapolación
+# razonada de esa medición, sin validar todavía en hardware real.
+set -euo pipefail
+
+REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ENV_FILE="${REPO_DIR}/.env"
+
+PULL=false
+DRY_RUN=false
+for arg in "$@"; do
+    case "$arg" in
+        --pull) PULL=true ;;
+        --dry-run) DRY_RUN=true ;;
+        -h | --help)
+            echo "Uso: $(basename "$0") [--pull] [--dry-run]"
+            echo "  --pull     además de escribir .env, hace 'ollama pull' de los modelos elegidos"
+            echo "  --dry-run  no escribe .env ni descarga nada; solo muestra la recomendación"
+            echo "Override: JARVIS_MODEL_TIER=<nivel> salta la detección de VRAM"
+            exit 0
+            ;;
+        *)
+            echo "ERROR: argumento desconocido '$arg' (usa --pull, --dry-run o --help)" >&2
+            exit 1
+            ;;
+    esac
+done
+
+if [[ "${DRY_RUN}" != "true" && ! -f "${ENV_FILE}" ]]; then
+    echo "ERROR: no existe ${ENV_FILE}. Ejecuta 'cp .env.example .env' (o scripts/quickstart) antes." >&2
+    exit 1
+fi
+
+detect_vram_mib() {
+    if ! command -v nvidia-smi >/dev/null 2>&1; then
+        echo 0
+        return
+    fi
+    local raw
+    raw="$(nvidia-smi --query-gpu=memory.total --format=csv,noheader,nounits 2>/dev/null | head -1 | tr -d '[:space:]')"
+    if [[ -z "${raw}" || ! "${raw}" =~ ^[0-9]+$ ]]; then
+        echo 0
+        return
+    fi
+    echo "${raw}"
+}
+
+tier_from_vram() {
+    local vram="$1"
+    if [[ "${vram}" -eq 0 ]]; then
+        echo "cpu"
+    elif [[ "${vram}" -lt 7000 ]]; then
+        echo "vram_lt_7000"
+    elif [[ "${vram}" -lt 11000 ]]; then
+        echo "vram_7000"
+    elif [[ "${vram}" -lt 15000 ]]; then
+        echo "vram_11000"
+    elif [[ "${vram}" -lt 21000 ]]; then
+        echo "vram_15000"
+    elif [[ "${vram}" -lt 38000 ]]; then
+        echo "vram_21000"
+    elif [[ "${vram}" -lt 47000 ]]; then
+        echo "vram_38000"
+    else
+        echo "vram_47000"
+    fi
+}
+
+VRAM_MIB="$(detect_vram_mib)"
+
+if [[ -n "${JARVIS_MODEL_TIER:-}" ]]; then
+    TIER="${JARVIS_MODEL_TIER}"
+    TIER_SOURCE="override JARVIS_MODEL_TIER"
+else
+    TIER="$(tier_from_vram "${VRAM_MIB}")"
+    TIER_SOURCE="detectado (${VRAM_MIB} MiB VRAM total)"
+fi
+
+case "${TIER}" in
+    cpu)          PRIMARY=qwen2.5:3b;  POWERFUL=qwen2.5:3b;  CTX=8192 ;;
+    vram_lt_7000) PRIMARY=qwen2.5:3b;  POWERFUL=qwen2.5:7b;  CTX=16384 ;;
+    vram_7000)    PRIMARY=qwen2.5:7b;  POWERFUL=llama3.1:8b; CTX=32768 ;;
+    vram_11000)   PRIMARY=qwen2.5:7b;  POWERFUL=qwen2.5:14b; CTX=32768 ;;
+    vram_15000)   PRIMARY=qwen2.5:14b; POWERFUL=qwen2.5:14b; CTX=32768 ;;
+    vram_21000)   PRIMARY=qwen2.5:14b; POWERFUL=qwen2.5:32b; CTX=16384 ;;
+    vram_38000)   PRIMARY=qwen2.5:14b; POWERFUL=qwen2.5:32b; CTX=32768 ;;
+    vram_47000)   PRIMARY=qwen2.5:32b; POWERFUL=qwen2.5:72b; CTX=32768 ;;
+    *)
+        echo "ERROR: JARVIS_MODEL_TIER='${TIER}' desconocido. Niveles válidos:" >&2
+        echo "       cpu, vram_lt_7000, vram_7000, vram_11000, vram_15000, vram_21000, vram_38000, vram_47000" >&2
+        exit 1
+        ;;
+esac
+
+echo "== Jarvis Local · select-models =="
+echo "Nivel: ${TIER} (${TIER_SOURCE})"
+echo "OLLAMA_PRIMARY_MODEL=${PRIMARY}"
+echo "OLLAMA_POWERFUL_MODEL=${POWERFUL}"
+echo "OLLAMA_CONTEXT_LENGTH=${CTX}"
+echo "JARVIS_MODEL_TIER=${TIER}"
+if [[ "${TIER}" == "vram_7000" ]]; then
+    echo "(par benchmarkeado en docs/BENCHMARKS.md; el resto de niveles no están validados en hardware real)"
+fi
+
+if [[ "${DRY_RUN}" == "true" ]]; then
+    echo "-- --dry-run: no se ha escrito .env ni descargado nada"
+    exit 0
+fi
+
+set_env_var() {
+    local key="$1" value="$2"
+    if grep -q "^${key}=" "${ENV_FILE}"; then
+        sed -i "s|^${key}=.*|${key}=${value}|" "${ENV_FILE}"
+    else
+        printf '%s=%s\n' "${key}" "${value}" >>"${ENV_FILE}"
+    fi
+}
+
+set_env_var OLLAMA_PRIMARY_MODEL "${PRIMARY}"
+set_env_var OLLAMA_POWERFUL_MODEL "${POWERFUL}"
+set_env_var OLLAMA_CONTEXT_LENGTH "${CTX}"
+set_env_var JARVIS_MODEL_TIER "${TIER}"
+echo "-- .env actualizado"
+
+if [[ "${PULL}" == "true" ]]; then
+    if ! command -v ollama >/dev/null 2>&1; then
+        echo "ERROR: --pull requiere 'ollama' en PATH (scripts/install-ollama)." >&2
+        exit 1
+    fi
+    echo "-- Descargando modelos (ollama pull)"
+    ollama pull "${PRIMARY}"
+    if [[ "${POWERFUL}" != "${PRIMARY}" ]]; then
+        ollama pull "${POWERFUL}"
+    fi
+fi

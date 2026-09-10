@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Clona y arranca: prepara .env (secretos generados + modelo Ollama elegido
-# según la GPU detectada, ver packages/core/hardware.py y docs/BENCHMARKS.md)
+# según la GPU detectada, ver scripts/select-models y docs/MODELS.md)
 # y levanta el perfil `app` de Docker Compose (ver docs/DOCKER.md).
 set -euo pipefail
 
@@ -51,24 +51,8 @@ for key in TELEGRAM_BOT_TOKEN TELEGRAM_AUTHORIZED_USER_IDS; do
     fi
 done
 
-echo "-- Detectando hardware para elegir modelos Ollama (docs/BENCHMARKS.md)"
-if command -v python3 >/dev/null 2>&1; then
-    RECOMMENDATION_JSON="$(python3 "${REPO_DIR}/packages/core/hardware.py" --format json)"
-    PRIMARY="$(python3 -c 'import json,sys; print(json.loads(sys.argv[1])["primary_model"])' "${RECOMMENDATION_JSON}")"
-    POWERFUL="$(python3 -c 'import json,sys; v=json.loads(sys.argv[1])["powerful_model"]; print(v or "")' "${RECOMMENDATION_JSON}")"
-    TIER="$(python3 -c 'import json,sys; print(json.loads(sys.argv[1])["tier"])' "${RECOMMENDATION_JSON}")"
-    RATIONALE="$(python3 -c 'import json,sys; print(json.loads(sys.argv[1])["rationale"])' "${RECOMMENDATION_JSON}")"
-
-    set_env_var OLLAMA_PRIMARY_MODEL "${PRIMARY}"
-    set_env_var OLLAMA_POWERFUL_MODEL "${POWERFUL}"
-
-    echo "   nivel detectado: ${TIER}"
-    echo "   OLLAMA_PRIMARY_MODEL=${PRIMARY}"
-    echo "   OLLAMA_POWERFUL_MODEL=${POWERFUL:-<desactivado>}"
-    echo "   motivo: ${RATIONALE}"
-else
-    echo "   AVISO: python3 no disponible; se mantienen los modelos ya presentes en .env" >&2
-fi
+echo "-- Detectando hardware para elegir modelos Ollama (docs/MODELS.md)"
+"${REPO_DIR}/scripts/select-models"
 
 if ! command -v ollama >/dev/null 2>&1; then
     echo "AVISO: no se encontró 'ollama' en PATH. La API arrancará pero /ask fallará" >&2
