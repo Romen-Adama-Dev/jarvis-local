@@ -47,12 +47,3 @@ JARVIS_MODEL_TIER=vram_21000 scripts/select-models   # fuerza un nivel concreto
 `OLLAMA_CONTEXT_LENGTH` también alimenta el override de systemd de Ollama
 (`scripts/install-ollama`): si `.env` ya define esa variable la usa, si no
 cae a `32768` por defecto.
-
-## Relación con `packages/core/hardware.py`
-
-`packages/core/hardware.py` es un módulo Python anterior y más limitado (solo
-conoce el par benchmarkeado en 8 GB y nunca recomienda un modelo mayor aunque
-haya más VRAM libre); tiene su propia suite de tests
-(`tests/unit/test_hardware.py`) y ya no lo usa `scripts/quickstart`, que ahora
-llama a `scripts/select-models`. Se mantiene por ahora sin usuarios en el
-arranque; valorar si retirarlo por completo en una fase posterior.

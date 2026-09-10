@@ -128,26 +128,12 @@ calling, no un cuelgue ni un error del servicio.
 
 ## Auto-selección por hardware (`scripts/quickstart`)
 
-`packages/core/hardware.py` traduce este benchmark en una recomendación
-automática de `OLLAMA_PRIMARY_MODEL`/`OLLAMA_POWERFUL_MODEL`, que
-`scripts/quickstart` escribe en `.env` al detectar la GPU (`nvidia-smi
---query-gpu=memory.free`). Nunca recomienda un modelo fuera del par validado
-arriba: fuera del rango de VRAM medido en este hardware, degrada la
-recomendación en vez de inventar una nueva.
-
-| VRAM libre detectada | Recomendación | Nivel (`tier`) |
-|---|---|---|
-| Sin GPU NVIDIA (`nvidia-smi` no disponible) | `qwen2.5:7b` (potente desactivado) | `cpu_only` — rendimiento en CPU no medido en este repo |
-| < 5799 MiB (80% del margen sobre 4639 MiB) | `qwen2.5:7b` (potente desactivado) | `low_vram` — riesgo real de CUDA OOM |
-| 5799–6421 MiB | `qwen2.5:7b` (potente desactivado) | `primary_only` |
-| 6421–8192 MiB | `qwen2.5:7b` + `llama3.1:8b` | `validated` — exactamente el hardware benchmarkeado |
-| > 8192 MiB | `qwen2.5:7b` + `llama3.1:8b` | `ample` — mismo par (sigue siendo seguro), pero re-ejecuta `scripts/benchmark-models` con candidatos mayores para ver si hay margen de calidad sin explorar |
-
-Umbrales derivados de la huella de VRAM cargada medida arriba (4639 MiB
-`qwen2.5:7b`, 5137 MiB `llama3.1:8b`) con el mismo criterio de margen de
-seguridad que descartó `gemma2:9b` (no superar ~80% de la VRAM disponible).
-Reejecutar en cualquier momento: `python3 packages/core/hardware.py --format
-text` (o `scripts/quickstart`, que además lo escribe en `.env`).
+Este benchmark ancla la única franja validada (`vram_7000`, GTX 1070 8192 MiB)
+de la auto-selección de modelo por VRAM total detectada: ver `docs/MODELS.md`
+para la tabla completa de franjas y `scripts/select-models` para el script.
+Fuera de esa franja, `scripts/select-models` extrapola razonadamente sin
+inventar un modelo no evaluado; re-ejecutar `scripts/benchmark-models` con
+candidatos mayores para validar las franjas superiores.
 
 ## Reproducir el benchmark
 
