@@ -1,10 +1,10 @@
 """Autenticación OAuth2 (device code flow) contra Microsoft Graph.
 
-Base compartida para las capacidades de correo (`feature/mcp-email`) y
-calendario (`feature/mcp-calendar`), que aún no existen en esta rama. Aquí
-solo vive lo necesario para obtener y refrescar un token de acceso de Graph
-para el usuario dueño del tenant; ninguna llamada a Graph propiamente dicha
-(ver `packages/msgraph/client.py`).
+Base compartida para las capacidades de correo (`packages/msgraph/mail.py`) y
+calendario (`packages/msgraph/calendar.py`). Aquí solo vive lo necesario para
+obtener y refrescar un token de acceso de Graph para el usuario dueño del
+tenant; ninguna llamada a Graph propiamente dicha (ver
+`packages/msgraph/client.py`).
 
 El login interactivo (flujo de código de dispositivo) solo debe ejecutarse
 desde `scripts/configure-msgraph`, en el momento de la puesta en marcha:

@@ -4,9 +4,9 @@ Deliberadamente NO conoce nada de correo ni de calendario: solo sabe hacer
 peticiones autenticadas GET/POST/PATCH/DELETE contra `v1.0` de Graph y
 traducir respuestas no-2xx a `ProviderUnavailableError`. Los métodos
 específicos de cada capacidad (listar mensajes, enviar correo, crear
-eventos, consultar disponibilidad...) se añaden en las ramas
-`feature/mcp-email` y `feature/mcp-calendar`, construidas sobre esta base -
-no forman parte de este módulo.
+eventos, consultar disponibilidad...) viven en `packages/msgraph/mail.py` y
+`packages/msgraph/calendar.py`, construidos sobre esta base - no forman
+parte de este módulo.
 """
 
 from collections.abc import Callable
