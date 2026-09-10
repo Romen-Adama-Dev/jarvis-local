@@ -1,0 +1,89 @@
+#!/usr/bin/env bash
+# Activa el canal Microsoft Teams (ver docs/TEAMS.md) sobre una instalación de
+# OpenClaw ya configurada con scripts/configure-telegram. Requiere haber
+# registrado un Azure Bot (App ID, client secret, tenant ID) y tener el
+# messaging endpoint (túnel hacia 127.0.0.1:3978, ver docs/TEAMS.md) ya
+# apuntado en Azure antes de ejecutar esto.
+set -euo pipefail
+
+REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+CONFIG="$HOME/.openclaw/openclaw.json"
+SECRETS_DIR="$HOME/.openclaw/secrets"
+SYSTEMD_DROPIN_DIR="$HOME/.config/systemd/user/openclaw-gateway.service.d"
+export PATH="$HOME/.npm-global/bin:$PATH"
+
+if [[ ! -f "$CONFIG" ]]; then
+  echo "ERROR: no existe $CONFIG. Ejecuta antes scripts/configure-telegram (crea la config base)." >&2
+  exit 1
+fi
+
+MSTEAMS_APP_ID="${MSTEAMS_APP_ID:-}"
+MSTEAMS_APP_PASSWORD="${MSTEAMS_APP_PASSWORD:-}"
+MSTEAMS_TENANT_ID="${MSTEAMS_TENANT_ID:-}"
+MSTEAMS_ALLOWED_AAD_OBJECT_ID="${MSTEAMS_ALLOWED_AAD_OBJECT_ID:-}"
+
+if [[ -z "$MSTEAMS_APP_ID" ]]; then
+  read -rp "App ID del Azure Bot: " MSTEAMS_APP_ID
+fi
+if [[ -z "$MSTEAMS_APP_PASSWORD" ]]; then
+  read -rsp "Client secret del Azure Bot: " MSTEAMS_APP_PASSWORD; echo
+fi
+if [[ -z "$MSTEAMS_TENANT_ID" ]]; then
+  read -rp "Tenant ID (Entra ID): " MSTEAMS_TENANT_ID
+fi
+if [[ -z "$MSTEAMS_ALLOWED_AAD_OBJECT_ID" ]]; then
+  read -rp "AAD object ID autorizado a hablar con el bot: " MSTEAMS_ALLOWED_AAD_OBJECT_ID
+fi
+
+echo "== Plugin @openclaw/msteams =="
+openclaw plugins list 2>/dev/null | grep -q msteams || openclaw plugins install @openclaw/msteams
+
+echo "== Guardando credenciales fuera de Git =="
+mkdir -p "$SECRETS_DIR"
+chmod 700 "$SECRETS_DIR"
+cat >"$SECRETS_DIR/msteams.env" <<EOF
+MSTEAMS_AUTH_TYPE=secret
+MSTEAMS_APP_ID=${MSTEAMS_APP_ID}
+MSTEAMS_APP_PASSWORD=${MSTEAMS_APP_PASSWORD}
+MSTEAMS_TENANT_ID=${MSTEAMS_TENANT_ID}
+EOF
+chmod 600 "$SECRETS_DIR/msteams.env"
+
+echo "== Activando canal msteams en openclaw.json =="
+cp "$CONFIG" "$CONFIG.bak.$(date +%Y%m%d%H%M%S)"
+python3 - "$CONFIG" "$MSTEAMS_ALLOWED_AAD_OBJECT_ID" <<'PYEOF'
+import json
+import sys
+
+path, allowed_id = sys.argv[1], sys.argv[2]
+with open(path) as f:
+    config = json.load(f)
+
+msteams = config.setdefault("channels", {}).setdefault("msteams", {})
+msteams["enabled"] = True
+msteams["authType"] = "secret"
+msteams["dmPolicy"] = "allowlist"
+msteams["allowFrom"] = [allowed_id]
+msteams.setdefault("webhook", {"port": 3978, "path": "/api/messages"})
+
+with open(path, "w") as f:
+    json.dump(config, f, indent=2, ensure_ascii=False)
+    f.write("\n")
+PYEOF
+chmod 600 "$CONFIG"
+
+echo "== Cargando credenciales en el servicio del gateway =="
+mkdir -p "$SYSTEMD_DROPIN_DIR"
+cat >"$SYSTEMD_DROPIN_DIR/10-msteams.conf" <<EOF
+[Service]
+EnvironmentFile=${SECRETS_DIR}/msteams.env
+EOF
+
+echo "== Reiniciando gateway =="
+systemctl --user daemon-reload
+systemctl --user restart openclaw-gateway.service
+sleep 5
+systemctl --user is-active openclaw-gateway.service
+
+echo "Teams configurado. Verifica en Azure que el messaging endpoint apunta al"
+echo "túnel hacia 127.0.0.1:3978/api/messages (ver docs/TEAMS.md) y escribe al bot desde una cuenta autorizada."
