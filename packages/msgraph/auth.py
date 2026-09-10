@@ -96,7 +96,14 @@ class MsGraphAuthenticator:
 
     def get_token(self) -> str:
         cache = self._token_store.load()
-        app = self._build_app(cache)
+        try:
+            app = self._build_app(cache)
+        except ValueError as exc:
+            logger.warning("msgraph_invalid_config", tenant_id=self._tenant_id, error=str(exc))
+            raise ProviderUnavailableError(
+                "Configuración de Microsoft Graph inválida (MSGRAPH_CLIENT_ID / "
+                "MSGRAPH_TENANT_ID). Revisa docs/MSGRAPH.md."
+            ) from exc
         accounts = app.get_accounts()
 
         result = None
