@@ -1,12 +1,21 @@
 # Jarvis Local
 
-Asistente de IA privado y local: RAG sobre documentación propia, memoria por usuario, control por Telegram vía OpenClaw, inferencia con Ollama (habitual) y AirLLM (`/deep`, modelos grandes). Ningún documento, embedding, prompt o respuesta sale del servidor hacia APIs de modelos en la nube. Telegram es el único transporte externo.
+Asistente de IA privado y local: RAG sobre documentación propia, memoria por usuario, control por Telegram y Microsoft Teams vía OpenClaw, agente MCP (correo, calendario y generación de documentos sobre Microsoft Graph) e inferencia con Ollama (habitual) y AirLLM (`/deep`, modelos grandes). Ningún documento, embedding, prompt o respuesta sale del servidor hacia APIs de modelos en la nube. Telegram/Teams son los únicos transportes externos.
 
 Ver `docs/ARCHITECTURE.md` para el diseño completo y `docs/INSTALL.md` para la instalación reproducible desde cero.
 
 ## Estado del proyecto
 
-En construcción por fases. Ver `docs/ACCEPTANCE.md` para el estado de los criterios de aceptación y `docs/ROADMAP.md` para el plan de evolución (capa MCP, correo, calendario, generación de documentos, Teams).
+En construcción por fases. Ver `docs/ACCEPTANCE.md` para el estado de los criterios de aceptación y `docs/ROADMAP.md` para el plan de evolución.
+
+**Capacidades del agente (Fase 3, en integración):**
+
+* **Calendario** (`docs/CALENDAR.md`) — consulta de eventos y flujo borrador→confirmación para crear reuniones.
+* **Correo** (`docs/EMAIL.md`) — lectura de bandeja y flujo borrador→confirmación para enviar correo.
+* **Generación de documentos** (`docs/DOCGEN.md`) — DAFO y planes fundamentados en el RAG, exportables a Markdown/DOCX/PDF/PPTX.
+* **Microsoft Teams** (`docs/TEAMS.md`) — segundo canal de interacción junto a Telegram.
+
+Calendario y correo comparten una única autenticación OAuth2 contra Microsoft Graph (`docs/MSGRAPH.md`, `scripts/configure-msgraph`); ambas requieren `MSGRAPH_CLIENT_ID`/`MSGRAPH_TENANT_ID` configurados o responden con un error `provider_unavailable` explícito en vez de fallar.
 
 ## Contribuir
 
@@ -16,9 +25,9 @@ Ver `CONTRIBUTING.md`. Proyecto bajo licencia MIT (`LICENSE`).
 
 ```text
 apps/            API (FastAPI) y worker (arq)
-packages/        Dominio: core, security, documents, rag, inference
+packages/        Dominio: core, security, documents, rag, inference, msgraph, docgen
 services/airllm/ Microservicio AirLLM independiente
-integrations/    Skill jarvis-rag para OpenClaw
+integrations/    Skills de OpenClaw: jarvis-rag, jarvis-calendar, jarvis-email
 infra/           Docker Compose, unidades systemd, monitorización, nginx
 scripts/         Automatización idempotente (bootstrap, instalación, backups...)
 docs/            Documentación obligatoria
