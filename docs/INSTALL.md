@@ -36,8 +36,8 @@ scripts/install-docker
 scripts/install-ollama
 
 # 4. Elegir/confirmar los modelos Ollama para esta GPU
-python3 packages/core/hardware.py --format text
-#   o vuelve a ejecutar scripts/quickstart más adelante para reescribir .env
+scripts/select-models --dry-run
+#   sin --dry-run escribe .env; scripts/quickstart también lo invoca
 
 # 5. AirLLM (opcional, modo /deep; ver docs/AIRLLM.md)
 scripts/install-airllm
