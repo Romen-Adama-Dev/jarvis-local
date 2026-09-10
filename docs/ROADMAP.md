@@ -53,16 +53,16 @@ Leyenda: ✅ hecho · 🟡 parcial · ⬜ por hacer
 | **Infra reproducible** (Postgres/Redis/Qdrant, Docker) | ✅ | ✅ `compose.yml` con profiles, `scripts/` idempotentes, `scripts/quickstart` "clona y arranca" | — |
 | **Embeddings** | ✅ | ✅ FastEmbed (denso + disperso) | 🟡 reranker local (mejora recuperación) |
 | **Transporte Telegram** | 🟡 capa opcional | ✅ `integrations/openclaw`, config Telegram | 🟡 endurecer (borrador→confirmación) |
-| **Agente / orquestación** | 🟡 OpenClaw mencionado | ✅ OpenClaw + skill `jarvis-rag` | ⬜ **capa MCP** (estándar 2026) |
+| **Agente / orquestación** | 🟡 OpenClaw mencionado | ✅ OpenClaw + skills MCP (`jarvis-rag`, `jarvis-email`, `jarvis-calendar`, vía `FastMCP`) | — |
 | **Búsqueda web** | — | ✅ SearXNG (perfil assistant) | — |
 | **Automatización** | — | ✅ n8n (perfil automation) | 🟡 flujos de correo/calendario |
 | **Observabilidad** | ✅ supervisión | ✅ Prometheus + Grafana, watchdog | — |
-| **Voz local (STT/TTS)** | ✅ | 🟡 mencionada | 🟡 confirmar en repo |
-| **Contestar correos** | ⬜ (roadmap) | ⬜ | ⬜ **MCP correo (borrador+aprobación)** |
-| **Agendar / planificar reuniones** | ⬜ (roadmap) | ⬜ | ⬜ **MCP calendario (CalDAV/Graph)** |
-| **Generar documentos desde cero** | ⬜ (roadmap) | ⬜ | ⬜ **skill doc-gen (docx/pptx/md)** |
-| **Microsoft Teams** | ⬜ | ⬜ (solo Telegram) | ⬜ **MCP/conector Teams** |
-| **Licencia + gobernanza** | ⬜ declarado pendiente | ⬜ | ⬜ **LICENSE + CONTRIBUTING** |
+| **Voz local (STT/TTS)** | ✅ | ✅ scripted en `scripts/install-openclaw` (whisper.cpp + Piper es_ES) | 🟡 validar end-to-end en esta VM |
+| **Contestar correos** | ⬜ (roadmap) | ✅ MCP correo sobre Graph (`packages/msgraph/mail.py`, skill `jarvis-email`, borrador→confirmación) | 🟡 validar end-to-end (falta instalar OpenClaw en esta VM) |
+| **Agendar / planificar reuniones** | ⬜ (roadmap) | ✅ MCP calendario sobre Graph (`packages/msgraph/calendar.py`, skill `jarvis-calendar`, propuesta→confirmación) | 🟡 validar end-to-end |
+| **Generar documentos desde cero** | ⬜ (roadmap) | ✅ `packages/docgen` (DAFO/planes desde el RAG, docx/pdf/md, `docs/DOCGEN.md`) | — |
+| **Microsoft Teams** | ⬜ | 🟡 canal `msteams` soportado en OpenClaw (`scripts/configure-teams`, `docs/TEAMS.md`) | ⬜ **túnel público (Cloudflare Tunnel) + manifiesto de la app**, sin versionar todavía |
+| **Licencia + gobernanza** | ⬜ declarado pendiente | ✅ `LICENSE` (MIT) + `CONTRIBUTING.md` | — |
 
 ---
 
