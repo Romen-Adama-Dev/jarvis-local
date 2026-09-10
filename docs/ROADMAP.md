@@ -62,7 +62,7 @@ Leyenda: ✅ hecho · 🟡 parcial · ⬜ por hacer
 | **Agendar / planificar reuniones** | ⬜ (roadmap) | ⬜ | ⬜ **MCP calendario (CalDAV/Graph)** |
 | **Generar documentos desde cero** | ⬜ (roadmap) | ⬜ | ⬜ **skill doc-gen (docx/pptx/md)** |
 | **Microsoft Teams** | ⬜ | ⬜ (solo Telegram) | ⬜ **MCP/conector Teams** |
-| **Licencia + gobernanza** | ⬜ declarado pendiente | ⬜ | ⬜ **LICENSE + CONTRIBUTING** |
+| **Licencia + gobernanza** | ⬜ declarado pendiente | ✅ `LICENSE` (MIT) + `CONTRIBUTING.md` | — |
 
 ---
 
