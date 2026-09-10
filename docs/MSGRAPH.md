@@ -1,17 +1,21 @@
 # Microsoft Graph — base compartida (correo y calendario)
 
-Esta rama (`feature/mcp-msgraph-base`) construye únicamente la base común que
-necesitarán tanto el correo (Fase 3 del roadmap) como el calendario (Fase 4):
-autenticación OAuth2 contra Microsoft Graph y un cliente HTTP genérico. **No
-expone ninguna herramienta MCP ni lógica de correo/calendario todavía** — eso
-llega en `docs/EMAIL.md` y `docs/CALENDAR.md`, en ramas separadas
-(`feature/mcp-email`, `feature/mcp-calendar`) construidas encima de esta.
+`packages/msgraph/` es la base común (autenticación OAuth2 contra Microsoft
+Graph + cliente HTTP genérico) sobre la que están construidas las
+herramientas MCP de correo (`docs/EMAIL.md`, `packages/msgraph/mail.py`,
+skill `jarvis-email`) y de calendario (`docs/CALENDAR.md`,
+`packages/msgraph/calendar.py`, skill `jarvis-calendar`).
 
-Mismo principio que con Teams (`docs/TEAMS.md`) y `gog` (Google, ver el
-apartado "Correo y calendario (gog)" de `docs/OPENCLAW.md`): la inferencia
-del LLM sigue siendo 100% local (Ollama/AirLLM); solo los datos de
-correo/calendario van y vienen de la nube de Microsoft, algo que el
-propietario ya acepta al usar Microsoft 365/Teams.
+**Importante — a diferencia del resto del sistema, estas dos integraciones
+salen a la nube de Microsoft.** El RAG (documentos, embeddings, Qdrant) y la
+inferencia (Ollama/AirLLM) son 100% locales y no salen del servidor; pero
+cada lectura de bandeja, cada correo enviado y cada evento de calendario es
+una llamada real a `https://graph.microsoft.com`, así que esos datos (asuntos,
+cuerpos de correo, participantes de reuniones) sí viajan a servidores de
+Microsoft. Es el mismo principio que con Teams (`docs/TEAMS.md`) y `gog`
+(Google, ver el apartado "Correo y calendario (gog)" de `docs/OPENCLAW.md`):
+algo que el propietario ya acepta al usar Microsoft 365/Teams, pero que debe
+quedar explícito y no mezclarse con la garantía de privacidad del RAG.
 
 ## Qué hay aquí
 
@@ -26,7 +30,8 @@ propietario ya acepta al usar Microsoft 365/Teams.
 * `packages/msgraph/client.py` — `MsGraphClient`, un envoltorio async mínimo
   sobre `httpx.AsyncClient` contra `https://graph.microsoft.com/v1.0`, con
   `get`/`post`/`patch`/`delete` genéricos. No sabe nada de mensajes ni
-  eventos: eso lo añaden las ramas de correo/calendario.
+  eventos: eso lo añaden `packages/msgraph/mail.py` y
+  `packages/msgraph/calendar.py`.
 * `scripts/configure-msgraph` — paso de configuración único: guarda
   `client_id`/`tenant_id` y ejecuta el login interactivo una vez.
 
@@ -110,12 +115,10 @@ trátalo con el mismo cuidado que un token de bot de Telegram o un
 2. Borra la caché local: `rm ~/.openclaw/secrets/msgraph_token_cache.json`.
 3. Repite `scripts/configure-msgraph` para volver a autenticarte desde cero.
 
-## Pendiente (fuera de esta rama)
+## Ver también
 
-* Herramientas MCP de correo (`docs/EMAIL.md`, `feature/mcp-email`): leer
-  bandeja, redactar borrador, enviar tras confirmación explícita (Fase 3 del
-  roadmap, reutilizando `packages/security/confirmation.py` como en el
-  patrón de `gog` descrito en `docs/OPENCLAW.md`).
-* Herramientas MCP de calendario (`docs/CALENDAR.md`, `feature/mcp-calendar`):
-  consultar disponibilidad, proponer/crear eventos tras confirmación
-  (Fase 4 del roadmap).
+* Herramientas MCP de correo: `docs/EMAIL.md` (leer bandeja, redactar
+  borrador, enviar tras confirmación explícita — `packages/security/confirmation.py`,
+  mismo patrón que `gog` en `docs/OPENCLAW.md`).
+* Herramientas MCP de calendario: `docs/CALENDAR.md` (consultar
+  disponibilidad, proponer/crear eventos tras confirmación).
