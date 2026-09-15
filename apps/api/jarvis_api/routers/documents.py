@@ -13,6 +13,7 @@ from apps.api.jarvis_api.schemas import (
     DocumentResponse,
     GenerateDocumentRequest,
     JobResponse,
+    ProjectListResponse,
 )
 from packages.core.db.models import Document, Job
 from packages.core.errors import ConflictError, NotFoundError, ValidationFailedError
@@ -33,6 +34,20 @@ async def list_documents(session: DbSession) -> DocumentListResponse:
     return DocumentListResponse(documents=[DocumentResponse.model_validate(r) for r in rows])
 
 
+@router.get("/projects", response_model=ProjectListResponse)
+async def list_projects(session: DbSession) -> ProjectListResponse:
+    stmt = (
+        select(Document.doc_metadata["project"].astext)
+        .where(
+            Document.deleted_at.is_(None),
+            Document.doc_metadata["project"].astext.isnot(None),
+        )
+        .distinct()
+    )
+    rows = (await session.execute(stmt)).scalars().all()
+    return ProjectListResponse(projects=sorted(rows))
+
+
 @router.get("/{document_id}", response_model=DocumentResponse)
 async def get_document(document_id: uuid.UUID, session: DbSession) -> DocumentResponse:
     document = await session.get(Document, document_id)
@@ -47,7 +62,10 @@ async def upload_document(
     settings: SettingsDep,
     file: UploadFile,
     telegram_user_id: int | None = None,
+    project: str | None = None,
 ) -> JobResponse:
+    if project is not None:
+        project = project.strip()[:128] or None
     safe_name = validate_filename(file.filename or "")
     content = await file.read()
     validate_size(len(content), settings.max_upload_mb)
@@ -79,6 +97,7 @@ async def upload_document(
         size_bytes=len(content),
         status="pending",
         uploaded_by=telegram_user_id,
+        doc_metadata={"project": project} if project else {},
     )
     session.add(document)
     await session.flush()
