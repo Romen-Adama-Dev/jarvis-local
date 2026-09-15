@@ -11,7 +11,8 @@
 set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-ENV_FILE="${REPO_DIR}/.env"
+# El servicio init de docker compose escribe en su propio fichero (/run/jarvis/models.env).
+ENV_FILE="${JARVIS_ENV_FILE:-${REPO_DIR}/.env}"
 
 PULL=false
 DRY_RUN=false

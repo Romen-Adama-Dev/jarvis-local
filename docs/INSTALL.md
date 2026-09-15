@@ -1,24 +1,21 @@
 # Instalación reproducible
 
-Dos caminos, según lo que quieras probar. Ambos parten de `cp .env.example .env`.
+Dos caminos. Ambos parten de `cp .env.example .env`.
 
-## Camino rápido: solo la aplicación, con Docker
+## Camino principal: Docker Compose
 
-Para evaluar la API/RAG sin montar el despliegue completo de producción:
+Todo el asistente (Ollama, API, worker, OpenClaw con Telegram y voz, búsqueda web y
+datos) con un solo comando, sin instalar nada más en el host:
 
 ```bash
-scripts/quickstart
+cp .env.example .env   # rellena TELEGRAM_BOT_TOKEN y TELEGRAM_AUTHORIZED_USER_IDS
+docker compose up -d
 ```
 
-Prepara `.env` (genera los secretos locales que faltan, detecta la GPU y
-elige el par de modelos Ollama según `docs/BENCHMARKS.md`) y levanta el
-perfil `app` de Docker Compose (API + worker + Qdrant + PostgreSQL + Redis).
-Ver `docs/DOCKER.md` para el diseño de ese perfil y sus límites actuales
-(Ollama sigue siendo un servicio nativo, no contenerizado).
+Requisitos, servicios, secretos, interfaz web y cómo migrar una instalación previa en
+`docs/DOCKER.md`.
 
-Si prefieres los pasos a mano: `docs/DOCKER.md` los detalla.
-
-## Camino completo: servidor bare-metal reproducible (producción local)
+## Camino alternativo: servidor bare-metal con systemd
 
 El despliegue real de este proyecto (ver `docs/ARCHITECTURE.md` y
 `docs/SECURITY.md`) corre Ollama y AirLLM nativos por GPU y la API/worker

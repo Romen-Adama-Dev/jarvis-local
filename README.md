@@ -2,6 +2,15 @@
 
 Asistente de IA privado y local: RAG sobre documentación propia, memoria por usuario, control por Telegram y Microsoft Teams vía OpenClaw, agente MCP (correo por IMAP/SMTP o Microsoft Graph, calendario por CalDAV o Graph, y documentos generados que se envían por el chat) e inferencia con Ollama (habitual) y AirLLM (`/deep`, modelos grandes). El RAG y la inferencia son 100% locales: ningún documento, embedding, prompt o respuesta sale del servidor hacia APIs de modelos en la nube. Telegram y Teams son los transportes de conversación; el agente de correo/calendario sí sale además al proveedor configurado (servidor IMAP/SMTP/CalDAV o Microsoft Graph) con los datos propios de esa integración (ver `docs/EMAIL.md` y `docs/CALENDAR.md`).
 
+## Arranque rápido
+
+```bash
+cp .env.example .env   # rellena TELEGRAM_BOT_TOKEN y TELEGRAM_AUTHORIZED_USER_IDS
+docker compose up -d
+```
+
+Requiere Docker con Compose v2.30+ y, para GPU, NVIDIA Container Toolkit. Los secretos y el modelo adecuado a tu GPU se generan solos en el primer arranque. Detalles en `docs/DOCKER.md`.
+
 Ver `docs/ARCHITECTURE.md` para el diseño completo y `docs/INSTALL.md` para la instalación reproducible desde cero. La elección automática de modelo Ollama según la VRAM disponible está en `docs/MODELS.md` (`scripts/select-models`).
 
 ## Estado del proyecto

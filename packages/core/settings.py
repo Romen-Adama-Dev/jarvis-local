@@ -85,6 +85,8 @@ class Settings(BaseSettings):
 
     max_upload_mb: int = 50
     confirmation_ttl_seconds: int = 600
+    # Secciones de un documento generadas a la vez (casar con OLLAMA_NUM_PARALLEL).
+    docgen_concurrency: int = 4
     rate_limit_per_minute: int = 30
 
     @property

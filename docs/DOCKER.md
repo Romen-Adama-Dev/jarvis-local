@@ -1,67 +1,136 @@
-# Docker — imagen de la aplicación (perfil `app`)
+# Docker compose: despliegue completo
 
-Primera iteración del objetivo de portabilidad: la aplicación completa (API +
-worker) empaquetada en una única imagen (`jarvis-local:latest`) que arranca
-automáticamente, con migraciones incluidas. La infraestructura (Qdrant,
-PostgreSQL, Redis) ya era Docker; con este perfil, todo el plano de datos y de
-aplicación se levanta con Compose:
+Todo Jarvis (modelo local, RAG, agente con Telegram y voz, búsqueda web, memoria) se
+levanta con Docker Compose, sin instalar nada más en el host:
 
 ```bash
-cp .env.example .env   # rellenar valores
-docker compose --profile app up -d --build
-curl http://127.0.0.1:8000/health
-curl http://127.0.0.1:8000/ready
+git clone https://github.com/Romen-Adama-Dev/jarvis-local.git
+cd jarvis-local
+cp .env.example .env   # rellena TELEGRAM_BOT_TOKEN y TELEGRAM_AUTHORIZED_USER_IDS
+docker compose up -d
+```
+
+El primer arranque construye las imágenes (unos 10-15 minutos) y descarga el modelo
+elegido para tu GPU (15 GB en una GPU de 24 GB). Para seguirlo:
+`docker compose logs -f ollama-pull openclaw`. Después, háblale al bot por Telegram o
+abre la interfaz web (ver más abajo).
+
+Sin `.env` también arranca: Telegram queda desactivado y la interfaz web funciona.
+
+## Requisitos
+
+* Linux x86-64 con Docker Engine y Compose v2.30 o superior.
+* GPU NVIDIA con driver y [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)
+  (`sudo nvidia-ctk runtime configure --runtime=docker && sudo systemctl restart docker`).
+  Sin GPU: `docker compose -f compose.yml -f compose.cpu.yml up -d` (modelo pequeño,
+  mucho más lento).
+* ~40 GB de disco libres.
+* Un bot de Telegram (BotFather) y tu ID numérico de Telegram.
+
+## Servicios
+
+| Servicio | Qué hace |
+|---|---|
+| `init` | Primer paso de cada arranque: genera los secretos que falten y elige los modelos según la VRAM (`scripts/select-models`). Termina y sale |
+| `ollama` | Modelos locales en GPU (`ollama/ollama`, versión fijada) |
+| `ollama-pull` | Descarga los modelos si faltan (el elegido y `embeddinggemma` para la memoria). Termina y sale |
+| `api` / `worker` | API de Jarvis (RAG, documentos, correo, calendario) y cola de trabajos; `api` aplica las migraciones al arrancar |
+| `openclaw` | Agente y canales (Telegram, interfaz web), skills MCP, voz (whisper.cpp + Piper) y memoria/Obsidian. Imagen `integrations/openclaw/Dockerfile` |
+| `postgres`, `redis`, `qdrant` | Datos |
+| `searxng` | Búsqueda web del agente |
+
+Perfiles opcionales (`COMPOSE_PROFILES` en `.env`, separados por comas):
+
+| Perfil | Servicios |
+|---|---|
+| `vault` | `vault-sync`: vault de Obsidian en un repo git privado (`VAULT_GIT_URL`, `VAULT_SSH_KEY_PATH`; ver `docs/MEMORY.md`) |
+| `monitoring` | Prometheus + Grafana |
+| `assistant` | changedetection |
+| `automation` | n8n |
+| `webui` | Open WebUI (habla con Ollama directamente, sin RAG ni herramientas de Jarvis) |
+
+Orden de arranque: `init` → `postgres`/`searxng`/`ollama` → `ollama-pull` y `api` →
+`worker` y `openclaw`.
+
+## Configuración y secretos
+
+* **Secretos**: `init` genera la contraseña de PostgreSQL, el token interno de la API,
+  el secreto de SearXNG y el token del gateway en el volumen `jarvis_runtime`
+  (`/run/jarvis`), que el resto de servicios lee al arrancar. Si un valor está en `.env`,
+  tiene prioridad y se copia al volumen: así una instalación existente conserva los
+  suyos. No cambies `POSTGRES_PASSWORD` después del primer arranque (la base de datos ya
+  se inicializó con la anterior).
+* **Modelos**: con `OLLAMA_PRIMARY_MODEL` vacío, `init` detecta la VRAM y elige nivel
+  (`docs/MODELS.md`); `JARVIS_MODEL_TIER` fuerza un nivel concreto.
+* **OpenClaw**: `openclaw.json` se genera en cada arranque desde
+  `integrations/openclaw/config/openclaw.template.json` y `.env`, y `AGENTS.md` se copia
+  desde `integrations/openclaw/workspace/`. La configuración vive en el repo: los cambios
+  hechos a mano en el volumen se pierden al reiniciar.
+* **Correo y calendario**: variables `MAIL_*`, `IMAP_*`, `SMTP_*` y `CALDAV_*` de `.env`
+  (`docs/EMAIL.md`, `docs/CALENDAR.md`) y `docker compose up -d api worker`.
+  `scripts/configure-mail` las rellena y prueba la conexión, pero necesita `uv` en el
+  host.
+
+## Interfaz web de OpenClaw
+
+Escucha solo en `127.0.0.1:18789` del servidor. Desde tu equipo:
+
+```bash
+ssh -L 18789:127.0.0.1:18789 usuario@servidor
+# abre http://localhost:18789 y pega el token:
+docker compose exec openclaw cat /run/jarvis/openclaw_gateway_token
+```
+
+## Actualizar
+
+```bash
+git pull
+docker compose up -d --build
+```
+
+## Reutilizar una instalación previa en el host
+
+Para pasar a compose un servidor que ya ejecutaba Ollama y OpenClaw con systemd, sin
+volver a descargar modelos ni perder sesiones, memoria o el vault:
+
+```bash
+# .env
+OLLAMA_MODELS_PATH=/usr/share/ollama/.ollama/models
+OPENCLAW_STATE_PATH=/home/<usuario>/.openclaw
+JARVIS_UID=<id -u>
+JARVIS_GID=<id -g>
+TELEGRAM_BOT_TOKEN=...            # el de ~/.openclaw/secrets/telegram_bot_token
+TELEGRAM_AUTHORIZED_USER_IDS=...
+OPENCLAW_GATEWAY_TOKEN=...        # el de ~/.openclaw/openclaw.json, para no cambiarlo
+
+# parar los servicios del host (liberan los puertos 11434 y 18789)
+systemctl --user disable --now openclaw-gateway.service jarvis-vault-sync.timer
+sudo systemctl disable --now ollama
+docker compose up -d
 ```
 
 ## Diseño
 
-* **Una imagen, dos servicios**: `api` y `worker` comparten la imagen; el
-  entrypoint (`infra/docker/entrypoint.sh`) selecciona el modo. `api` ejecuta
-  `alembic upgrade head` antes de arrancar, de modo que un despliegue desde
-  cero queda migrado sin pasos manuales. `worker` arranca arq directamente y
-  espera a que `api` esté healthy (las migraciones ya aplicadas).
-* **Multi-stage con uv**: el builder resuelve `uv.lock` congelado
-  (`uv sync --frozen --no-dev`); la imagen final es `python:3.12-slim` +
-  `libmagic1`, sin toolchain. El código corre como usuario `jarvis` (uid
-  1000), nunca root.
-* **`network_mode: host`**, decisión deliberada y no un atajo: Ollama y
-  AirLLM son servicios nativos ligados a `127.0.0.1` (requisito de seguridad:
-  nada expuesto públicamente). Con red de host, los contenedores los alcanzan
-  por loopback igual que el despliegue systemd, con el mismo `.env`, y la API
-  del contenedor sigue ligada a `127.0.0.1`. La alternativa (bridge +
-  `host.docker.internal`) exigiría re-exponer Ollama/AirLLM en la IP del
-  puente, ampliando superficie.
-* **Estado en volumen**: `/srv/jarvis` (documentos, caché de embeddings,
-  logs) vive en el volumen `jarvis_srv`. Los healthchecks son los del resto
-  del stack: HTTP `/health` para la API y `arq --check` (health key real de la
-  cola) para el worker.
-* El `.env` se inyecta en runtime (`env_file`); la imagen no contiene
-  secretos (`.dockerignore` excluye `.env` y `.git`).
+* **`network_mode: host`** en `ollama`, `openclaw`, `api` y `worker`: se hablan por
+  `127.0.0.1` igual que en el despliegue en host, con la misma plantilla de OpenClaw, y
+  nada queda expuesto fuera del loopback. PostgreSQL, Redis, Qdrant y SearXNG van en una
+  red bridge y publican sus puertos solo en `127.0.0.1`. Por eso el despliegue es solo
+  Linux.
+* **Imágenes**: `jarvis-local` (API, worker e init; `python:3.12-slim` + pandoc/XeLaTeX)
+  y `jarvis-openclaw` (Node 24 + OpenClaw fijado, el venv de las skills MCP, whisper.cpp
+  compilado para CPU con AVX2 y Piper con la voz `es_ES-davefx-medium`). Ninguna
+  contiene secretos (`.dockerignore` excluye `.env`).
+* **Usuarios**: `api`/`worker` corren como `jarvis` (uid 1000); `openclaw` y
+  `vault-sync` con `JARVIS_UID`/`JARVIS_GID`, para poder reutilizar un `~/.openclaw` del
+  host; `init` corre como root para escribir el volumen de secretos.
+* **Rendimiento**: `OLLAMA_NUM_PARALLEL` (4) permite atender a la vez al agente, al RAG y
+  a las secciones de un documento (`DOCGEN_CONCURRENCY`, también 4); flash attention y
+  caché KV en `q8_0`.
 
-## Advertencia operativa
+## Límites
 
-No ejecutes el perfil `app` en una máquina donde la API y el worker ya corren
-por systemd: ambos workers consumirían la misma cola de Redis con sistemas de
-archivos distintos (el volumen vs `/srv/jarvis` real) y las ingestas quedarían
-repartidas de forma inconsistente. En este servidor el perfil `app` se validó
-(build, arranque, `/health` y `/ready` con todas las dependencias en verde,
-worker healthy conectado a la cola) y se detuvo; systemd sigue siendo el
-despliegue de producción local.
-
-## Puerto
-
-`JARVIS_API_PORT` (por defecto 8000) controla el puerto de la API también en
-el contenedor. Para la validación en este servidor se usó
-`JARVIS_API_PORT=8010 docker compose --profile app up -d` por convivir con la
-API de systemd en el 8000.
-
-## Límites actuales y ampliaciones previstas
-
-* **Ollama y AirLLM siguen siendo nativos** (systemd): contenedorizarlos exige
-  el NVIDIA Container Toolkit y una imagen con torch/CUDA (~5 GiB); es la
-  siguiente iteración natural del objetivo "clonar y levantar" en máquinas
-  nuevas. En equipos sin GPU, la API funciona apuntando a cualquier endpoint
-  Ollama accesible (`OLLAMA_HOST`).
-* **OpenClaw** (Telegram) también queda fuera de la imagen por ahora.
-* Publicar la imagen en un registry (GHCR) cuando el repositorio tenga remoto,
-  para que "descargar y lanzar" no requiera build local.
+* AirLLM (`/deep`) no está contenerizado (`docs/AIRLLM.md`).
+* whisper.cpp se compila con AVX2; en CPUs anteriores a ~2013 construye la imagen con
+  `--build-arg WHISPER_AVX2=OFF`.
+* Las imágenes se construyen en local; publicarlas en GHCR evitaría el build del primer
+  arranque.

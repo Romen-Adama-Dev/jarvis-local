@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+# Servicio "init" de docker compose (primer paso de cada arranque): genera los secretos
+# que falten y elige los modelos de Ollama según la VRAM. Todo queda en el volumen
+# jarvis_runtime (/run/jarvis), que leen el resto de servicios al arrancar, así que no
+# hace falta rellenar secretos a mano en .env. Lo que sí esté definido en .env tiene
+# prioridad (una instalación existente conserva sus secretos). Idempotente.
+set -euo pipefail
+
+RUNTIME_DIR="${JARVIS_RUNTIME_DIR:-/run/jarvis}"
+mkdir -p "$RUNTIME_DIR"
+# Legibles por el resto de contenedores (cada imagen corre con su propio UID); el
+# volumen solo se monta en los servicios de Jarvis.
+umask 022
+
+is_placeholder() { [[ -z "$1" || "$1" == change-me || "$1" == generar-con-openssl-rand-hex-32 ]]; }
+
+ensure_secret() {
+  local name="$1" env_value="$2" bytes="$3" file="$RUNTIME_DIR/$1"
+  if ! is_placeholder "$env_value"; then
+    printf '%s' "$env_value" >"$file"
+  elif [[ ! -s "$file" ]]; then
+    python -c "import secrets, sys; sys.stdout.write(secrets.token_hex($bytes))" >"$file"
+    echo "secreto generado: $name"
+  fi
+}
+
+ensure_secret postgres_password "${POSTGRES_PASSWORD:-}" 24
+ensure_secret jarvis_api_internal_token "${JARVIS_API_INTERNAL_TOKEN:-}" 24
+ensure_secret searxng_secret "${SEARXNG_SECRET:-}" 32
+ensure_secret openclaw_gateway_token "${OPENCLAW_GATEWAY_TOKEN:-}" 24
+
+MODELS_ENV="$RUNTIME_DIR/models.env"
+if [[ -n "${OLLAMA_PRIMARY_MODEL:-}" ]]; then
+  cat >"$MODELS_ENV" <<EOF
+OLLAMA_PRIMARY_MODEL=${OLLAMA_PRIMARY_MODEL}
+OLLAMA_POWERFUL_MODEL=${OLLAMA_POWERFUL_MODEL:-$OLLAMA_PRIMARY_MODEL}
+OLLAMA_CONTEXT_LENGTH=${OLLAMA_CONTEXT_LENGTH:-32768}
+EOF
+  echo "modelos fijados en .env: ${OLLAMA_PRIMARY_MODEL}"
+else
+  : >"$MODELS_ENV"
+  JARVIS_ENV_FILE="$MODELS_ENV" /app/scripts/select-models
+fi
