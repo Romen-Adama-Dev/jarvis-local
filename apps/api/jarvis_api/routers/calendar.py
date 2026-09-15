@@ -2,26 +2,28 @@ from typing import Any
 
 from fastapi import APIRouter
 
-from apps.api.jarvis_api.deps import ConfirmationServiceDep, MsGraphClientDep
+from apps.api.jarvis_api.deps import CalendarBackendDep, ConfirmationServiceDep
 from apps.api.jarvis_api.schemas import (
     CalendarConfirmRequest,
     CalendarDraftRequest,
     CalendarDraftResponse,
 )
 from packages.core.errors import ValidationFailedError
-from packages.msgraph.calendar import create_event, get_calendar_view
 
 router = APIRouter(prefix="/v1/calendar", tags=["calendar"])
 
 
 @router.get("/events")
-async def get_events(start: str, end: str, client: MsGraphClientDep) -> list[dict[str, Any]]:
-    return await get_calendar_view(client, start, end)
+async def get_events(start: str, end: str, backend: CalendarBackendDep) -> list[dict[str, Any]]:
+    return await backend.get_calendar_view(start, end)
 
 
 @router.post("/draft", response_model=CalendarDraftResponse, status_code=202)
 async def draft_event(
-    payload: CalendarDraftRequest, confirmation_service: ConfirmationServiceDep
+    payload: CalendarDraftRequest,
+    confirmation_service: ConfirmationServiceDep,
+    # Sin usar aquí: resolverlo hace que la propuesta falle ya si no hay calendario.
+    _backend: CalendarBackendDep,
 ) -> CalendarDraftResponse:
     if not payload.subject or not payload.start or not payload.end:
         raise ValidationFailedError("subject, start y end son obligatorios")
@@ -46,12 +48,11 @@ async def confirm_event(
     token: str,
     payload: CalendarConfirmRequest,
     confirmation_service: ConfirmationServiceDep,
-    client: MsGraphClientDep,
+    backend: CalendarBackendDep,
 ) -> dict[str, Any]:
     pending = await confirmation_service.confirm(payload.telegram_user_id, token)
     draft = pending.payload
-    event = await create_event(
-        client,
+    event = await backend.create_event(
         subject=draft["subject"],
         start=draft["start"],
         end=draft["end"],

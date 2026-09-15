@@ -49,10 +49,30 @@ class Settings(BaseSettings):
     openclaw_gateway_host: str = "127.0.0.1"
     openclaw_gateway_port: int = 8899
 
-    # Ver docs/MSGRAPH.md. Base compartida de OAuth2/HTTP para Microsoft
-    # Graph (correo y calendario, todavía sin herramientas MCP propias en
-    # esta rama). client_id/tenant_id vienen del registro de app Azure AD
-    # que hace el propietario a mano (scripts/configure-msgraph).
+    # Correo y calendario (docs/EMAIL.md, docs/CALENDAR.md). "imap" y "caldav"
+    # funcionan con cualquier proveedor estándar y contraseña de aplicación
+    # (scripts/configure-mail); "msgraph" usa Microsoft Graph y requiere un
+    # registro de app en Azure (docs/MSGRAPH.md).
+    mail_provider: str = "imap"
+    imap_host: str = ""
+    imap_port: int = 993
+    imap_mailbox: str = "INBOX"
+    smtp_host: str = ""
+    smtp_port: int = 587
+    smtp_security: str = "starttls"
+    mail_username: str = ""
+    mail_password: str = ""
+    mail_from: str = ""
+    calendar_provider: str = "caldav"
+    caldav_url: str = ""
+    caldav_username: str = ""
+    caldav_password: str = ""
+    caldav_calendar_name: str = ""
+    calendar_timezone: str = "Europe/Madrid"
+
+    # Solo con MAIL_PROVIDER/CALENDAR_PROVIDER=msgraph (docs/MSGRAPH.md).
+    # client_id/tenant_id vienen del registro de app Azure AD que hace el
+    # propietario a mano (scripts/configure-msgraph).
     msgraph_client_id: str = ""
     msgraph_tenant_id: str = ""
     msgraph_token_cache_path: Path = (
@@ -64,7 +84,7 @@ class Settings(BaseSettings):
     jarvis_api_internal_token: str = ""
 
     max_upload_mb: int = 50
-    confirmation_ttl_seconds: int = 120
+    confirmation_ttl_seconds: int = 600
     rate_limit_per_minute: int = 30
 
     @property

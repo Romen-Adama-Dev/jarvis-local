@@ -1,50 +1,105 @@
 # Correo (Fase 3 del roadmap)
 
-MCP de correo sobre Microsoft Graph: leer la bandeja de entrada, leer un mensaje
-como entrada no confiable, y redactar+confirmar el envío. **Nunca envía nada de
-forma autónoma**: todo envío pasa por borrador → confirmación explícita del
+MCP de correo: leer la bandeja de entrada, leer un mensaje como entrada no confiable,
+y redactar+confirmar el envío, con documentos generados adjuntos. **Nunca envía nada
+de forma autónoma**: todo envío pasa por borrador → confirmación explícita del
 propietario en Telegram → envío.
 
-Depende de `feature/mcp-msgraph-base` (`packages/msgraph/`, ver `docs/MSGRAPH.md`):
-antes de usar esta capacidad hay que haber ejecutado `scripts/configure-msgraph`
-(registro de app en Azure AD + login por código de dispositivo) con los scopes
-`Mail.Read` y `Mail.Send` concedidos por el propietario del tenant.
+## Proveedores
+
+Se elige con `MAIL_PROVIDER` en `.env`:
+
+| `MAIL_PROVIDER` | Implementación | Cuentas | Requisitos |
+|---|---|---|---|
+| `imap` (por defecto) | `packages/imapsmtp/mail.py`: IMAP para leer, SMTP para enviar (biblioteca estándar) | Cualquier proveedor con IMAP/SMTP: Gmail/Google Workspace, iCloud, Fastmail, Zoho, Nextcloud Mail, Proton Bridge, servidor propio | Una **contraseña de aplicación** de la cuenta. Nada que registrar en Azure ni en Google Cloud |
+| `msgraph` | `packages/msgraph/mail.py` | Microsoft 365 / Outlook | Registro de app en Azure AD y login por código de dispositivo (`docs/MSGRAPH.md`) |
+
+`imap` es el valor por defecto porque cualquiera puede usarlo sin ser administrador de
+un tenant. Los dos backends devuelven los mensajes con la misma forma (la de Graph), así
+que el router y el servidor MCP no cambian según el proveedor.
+
+### Configurar IMAP/SMTP
+
+```bash
+scripts/configure-mail
+```
+
+Pregunta el proveedor (Gmail, iCloud, Fastmail u otro), la dirección y la contraseña de
+aplicación y, opcionalmente, la URL CalDAV del calendario (`docs/CALENDAR.md`). Escribe
+las variables en `.env`, prueba IMAP y el login SMTP **sin enviar nada** y recrea el
+contenedor `api` para que cargue la configuración.
+
+Contraseñas de aplicación:
+
+* **Gmail**: requiere la verificación en dos pasos; se crean en
+  <https://myaccount.google.com/apppasswords>.
+* **iCloud**: <https://account.apple.com> → Inicio de sesión y seguridad → Contraseñas
+  específicas de apps.
+* **Fastmail**: Ajustes → Privacidad y seguridad → Contraseñas de aplicaciones.
+* **Outlook.com / Hotmail**: Microsoft ya no acepta contraseñas en IMAP/SMTP para
+  cuentas personales (solo OAuth2), así que con `imap` lo más probable es que el login
+  falle. Usa otra cuenta para Jarvis: puede enviar correos a cualquier dirección,
+  incluidas las de Outlook.
+
+Recomendación: una cuenta dedicada para Jarvis, no tu buzón personal.
+
+Variables (ver `.env.example`): `MAIL_PROVIDER`, `IMAP_HOST`, `IMAP_PORT` (993, TLS
+implícito), `IMAP_MAILBOX` (`INBOX`), `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURITY`
+(`starttls` en 587, `ssl` en 465), `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_FROM` (vacío =
+`MAIL_USERNAME`). Si falta alguna, la API responde `provider_unavailable` nombrando las
+que faltan, y el agente se lo dice al usuario.
+
+La lectura por IMAP abre el buzón en solo lectura (`EXAMINE` + `BODY.PEEK[]`): listar o
+leer no marca nada como leído. Los identificadores de mensaje son UIDs IMAP.
 
 ## Qué hay aquí
 
-* `packages/msgraph/mail.py` — `list_inbox`, `get_message`, `send_mail`: funciones
-  planas sobre `MsGraphClient` (`GET /me/mailFolders/inbox/messages`,
-  `GET /me/messages/{id}`, `POST /me/sendMail`).
-* `apps/api/jarvis_api/routers/email.py` (`/v1/email`) — expone esas funciones vía
-  API interna, protegida como el resto (`require_internal_token`):
+* `packages/imapsmtp/mail.py` — `list_inbox`, `get_message`, `send_mail` y
+  `check_smtp_login` sobre IMAP/SMTP.
+* `packages/msgraph/mail.py` — `list_inbox`, `get_message`, `send_mail` sobre
+  `MsGraphClient` (`GET /me/mailFolders/inbox/messages`, `GET /me/messages/{id}`,
+  `POST /me/sendMail`).
+* `apps/api/jarvis_api/adapters/mail_backends.py` — protocolo `MailBackend` y selección
+  del backend según `MAIL_PROVIDER`.
+* `apps/api/jarvis_api/routers/email.py` (`/v1/email`) — API interna, protegida como el
+  resto (`require_internal_token`):
   * `GET /messages?top=N` — lista la bandeja (máx. 50).
   * `GET /messages/{id}` — lee un mensaje; su `body.content` se devuelve envuelto
     entre `<correo_no_confiable>...</correo_no_confiable>`, el mismo convenio de
     delimitar entrada no confiable que usa el RAG con `<contexto>` (ver
     `docs/SECURITY.md`).
-  * `POST /draft` — valida destinatarios, crea una `PendingConfirmation` vía
-    `ConfirmationService.request(..., payload=...)` (el borrador completo viaja en
-    el `payload` genérico añadido en `feature/mcp-msgraph-base`) y devuelve un
-    `token` + resumen. No envía nada todavía.
+  * `POST /draft` — valida destinatarios y el adjunto (si lo hay), crea una
+    `PendingConfirmation` vía `ConfirmationService.request(..., payload=...)` y
+    devuelve un `token` + resumen. No envía nada todavía.
   * `POST /draft/{token}/confirm` — confirma el token (caduca a los
     `CONFIRMATION_TTL_SECONDS` configurados, un solo uso, ligado al
-    `telegram_user_id` que lo pidió) y solo entonces llama a `send_mail`.
+    `telegram_user_id` que lo pidió) y solo entonces envía.
 * `integrations/openclaw/skills/jarvis-email/` — servidor MCP (`FastMCP`) con
   cuatro herramientas: `jarvis_email_inbox`, `jarvis_email_read`,
   `jarvis_email_draft`, `jarvis_email_confirm_send`. Un servidor MCP por
   capacidad, igual que `jarvis-rag`: no se añade a `jarvis-rag`, es un sibling.
 
+## Adjuntar documentos generados
+
+`jarvis_email_draft(..., attachment_job_id="<id>")` adjunta el documento de un trabajo de
+doc-gen terminado (`docs/DOCGEN.md`), p. ej. "resúmeme el PMBOK en PDF y mándamelo por
+correo". La API lo lee del volumen de datos al confirmar el envío, y el resumen del
+borrador muestra el nombre del adjunto para que el propietario vea qué se envía. Con
+`msgraph` el adjunto va inline en `sendMail`, que Graph limita a 3 MB.
+
 ## Flujo de confirmación
 
 Reutiliza exactamente el mismo mecanismo que el resto de acciones sensibles del
 proyecto (`packages/security/confirmation.py`, `CONFIRMATION_TTL_SECONDS`): el
-borrador se guarda en Redis con un token de un solo uso y expiración corta; solo
-el mismo `telegram_user_id` que pidió el borrador puede confirmarlo, y una vez
-confirmado (o caducado) el token se borra. El agente debe mostrar siempre el
-resumen del borrador y esperar un "sí" explícito del propietario antes de llamar a
-`jarvis_email_confirm_send` — la regla está en `integrations/openclaw/skills/
-jarvis-email/SKILL.md`, mismo espíritu que la doble puerta de `gog` descrita en
-`docs/OPENCLAW.md`.
+borrador se guarda en Redis con un token de un solo uso y expiración; solo el mismo
+`telegram_user_id` que pidió el borrador puede confirmarlo, y una vez confirmado (o
+caducado) el token se borra. El TTL por defecto es de 10 minutos: con un modelo local
+grande cada turno del agente tarda del orden de un minuto, y con 2 minutos los "sí" del
+propietario llegaban cuando el token ya había caducado.
+
+El agente debe mostrar siempre el resumen del borrador, esperar un "sí" explícito del
+propietario y llamar él mismo a `jarvis_email_confirm_send` — la regla está en
+`integrations/openclaw/skills/jarvis-email/SKILL.md` y en el `AGENTS.md` del workspace.
 
 ## Entrada no confiable
 
@@ -57,8 +112,8 @@ instrucciones contenidas en un correo.
 
 ## Activación
 
-Añadir `jarvis-email` a `mcp.servers` (ya en la plantilla
-`integrations/openclaw/config/openclaw.template.json`) y `jarvis-email__*` a
-`tools.sandbox.tools.alsoAllow`. `scripts/configure-telegram` rellena
-`JARVIS_OWNER_TELEGRAM_ID` automáticamente (mismo placeholder
-`__TELEGRAM_USER_ID__` que ya usa para Telegram, sin cambios en el script).
+`jarvis-email` ya está en `mcp.servers` y `jarvis-email__*` en
+`tools.sandbox.tools.alsoAllow` de la plantilla
+`integrations/openclaw/config/openclaw.template.json`; `scripts/configure-telegram`
+rellena `JARVIS_OWNER_TELEGRAM_ID`. Solo falta configurar la cuenta
+(`scripts/configure-mail`).

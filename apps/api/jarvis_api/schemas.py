@@ -171,6 +171,8 @@ class EmailDraftRequest(BaseModel):
     subject: str
     body: str
     cc: list[str] = Field(default_factory=list)
+    # Trabajo de doc-gen terminado cuyo documento se adjunta (ver jarvis_generate_doc).
+    attachment_job_id: str | None = None
     telegram_user_id: int
 
 

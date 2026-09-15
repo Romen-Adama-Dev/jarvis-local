@@ -58,9 +58,9 @@ Leyenda: ✅ hecho · 🟡 parcial · ⬜ por hacer
 | **Automatización** | — | ✅ n8n (perfil automation) | 🟡 flujos de correo/calendario |
 | **Observabilidad** | ✅ supervisión | ✅ Prometheus + Grafana, watchdog | — |
 | **Voz local (STT/TTS)** | ✅ | ✅ scripted en `scripts/install-openclaw` (whisper.cpp + Piper es_ES) | 🟡 validar end-to-end en esta VM |
-| **Contestar correos** | ⬜ (roadmap) | ✅ MCP correo sobre Graph (`packages/msgraph/mail.py`, skill `jarvis-email`, borrador→confirmación) | 🟡 validar end-to-end (falta instalar OpenClaw en esta VM) |
-| **Agendar / planificar reuniones** | ⬜ (roadmap) | ✅ MCP calendario sobre Graph (`packages/msgraph/calendar.py`, skill `jarvis-calendar`, propuesta→confirmación) | 🟡 validar end-to-end |
-| **Generar documentos desde cero** | ⬜ (roadmap) | ✅ `packages/docgen` (DAFO/planes desde el RAG, docx/pdf/md, `docs/DOCGEN.md`) | — |
+| **Contestar correos** | ⬜ (roadmap) | ✅ MCP correo con backend IMAP/SMTP para cualquier proveedor (`packages/imapsmtp`) o Graph (`packages/msgraph/mail.py`); skill `jarvis-email`, borrador→confirmación, adjuntos de doc-gen | 🟡 configurar la cuenta de Jarvis (`scripts/configure-mail`) y validar end-to-end |
+| **Agendar / planificar reuniones** | ⬜ (roadmap) | ✅ MCP calendario con backend CalDAV (`packages/caldavcal`) o Graph (`packages/msgraph/calendar.py`); skill `jarvis-calendar`, propuesta→confirmación | 🟡 configurar CalDAV y validar end-to-end |
+| **Generar documentos desde cero** | ⬜ (roadmap) | ✅ `packages/docgen` (resúmenes/DAFO/planes desde el RAG, docx/pptx/pdf/md, entregados por Telegram, `docs/DOCGEN.md`) | 🟡 validar entrega por Telegram |
 | **Microsoft Teams** | ⬜ | 🟡 canal `msteams` soportado en OpenClaw (`scripts/configure-teams`, `docs/TEAMS.md`) | ⬜ **túnel público (Cloudflare Tunnel) + manifiesto de la app**, sin versionar todavía |
 | **Licencia + gobernanza** | ⬜ declarado pendiente | ✅ `LICENSE` (MIT) + `CONTRIBUTING.md` | — |
 
