@@ -2,6 +2,8 @@ import html
 import os
 import re
 import shutil
+import time
+import unicodedata
 from pathlib import Path
 
 import httpx
@@ -10,6 +12,14 @@ from mcp.server.fastmcp import FastMCP
 JARVIS_API_URL = os.environ.get("JARVIS_API_URL", "http://127.0.0.1:8000").rstrip("/")
 JARVIS_API_INTERNAL_TOKEN = os.environ["JARVIS_API_INTERNAL_TOKEN"]
 JARVIS_DATA_ROOT = Path(os.environ.get("JARVIS_DATA_ROOT", "/srv/jarvis"))
+# Los documentos generados se copian aquí (dentro del workspace del agente) para que
+# OpenClaw pueda adjuntarlos en el chat con una línea `MEDIA:<ruta>`.
+JARVIS_OUTBOX_DIR = Path(
+    os.environ.get("JARVIS_OUTBOX_DIR", Path.home() / ".openclaw" / "workspace-jarvis" / "outbox")
+)
+# Debe quedar por debajo de `requestTimeoutMs` del servidor MCP en openclaw.json.
+DOCGEN_WAIT_SECONDS = float(os.environ.get("DOCGEN_WAIT_SECONDS", "270"))
+_DOCGEN_POLL_SECONDS = 5.0
 
 mcp = FastMCP("jarvis-rag")
 
@@ -56,36 +66,61 @@ def jarvis_deep(query: str) -> str:
     )
 
 
+def _slug(text: str, max_len: int = 40) -> str:
+    ascii_text = unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode()
+    slug = re.sub(r"[^a-z0-9]+", "-", ascii_text.lower()).strip("-")
+    return slug[:max_len].rstrip("-") or "documento"
+
+
+def _download_generated_document(job_id: str, result: dict) -> Path:
+    """Copia el documento generado (vive en el volumen de la API) al outbox del workspace
+    del agente, desde donde OpenClaw puede adjuntarlo en el chat."""
+    response = _client.get(f"/v1/documents/generated/{job_id}")
+    response.raise_for_status()
+    kind = result.get("kind") or "documento"
+    ext = result.get("format") or "bin"
+    JARVIS_OUTBOX_DIR.mkdir(parents=True, exist_ok=True)
+    path = JARVIS_OUTBOX_DIR / f"{kind}-{_slug(result.get('topic') or '')}-{job_id[:8]}.{ext}"
+    path.write_bytes(response.content)
+    return path
+
+
 def _format_generated_document(job_id: str, result: dict) -> str:
     lines = [
-        f"Documento generado (trabajo {job_id}):",
-        f"- Tipo: {result.get('kind')}",
-        f"- Tema: {result.get('topic')}",
-        f"- Formato: {result.get('format')}",
-        f"- Ruta en el servidor: {result.get('storage_path')}",
+        f"Documento generado (trabajo {job_id}): {result.get('kind')} sobre "
+        f"'{result.get('topic')}' en {result.get('format')}.",
     ]
     missing = [
         s["title"] for s in result.get("sections", []) if s.get("insufficient_evidence")
     ]
     if missing:
-        lines.append(
-            "- Secciones sin evidencia suficiente: " + ", ".join(missing)
-        )
+        lines.append("Secciones sin evidencia suficiente: " + ", ".join(missing))
     else:
-        lines.append("- Todas las secciones tienen evidencia en la documentación indexada.")
-    lines.append(
-        "Nota: el archivo NO se envía automáticamente por Telegram/Teams todavía; "
-        "queda en el servidor (volumen jarvis_srv)."
-    )
+        lines.append("Todas las secciones tienen evidencia en la documentación indexada.")
+    try:
+        path = _download_generated_document(job_id, result)
+    except httpx.HTTPError as exc:
+        lines.append(f"No se pudo recuperar el archivo para enviarlo por el chat: {exc}")
+        return "\n".join(lines)
+    lines += [
+        "Para enviar el archivo a Romen por el chat, termina tu respuesta con esta línea "
+        "EXACTA, sola en su propia línea, sin comillas, negritas ni bloque de código:",
+        f"MEDIA:{path}",
+        "Para adjuntarlo a un correo usa "
+        f'jarvis_email_draft(..., attachment_job_id="{job_id}").',
+    ]
     return "\n".join(lines)
 
 
 @mcp.tool()
 def jarvis_generate_doc(kind: str, topic: str, format: str = "pdf") -> str:
-    """Genera un documento (DAFO o plan de coordinación) fundamentado en el RAG de Jarvis,
-    en formato md/docx/pptx/pdf. Encola un trabajo; recoge el resultado con
-    jarvis_job_result. El archivo NO se envía automáticamente por Telegram/Teams: queda
-    en el servidor."""
+    """Genera un documento fundamentado en el RAG de Jarvis y lo deja listo para enviarlo
+    por el chat o adjuntarlo a un correo. `kind`: "resumen" (resumen de un tema o de un
+    documento indexado, p. ej. "Guía del PMBOK 7ª edición"), "dafo" o "plan" (plan de
+    coordinación de proyecto). `format`: pdf, docx, pptx o md.
+
+    Tarda unos minutos y espera aquí hasta que el documento está listo. Si la espera se
+    agota, devuelve el identificador del trabajo para recogerlo con jarvis_job_result."""
     response = _client.post(
         "/v1/documents/generate", json={"kind": kind, "topic": topic, "format": format}
     )
@@ -93,16 +128,28 @@ def jarvis_generate_doc(kind: str, topic: str, format: str = "pdf") -> str:
         detail = response.json()
         return detail.get("message") or "Petición de generación de documento inválida."
     response.raise_for_status()
-    job = response.json()
+    job_id = response.json()["id"]
+
+    deadline = time.monotonic() + DOCGEN_WAIT_SECONDS
+    while time.monotonic() < deadline:
+        time.sleep(_DOCGEN_POLL_SECONDS)
+        poll = _client.get(f"/v1/jobs/{job_id}")
+        poll.raise_for_status()
+        job = poll.json()
+        if job["status"] == "completed":
+            return _format_generated_document(job_id, job.get("result") or {})
+        if job["status"] in {"failed", "cancelled"}:
+            return f"Trabajo {job_id} {job['status']}: {job.get('error') or 'sin detalle'}"
     return (
-        f"Generando {kind} sobre '{topic}' en {format} (trabajo {job['id']}). "
-        "Consulta el resultado con jarvis_job_result."
+        f"El documento sigue generándose (trabajo {job_id}). Dile a Romen que tardará un poco "
+        "más y recógelo con jarvis_job_result cuando lo pida."
     )
 
 
 @mcp.tool()
 def jarvis_job_result(job_id: str) -> str:
-    """Recoge el estado o el resultado de un trabajo (consulta profunda, indexación...)."""
+    """Recoge el estado o el resultado de un trabajo (consulta profunda, indexación,
+    documento generado). Si es un documento generado, lo deja listo para enviarlo."""
     response = _client.get(f"/v1/jobs/{job_id}")
     response.raise_for_status()
     job = response.json()

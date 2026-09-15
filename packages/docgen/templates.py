@@ -40,6 +40,27 @@ SECTION_TEMPLATES: dict[str, list[tuple[str, str]]] = {
             "documentación indexada?",
         ),
     ],
+    "resumen": [
+        (
+            "Visión general",
+            "¿De qué trata '{topic}' y cuál es su propósito según la documentación indexada?",
+        ),
+        (
+            "Conceptos y principios clave",
+            "¿Cuáles son los conceptos y principios clave de '{topic}' según la "
+            "documentación indexada?",
+        ),
+        (
+            "Estructura y contenidos principales",
+            "¿Cuáles son las partes, dominios, procesos o fases principales de '{topic}' "
+            "según la documentación indexada?",
+        ),
+        (
+            "Aplicación práctica",
+            "¿Qué recomendaciones prácticas se desprenden de '{topic}' según la "
+            "documentación indexada?",
+        ),
+    ],
 }
 
 

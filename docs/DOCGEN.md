@@ -1,8 +1,9 @@
 # Generación de documentos (doc-gen)
 
-Jarvis puede producir un documento fundamentado en el corpus RAG: un DAFO
-(`dafo`) o un plan de coordinación de proyecto (`plan`), en Markdown, `.docx`,
-`.pptx` o `.pdf`. Es la Fase 2 de `docs/ROADMAP.md`.
+Jarvis puede producir un documento fundamentado en el corpus RAG: un resumen de
+un tema o de un documento indexado (`resumen`), un DAFO (`dafo`) o un plan de
+coordinación de proyecto (`plan`), en Markdown, `.docx`, `.pptx` o `.pdf`, y
+enviarlo por el chat. Es la Fase 2 de `docs/ROADMAP.md`.
 
 ## Cómo funciona
 
@@ -56,16 +57,32 @@ curl http://127.0.0.1:8000/v1/documents/generated/<job_id> \
 ### Vía la skill MCP `jarvis-rag`
 
 ```
-jarvis_generate_doc(kind="plan", topic="Migración a Kubernetes", format="docx")
-# -> "Generando plan sobre 'Migración a Kubernetes' en docx (trabajo <id>)..."
+jarvis_generate_doc(kind="resumen", topic="Guía del PMBOK 7ª edición", format="pdf")
+# (espera a que el trabajo termine, hasta DOCGEN_WAIT_SECONDS)
+# -> "Documento generado (trabajo <id>): resumen sobre '...' en pdf.
+#     ...
+#     MEDIA:/home/<usuario>/.openclaw/workspace-jarvis/outbox/resumen-guia-del-pmbok-7a-edicion-<id>.pdf"
 jarvis_job_result(job_id="<id>")
-# -> resumen del documento (tipo, tema, formato, ruta, secciones sin evidencia)
+# -> lo mismo, si la espera se agotó antes de terminar
 ```
 
-## Limitación conocida
+## Entrega por el chat
 
-El archivo generado **no se envía automáticamente** por Telegram ni Teams
-todavía: queda en el servidor, bajo `${JARVIS_DATA_DIR}/generated/<job_id>.<ext>`
-(volumen `jarvis_srv` en despliegues Docker). La entrega del archivo al canal
-de chat es trabajo futuro, fuera del alcance de esta fase; mientras tanto, la
-skill informa al usuario de esta limitación al completar el trabajo.
+El archivo se genera en el servidor, bajo `${JARVIS_DATA_DIR}/generated/<job_id>.<ext>`
+(volumen `jarvis_srv` en Docker), fuera del alcance del gateway de OpenClaw. Cuando el
+trabajo termina, la skill `jarvis-rag` lo descarga con
+`GET /v1/documents/generated/<job_id>` a `JARVIS_OUTBOX_DIR` (por defecto
+`~/.openclaw/workspace-jarvis/outbox`, dentro del workspace del agente) y devuelve una
+línea `MEDIA:<ruta>`. El agente la copia al final de su respuesta y OpenClaw adjunta el
+archivo en Telegram (protocolo `MEDIA:` de OpenClaw; la regla está en el `AGENTS.md`
+del workspace).
+
+La skill espera hasta `DOCGEN_WAIT_SECONDS` (270 s por defecto) para que un modelo local
+no tenga que sondear el trabajo. Esa espera debe quedar por debajo del
+`requestTimeoutMs` del servidor MCP `jarvis-rag` en `openclaw.json` (330 000 ms en la
+plantilla); si la generación tarda más, la herramienta devuelve el identificador y
+`jarvis_job_result` hace la entrega después.
+
+El mismo documento se puede adjuntar a un correo con
+`jarvis_email_draft(..., attachment_job_id="<id>")` (ver `docs/EMAIL.md`). El outbox no
+se limpia solo.

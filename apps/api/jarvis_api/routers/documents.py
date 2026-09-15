@@ -17,11 +17,12 @@ from apps.api.jarvis_api.schemas import (
 )
 from packages.core.db.models import Document, Job
 from packages.core.errors import ConflictError, NotFoundError, ValidationFailedError
+from packages.docgen.templates import SECTION_TEMPLATES
 from packages.security.validation import validate_filename, validate_mime, validate_size
 
 router = APIRouter(prefix="/v1/documents", tags=["documents"])
 
-VALID_DOCGEN_KINDS = {"dafo", "plan"}
+VALID_DOCGEN_KINDS = set(SECTION_TEMPLATES)
 VALID_DOCGEN_FORMATS = {"md", "docx", "pptx", "pdf"}
 
 

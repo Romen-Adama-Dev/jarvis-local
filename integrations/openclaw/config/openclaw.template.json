@@ -66,8 +66,10 @@
         "env": {
           "JARVIS_API_URL": "http://127.0.0.1:8000",
           "JARVIS_API_INTERNAL_TOKEN": "__JARVIS_API_INTERNAL_TOKEN__",
-          "JARVIS_DATA_ROOT": "/srv/jarvis"
-        }
+          "JARVIS_DATA_ROOT": "/srv/jarvis",
+          "JARVIS_OUTBOX_DIR": "__HOME__/.openclaw/workspace-jarvis/outbox"
+        },
+        "requestTimeoutMs": 330000
       },
       "jarvis-calendar": {
         "command": "__HOME__/.local/bin/uv",
