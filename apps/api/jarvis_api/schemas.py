@@ -98,6 +98,7 @@ class DocumentResponse(BaseModel):
     sha256: str
     size_bytes: int
     page_count: int | None
+    doc_metadata: dict
     created_at: datetime
     updated_at: datetime
 
@@ -106,6 +107,10 @@ class DocumentResponse(BaseModel):
 
 class DocumentListResponse(BaseModel):
     documents: list[DocumentResponse]
+
+
+class ProjectListResponse(BaseModel):
+    projects: list[str]
 
 
 class JobResponse(BaseModel):

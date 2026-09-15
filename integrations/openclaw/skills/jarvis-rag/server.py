@@ -168,9 +168,13 @@ UPLOAD_MAX_BYTES = 50 * 1024 * 1024
 
 
 @mcp.tool()
-def jarvis_upload(file_path: str) -> str:
+def jarvis_upload(file_path: str, project: str | None = None) -> str:
     """Sube un documento al RAG de Jarvis para indexarlo. Acepta la ruta de un adjunto
-    de Telegram (media/inbound) o de /srv/jarvis/documents. Devuelve el trabajo de
+    de Telegram (media/inbound) o de /srv/jarvis/documents. Antes de llamarla, pregunta
+    siempre al usuario (1) si el documento debe añadirse al RAG como memoria del
+    proyecto, y (2) si es para una tarea puntual o para un proyecto concreto (usa
+    jarvis_list_projects para ofrecerle los proyectos existentes). Pasa ese nombre en
+    `project`, o deja `project` vacío si es una tarea puntual. Devuelve el trabajo de
     indexación; consulta su progreso con jarvis_jobs."""
     path = Path(file_path).expanduser().resolve()
     if not any(path.is_relative_to(root) for root in UPLOAD_ALLOWED_ROOTS):
@@ -184,16 +188,31 @@ def jarvis_upload(file_path: str) -> str:
     if path.stat().st_size > UPLOAD_MAX_BYTES:
         return f"Archivo demasiado grande ({path.stat().st_size / 1024**2:.0f} MiB > 50 MiB)."
 
+    params = {"project": project} if project else {}
     with path.open("rb") as fh:
-        response = _client.post("/v1/documents", files={"file": (path.name, fh)})
+        response = _client.post("/v1/documents", params=params, files={"file": (path.name, fh)})
     if response.status_code == 409:
         return f"El documento {path.name} ya está indexado (duplicado por hash)."
     response.raise_for_status()
     job = response.json()
+    project_note = f" (proyecto: {project})" if project else " (tarea puntual, sin proyecto)"
     return (
-        f"Documento {path.name} aceptado. Trabajo de indexación {job['id']} "
+        f"Documento {path.name} aceptado{project_note}. Trabajo de indexación {job['id']} "
         f"({job['status']}). Sigue el progreso con jarvis_jobs."
     )
+
+
+@mcp.tool()
+def jarvis_list_projects() -> str:
+    """Lista los nombres de proyecto ya usados al subir documentos al RAG, para
+    ofrecérselos al usuario cuando se le pregunta a qué proyecto pertenece un
+    documento nuevo."""
+    response = _client.get("/v1/documents/projects")
+    response.raise_for_status()
+    projects = response.json()["projects"]
+    if not projects:
+        return "Todavía no hay ningún proyecto registrado."
+    return "Proyectos existentes: " + ", ".join(projects)
 
 
 @mcp.tool()
