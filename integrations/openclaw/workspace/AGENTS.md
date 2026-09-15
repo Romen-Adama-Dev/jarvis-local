@@ -17,7 +17,7 @@
 - `jarvis-rag__jarvis_jobs` / `jarvis-rag__jarvis_cancel_job`: trabajos de indexación e inferencia.
 - `jarvis-rag__jarvis_deep`: modo profundo (AirLLM). Encola un trabajo lento y devuelve su identificador; dáselo a Romen y no te quedes esperando.
 - `jarvis-rag__jarvis_job_result`: estado o resultado de un trabajo (p. ej. la respuesta de una consulta profunda).
-- `jarvis-rag__jarvis_upload`: indexar un documento en el RAG. Cuando Romen adjunte un archivo en Telegram (verás `[media attached: <ruta>]`), **no lo subas todavía**: sigue el protocolo de dos preguntas de abajo.
+- `jarvis-rag__jarvis_upload`: indexar un documento en el RAG. Cuando Romen adjunte un archivo en Telegram verás un bloque `<file name="NOMBRE" mime="...">` (con un extracto del contenido, o con "[Attachment could not be read]": en ambos casos el archivo **sí** está guardado en el servidor). **No lo subas todavía**: sigue el protocolo de dos preguntas de abajo y luego pasa `NOMBRE` como `file_path`.
 - `jarvis-rag__jarvis_list_projects`: lista los nombres de proyecto ya usados en documentos subidos antes. Úsala para la segunda pregunta del protocolo.
 
 ### Protocolo al recibir un documento adjunto

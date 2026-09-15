@@ -1,4 +1,6 @@
+import html
 import os
+import re
 import shutil
 from pathlib import Path
 
@@ -167,16 +169,48 @@ UPLOAD_ALLOWED_SUFFIXES = {".pdf", ".docx", ".txt", ".md", ".html", ".csv", ".xl
 UPLOAD_MAX_BYTES = 50 * 1024 * 1024
 
 
+def _safe_stem(name: str) -> str:
+    return re.sub(r"[^A-Za-z0-9._-]", "_", name)
+
+
+def _resolve_upload_path(file_path: str) -> Path | None:
+    """Acepta una ruta o solo el nombre del adjunto. OpenClaw guarda los adjuntos como
+    `[input-]<nombre saneado y a veces truncado>---<uuid>.<ext>`, así que un nombre se
+    resuelve al archivo más reciente cuyo nombre guardado sea prefijo del pedido."""
+    candidate = Path(file_path).expanduser()
+    if candidate.is_absolute():
+        return candidate.resolve()
+
+    wanted = Path(html.unescape(file_path))
+    wanted_stem = _safe_stem(wanted.stem)
+    wanted_suffix = wanted.suffix.lower()
+    matches: list[Path] = []
+    for root in UPLOAD_ALLOWED_ROOTS:
+        if not root.is_dir():
+            continue
+        for path in root.rglob(f"*{wanted_suffix}"):
+            stored = path.stem.removeprefix("input-").split("---", 1)[0]
+            truncated_match = len(stored) >= 8 and wanted_stem.startswith(stored)
+            if stored and (stored == wanted_stem or truncated_match):
+                matches.append(path)
+    if not matches:
+        return None
+    return max(matches, key=lambda p: p.stat().st_mtime).resolve()
+
+
 @mcp.tool()
 def jarvis_upload(file_path: str, project: str | None = None) -> str:
-    """Sube un documento al RAG de Jarvis para indexarlo. Acepta la ruta de un adjunto
-    de Telegram (media/inbound) o de /srv/jarvis/documents. Antes de llamarla, pregunta
-    siempre al usuario (1) si el documento debe añadirse al RAG como memoria del
-    proyecto, y (2) si es para una tarea puntual o para un proyecto concreto (usa
+    """Sube un documento al RAG de Jarvis para indexarlo. `file_path` puede ser la ruta
+    completa o simplemente el nombre del adjunto tal como aparece en
+    `<file name="...">` (p. ej. "PMBOK-7Ed.pdf"). Antes de llamarla, pregunta siempre
+    al usuario (1) si el documento debe añadirse al RAG como memoria del proyecto, y
+    (2) si es para una tarea puntual o para un proyecto concreto (usa
     jarvis_list_projects para ofrecerle los proyectos existentes). Pasa ese nombre en
     `project`, o deja `project` vacío si es una tarea puntual. Devuelve el trabajo de
     indexación; consulta su progreso con jarvis_jobs."""
-    path = Path(file_path).expanduser().resolve()
+    path = _resolve_upload_path(file_path)
+    if path is None:
+        return f"No encuentro ningún adjunto recibido con el nombre: {file_path}"
     if not any(path.is_relative_to(root) for root in UPLOAD_ALLOWED_ROOTS):
         allowed = ", ".join(str(r) for r in UPLOAD_ALLOWED_ROOTS)
         return f"Ruta no autorizada para subida. Directorios permitidos: {allowed}"
