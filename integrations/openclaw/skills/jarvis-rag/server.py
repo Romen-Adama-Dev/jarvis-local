@@ -18,7 +18,7 @@ JARVIS_OUTBOX_DIR = Path(
     os.environ.get("JARVIS_OUTBOX_DIR", Path.home() / ".openclaw" / "workspace-jarvis" / "outbox")
 )
 # Debe quedar por debajo de `requestTimeoutMs` del servidor MCP en openclaw.json.
-DOCGEN_WAIT_SECONDS = float(os.environ.get("DOCGEN_WAIT_SECONDS", "270"))
+DOCGEN_WAIT_SECONDS = float(os.environ.get("DOCGEN_WAIT_SECONDS", "540"))
 _DOCGEN_POLL_SECONDS = 5.0
 
 mcp = FastMCP("jarvis-rag")

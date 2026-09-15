@@ -77,11 +77,12 @@ línea `MEDIA:<ruta>`. El agente la copia al final de su respuesta y OpenClaw ad
 archivo en Telegram (protocolo `MEDIA:` de OpenClaw; la regla está en el `AGENTS.md`
 del workspace).
 
-La skill espera hasta `DOCGEN_WAIT_SECONDS` (270 s por defecto) para que un modelo local
-no tenga que sondear el trabajo. Esa espera debe quedar por debajo del
-`requestTimeoutMs` del servidor MCP `jarvis-rag` en `openclaw.json` (330 000 ms en la
-plantilla); si la generación tarda más, la herramienta devuelve el identificador y
-`jarvis_job_result` hace la entrega después.
+La skill espera hasta `DOCGEN_WAIT_SECONDS` (540 s por defecto) para que un modelo local
+no tenga que sondear el trabajo: con `qwen2.5:32b` en una L4 un resumen de 4 secciones
+tarda unos 4 minutos. Esa espera debe quedar por debajo del `requestTimeoutMs` del
+servidor MCP `jarvis-rag` en `openclaw.json` (600 000 ms en la plantilla); si la
+generación tarda más, la herramienta devuelve el identificador y `jarvis_job_result`
+hace la entrega después.
 
 El mismo documento se puede adjuntar a un correo con
 `jarvis_email_draft(..., attachment_job_id="<id>")` (ver `docs/EMAIL.md`). El outbox no
