@@ -21,6 +21,7 @@ async def test_chat_parses_message_and_usage():
         body = json.loads(request.content)
         assert body["model"] == "qwen2.5:7b-instruct-q4_K_M"
         assert body["messages"] == [{"role": "user", "content": "hola"}]
+        assert body["think"] is False
         return httpx.Response(
             200,
             json={
