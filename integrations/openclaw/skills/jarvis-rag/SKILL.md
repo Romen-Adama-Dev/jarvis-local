@@ -15,16 +15,18 @@ forma segura y auditada.
   profunda sin urgencia. Encola un trabajo (AirLLM es lento por diseño) y devuelve
   su identificador: comunícaselo al usuario tal cual y NO te quedes esperando.
 * `jarvis_generate_doc(kind, topic, format="pdf")`: genera un documento fundamentado
-  en el RAG (`kind` = `"dafo"` o `"plan"`; `format` = `md`/`docx`/`pptx`/`pdf`). Cada
-  sección se responde por separado contra la documentación indexada (mismo motor que
-  `jarvis_ask`/`jarvis_deep`): si una sección no tiene evidencia, el documento lo dice
-  explícitamente en vez de inventar. Encola un trabajo: recoge el resultado con
-  `jarvis_job_result`. **Importante**: el archivo generado NO se envía automáticamente
-  por Telegram/Teams todavía (queda en el servidor, en el volumen `jarvis_srv`) —
-  díselo siempre al usuario cuando el trabajo termine.
+  en el RAG (`kind` = `"resumen"`, `"dafo"` o `"plan"`; `format` =
+  `pdf`/`docx`/`pptx`/`md`). Cada sección se responde por separado contra la
+  documentación indexada (mismo motor que `jarvis_ask`/`jarvis_deep`): si una sección
+  no tiene evidencia, el documento lo dice explícitamente en vez de inventar. La
+  herramienta espera a que el documento esté listo (unos minutos) y devuelve una línea
+  `MEDIA:<ruta>`: **termina tu respuesta con esa línea exacta, sola y sin formato**,
+  para que el archivo le llegue al usuario por el chat. Llámala en el mismo turno en
+  que anuncias que vas a generar el documento.
 * `jarvis_job_result`: recoge el estado o resultado de un trabajo. Úsala cuando el
   usuario pregunte por su consulta profunda, su documento generado, o pase un
-  identificador de trabajo.
+  identificador de trabajo. Si es un documento generado, también devuelve la línea
+  `MEDIA:<ruta>` para enviarlo.
 * Muestra siempre la respuesta completa devuelta por `jarvis_ask`/`jarvis_deep`,
   incluidas las fuentes: no las resumas ni las omitas.
 * Si la herramienta indica que no hay evidencia suficiente, dilo tal cual al
