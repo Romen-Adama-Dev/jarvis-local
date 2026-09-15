@@ -324,20 +324,18 @@
       "document-extract"
     ]
   },
-  "messages": {
-    "tts": {
-      "auto": "inbound",
-      "provider": "tts-local-cli",
-      "providers": {
-        "tts-local-cli": {
-          "command": "__HOME__/.local/bin/jarvis-tts",
-          "args": [
-            "{{OutputPath}}",
-            "{{Text}}"
-          ],
-          "outputFormat": "wav",
-          "timeoutMs": 120000
-        }
+  "tts": {
+    "auto": "inbound",
+    "provider": "tts-local-cli",
+    "providers": {
+      "tts-local-cli": {
+        "command": "__HOME__/.local/bin/jarvis-tts",
+        "args": [
+          "{{OutputPath}}",
+          "{{Text}}"
+        ],
+        "outputFormat": "wav",
+        "timeoutMs": 120000
       }
     }
   }
