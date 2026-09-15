@@ -69,7 +69,7 @@
           "JARVIS_DATA_ROOT": "/srv/jarvis",
           "JARVIS_OUTBOX_DIR": "__HOME__/.openclaw/workspace-jarvis/outbox"
         },
-        "requestTimeoutMs": 330000
+        "requestTimeoutMs": 600000
       },
       "jarvis-calendar": {
         "command": "__HOME__/.local/bin/uv",

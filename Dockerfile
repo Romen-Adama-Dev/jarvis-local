@@ -20,6 +20,7 @@ RUN apt-get update \
         texlive-xetex \
         texlive-latex-recommended \
         texlive-fonts-recommended \
+        lmodern \
         fonts-dejavu \
     && rm -rf /var/lib/apt/lists/* \
     && useradd --system --uid 1000 --create-home jarvis \

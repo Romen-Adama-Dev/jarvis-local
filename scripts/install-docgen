@@ -15,16 +15,22 @@ if ! command -v xelatex >/dev/null 2>&1; then
 else
     echo "xelatex ya está instalado ($(xelatex --version | head -1))."
 fi
+# La plantilla LaTeX de pandoc carga lmodern; sin él el PDF falla con
+# "File `lmodern.sty' not found" aunque xelatex exista.
+if ! kpsewhich lmodern.sty >/dev/null 2>&1; then
+    echo "lmodern.sty no está disponible."
+    NEED_INSTALL=1
+fi
 
 if [[ "${NEED_INSTALL}" -eq 0 ]]; then
-    echo "Nada que instalar: pandoc y xelatex ya están disponibles."
+    echo "Nada que instalar: pandoc, xelatex y lmodern ya están disponibles."
     exit 0
 fi
 
 echo "== Instalando pandoc + TeXLive (xelatex) =="
 sudo apt-get update -qq
 sudo apt-get install -y pandoc texlive-xetex texlive-latex-recommended \
-    texlive-fonts-recommended fonts-dejavu
+    texlive-fonts-recommended lmodern fonts-dejavu
 
 echo "== Verificación =="
 pandoc --version | head -1
