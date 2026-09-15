@@ -8,21 +8,26 @@
   },
   "agents": {
     "defaults": {
-      "workspace": "/home/jarvis/.openclaw/workspace-jarvis",
+      "workspace": "__HOME__/.openclaw/workspace-jarvis",
       "model": {
-        "primary": "custom/qwen3:4b-instruct-2507-q4_K_M"
+        "primary": "custom/__OLLAMA_PRIMARY_MODEL__"
       },
       "sandbox": {
         "mode": "off"
       },
-      "memorySearch": {
-        "enabled": false
-      },
       "compaction": {
-        "reserveTokens": 6144,
-        "reserveTokensFloor": 0,
         "keepRecentTokens": 8192
+      },
+      "mediaMaxMb": 25,
+      "pdfMaxPages": 3,
+      "heartbeat": {
+        "target": "none"
       }
+    }
+  },
+  "memory": {
+    "search": {
+      "enabled": false
     }
   },
   "models": {
@@ -33,33 +38,13 @@
         "api": "openai-completions",
         "models": [
           {
-            "id": "qwen3:4b-instruct-2507-q4_K_M",
-            "name": "Jarvis rápido (Ollama qwen3-4b)",
+            "id": "__OLLAMA_PRIMARY_MODEL__",
+            "name": "Jarvis (Ollama __OLLAMA_PRIMARY_MODEL__)",
             "reasoning": false,
             "input": [
               "text"
             ],
-            "contextWindow": 32768,
-            "maxTokens": 4096
-          },
-          {
-            "id": "qwen2.5:7b-instruct-q4_K_M",
-            "name": "Jarvis rápido (Ollama)",
-            "reasoning": false,
-            "input": [
-              "text"
-            ],
-            "contextWindow": 32768,
-            "maxTokens": 4096
-          },
-          {
-            "id": "llama3.1:8b-instruct-q4_K_M",
-            "name": "Jarvis potente (Ollama)",
-            "reasoning": false,
-            "input": [
-              "text"
-            ],
-            "contextWindow": 32768,
+            "contextWindow": __OLLAMA_CONTEXT_LENGTH__,
             "maxTokens": 4096
           }
         ]
@@ -69,14 +54,14 @@
   "mcp": {
     "servers": {
       "jarvis-rag": {
-        "command": "/home/jarvis/.local/bin/uv",
+        "command": "__HOME__/.local/bin/uv",
         "args": [
           "run",
           "--frozen",
           "--project",
-          "/home/jarvis/jarvis-local",
+          "__REPO_DIR__",
           "python",
-          "/home/jarvis/jarvis-local/integrations/openclaw/skills/jarvis-rag/server.py"
+          "__REPO_DIR__/integrations/openclaw/skills/jarvis-rag/server.py"
         ],
         "env": {
           "JARVIS_API_URL": "http://127.0.0.1:8000",
@@ -85,14 +70,14 @@
         }
       },
       "jarvis-calendar": {
-        "command": "/home/jarvis/.local/bin/uv",
+        "command": "__HOME__/.local/bin/uv",
         "args": [
           "run",
           "--frozen",
           "--project",
-          "/home/jarvis/jarvis-local",
+          "__REPO_DIR__",
           "python",
-          "/home/jarvis/jarvis-local/integrations/openclaw/skills/jarvis-calendar/server.py"
+          "__REPO_DIR__/integrations/openclaw/skills/jarvis-calendar/server.py"
         ],
         "env": {
           "JARVIS_API_URL": "http://127.0.0.1:8000",
@@ -101,14 +86,14 @@
         }
       },
       "jarvis-email": {
-        "command": "/home/jarvis/.local/bin/uv",
+        "command": "__HOME__/.local/bin/uv",
         "args": [
           "run",
           "--frozen",
           "--project",
-          "/home/jarvis/jarvis-local",
+          "__REPO_DIR__",
           "python",
-          "/home/jarvis/jarvis-local/integrations/openclaw/skills/jarvis-email/server.py"
+          "__REPO_DIR__/integrations/openclaw/skills/jarvis-email/server.py"
         ],
         "env": {
           "JARVIS_API_URL": "http://127.0.0.1:8000",
@@ -129,7 +114,36 @@
       "music_generate",
       "video_generate",
       "x_search",
-      "canvas"
+      "canvas",
+      "sessions_spawn",
+      "sessions_yield",
+      "sessions_list",
+      "sessions_history",
+      "sessions_search",
+      "sessions_send",
+      "subagents",
+      "agents_list",
+      "session_status",
+      "agents_wait",
+      "sessions",
+      "conversations_list",
+      "conversations_send",
+      "conversations_turn",
+      "create_goal",
+      "get_goal",
+      "update_goal",
+      "dashboard",
+      "intent",
+      "mobile_ui",
+      "portal",
+      "progress_card",
+      "secrets",
+      "transcripts",
+      "tts",
+      "skill_workshop",
+      "ask_user",
+      "terminal",
+      "process"
     ],
     "sandbox": {
       "tools": {
@@ -147,8 +161,7 @@
     },
     "exec": {
       "host": "gateway",
-      "security": "allowlist",
-      "ask": "on-miss"
+      "mode": "ask"
     },
     "web": {
       "search": {
@@ -159,29 +172,32 @@
       "audio": {
         "enabled": true,
         "echoTranscript": true,
-        "echoFormat": "📝 \"{transcript}\"",
-        "models": [
-          {
-            "type": "cli",
-            "command": "/usr/bin/whisper-cli",
-            "args": [
-              "-m",
-              "/srv/jarvis/models/whisper/ggml-small-q5_1.bin",
-              "-l",
-              "auto",
-              "--no-timestamps",
-              "{{MediaPath}}"
-            ],
-            "timeoutSeconds": 120
-          }
-        ]
-      }
+        "echoFormat": "📝 \"{transcript}\""
+      },
+      "models": [
+        {
+          "type": "cli",
+          "command": "/usr/bin/whisper-cli",
+          "args": [
+            "-m",
+            "/srv/jarvis/models/whisper/ggml-small-q5_1.bin",
+            "-l",
+            "auto",
+            "--no-timestamps",
+            "{{MediaPath}}"
+          ],
+          "timeoutSeconds": 120,
+          "capabilities": [
+            "audio"
+          ]
+        }
+      ]
     }
   },
   "channels": {
     "telegram": {
       "enabled": true,
-      "tokenFile": "/home/jarvis/.openclaw/secrets/telegram_bot_token",
+      "tokenFile": "__HOME__/.openclaw/secrets/telegram_bot_token",
       "dmPolicy": "allowlist",
       "allowFrom": [
         "__TELEGRAM_USER_ID__"
@@ -207,152 +223,60 @@
   },
   "skills": {
     "entries": {
-      "1password": {
-        "enabled": false
-      },
-      "blogwatcher": {
-        "enabled": false
-      },
-      "blucli": {
-        "enabled": false
-      },
-      "camsnap": {
-        "enabled": false
-      },
-      "coding-agent": {
-        "enabled": false
-      },
-      "eightctl": {
-        "enabled": false
-      },
-      "gemini": {
-        "enabled": false
-      },
-      "gifgrep": {
-        "enabled": false
-      },
-      "gog": {
-        "enabled": false
-      },
-      "goplaces": {
-        "enabled": false
-      },
-      "himalaya": {
-        "enabled": false
-      },
-      "mcporter": {
-        "enabled": false
-      },
-      "nano-pdf": {
-        "enabled": false
-      },
-      "obsidian": {
-        "enabled": false
-      },
-      "openai-whisper": {
-        "enabled": false
-      },
-      "openai-whisper-api": {
-        "enabled": false
-      },
-      "openhue": {
-        "enabled": false
-      },
-      "oracle": {
-        "enabled": false
-      },
-      "ordercli": {
-        "enabled": false
-      },
-      "sag": {
-        "enabled": false
-      },
-      "session-logs": {
-        "enabled": false
-      },
-      "sherpa-onnx-tts": {
-        "enabled": false
-      },
-      "songsee": {
-        "enabled": false
-      },
-      "sonoscli": {
-        "enabled": false
-      },
-      "spotify-player": {
-        "enabled": false
-      },
-      "summarize": {
-        "enabled": false
-      },
-      "trello": {
-        "enabled": false
-      },
-      "video-frames": {
-        "enabled": false
-      },
-      "xurl": {
-        "enabled": false
-      },
-      "browser-automation": {
-        "enabled": false
-      },
-      "canvas": {
-        "enabled": false
-      },
-      "clawhub": {
-        "enabled": false
-      },
-      "diagram-maker": {
-        "enabled": false
-      },
-      "gh-issues": {
-        "enabled": false
-      },
-      "github": {
-        "enabled": false
-      },
-      "healthcheck": {
-        "enabled": false
-      },
-      "meme-maker": {
-        "enabled": false
-      },
-      "node-connect": {
-        "enabled": false
-      },
-      "node-inspect-debugger": {
-        "enabled": false
-      },
-      "notion": {
-        "enabled": false
-      },
-      "python-debugpy": {
-        "enabled": false
-      },
-      "skill-creator": {
-        "enabled": false
-      },
-      "spike": {
-        "enabled": false
-      },
-      "taskflow": {
-        "enabled": false
-      },
-      "taskflow-inbox-triage": {
-        "enabled": false
-      },
-      "tmux": {
-        "enabled": false
-      },
-      "weather": {
-        "enabled": false
-      }
+      "1password": { "enabled": false },
+      "blogwatcher": { "enabled": false },
+      "blucli": { "enabled": false },
+      "camsnap": { "enabled": false },
+      "coding-agent": { "enabled": false },
+      "eightctl": { "enabled": false },
+      "gemini": { "enabled": false },
+      "gifgrep": { "enabled": false },
+      "gog": { "enabled": false },
+      "goplaces": { "enabled": false },
+      "himalaya": { "enabled": false },
+      "mcporter": { "enabled": false },
+      "model-usage": { "enabled": false },
+      "nano-pdf": { "enabled": false },
+      "obsidian": { "enabled": false },
+      "openai-whisper": { "enabled": false },
+      "openai-whisper-api": { "enabled": false },
+      "openhue": { "enabled": false },
+      "oracle": { "enabled": false },
+      "ordercli": { "enabled": false },
+      "sag": { "enabled": false },
+      "session-logs": { "enabled": false },
+      "sherpa-onnx-tts": { "enabled": false },
+      "songsee": { "enabled": false },
+      "sonoscli": { "enabled": false },
+      "spotify-player": { "enabled": false },
+      "summarize": { "enabled": false },
+      "trello": { "enabled": false },
+      "video-frames": { "enabled": false },
+      "xurl": { "enabled": false },
+      "browser-automation": { "enabled": false },
+      "canvas": { "enabled": false },
+      "clawhub": { "enabled": false },
+      "diagram-maker": { "enabled": false },
+      "gh-issues": { "enabled": false },
+      "github": { "enabled": false },
+      "healthcheck": { "enabled": false },
+      "meme-maker": { "enabled": false },
+      "node-connect": { "enabled": false },
+      "node-inspect-debugger": { "enabled": false },
+      "notion": { "enabled": false },
+      "python-debugpy": { "enabled": false },
+      "skill-creator": { "enabled": false },
+      "spike": { "enabled": false },
+      "taskflow": { "enabled": false },
+      "taskflow-inbox-triage": { "enabled": false },
+      "tmux": { "enabled": false },
+      "weather": { "enabled": false }
     }
   },
   "plugins": {
     "entries": {
       "searxng": {
+        "enabled": true,
         "config": {
           "webSearch": {
             "baseUrl": "http://127.0.0.1:8888",
@@ -388,11 +312,16 @@
             "createDashboards": true
           }
         }
+      },
+      "document-extract": {
+        "enabled": true
       }
     },
     "allow": [
       "searxng",
-      "memory-wiki"
+      "telegram",
+      "memory-wiki",
+      "document-extract"
     ]
   },
   "messages": {
@@ -401,7 +330,7 @@
       "provider": "tts-local-cli",
       "providers": {
         "tts-local-cli": {
-          "command": "/home/jarvis/.local/bin/jarvis-tts",
+          "command": "__HOME__/.local/bin/jarvis-tts",
           "args": [
             "{{OutputPath}}",
             "{{Text}}"

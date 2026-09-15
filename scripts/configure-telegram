@@ -25,6 +25,17 @@ if [[ -z "$JARVIS_API_INTERNAL_TOKEN" ]]; then
   exit 1
 fi
 
+env_value() { grep -oP "(?<=^$1=).*" "$REPO_DIR/.env" 2>/dev/null || true; }
+OLLAMA_PRIMARY_MODEL="${OLLAMA_PRIMARY_MODEL:-$(env_value OLLAMA_PRIMARY_MODEL)}"
+OLLAMA_CONTEXT_LENGTH="${OLLAMA_CONTEXT_LENGTH:-$(env_value OLLAMA_CONTEXT_LENGTH)}"
+if [[ -z "$OLLAMA_PRIMARY_MODEL" || -z "$OLLAMA_CONTEXT_LENGTH" ]]; then
+  echo "Faltan OLLAMA_PRIMARY_MODEL/OLLAMA_CONTEXT_LENGTH en $REPO_DIR/.env (ejecuta scripts/select-models)" >&2
+  exit 1
+fi
+if ! ollama list 2>/dev/null | grep -q "^${OLLAMA_PRIMARY_MODEL}[[:space:]]"; then
+  echo "AVISO: el modelo ${OLLAMA_PRIMARY_MODEL} no está descargado en Ollama (scripts/select-models --pull)." >&2
+fi
+
 echo "== Guardando token del bot fuera de Git =="
 mkdir -p "$SECRETS_DIR"
 chmod 700 "$SECRETS_DIR"
@@ -37,6 +48,10 @@ if [[ -f "$CONFIG" ]]; then
 fi
 sed -e "s/__TELEGRAM_USER_ID__/${TELEGRAM_USER_ID}/g" \
     -e "s/__JARVIS_API_INTERNAL_TOKEN__/${JARVIS_API_INTERNAL_TOKEN}/g" \
+    -e "s|__HOME__|${HOME}|g" \
+    -e "s|__REPO_DIR__|${REPO_DIR}|g" \
+    -e "s|__OLLAMA_PRIMARY_MODEL__|${OLLAMA_PRIMARY_MODEL}|g" \
+    -e "s/__OLLAMA_CONTEXT_LENGTH__/${OLLAMA_CONTEXT_LENGTH}/g" \
     "$TEMPLATE" > "$CONFIG"
 chmod 600 "$CONFIG"
 
