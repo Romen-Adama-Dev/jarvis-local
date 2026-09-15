@@ -49,6 +49,53 @@ Registrado en `mcp.servers.jarvis-rag` de `openclaw.json`, lanzado vía `uv run 
 * Reinicio de servicios permitidos (`ollama`, `jarvis-api`, `jarvis-worker`) — requiere conectar `packages/security/confirmation.py` (`ConfirmationService`, ya implementado en la Fase 5) a un flujo de confirmación de dos pasos antes de exponerlo como herramienta.
 * Subida de documentos (`/v1/documents`) y reindexación — Telegram permite adjuntar archivos; falta implementar la recepción del adjunto en la skill.
 
+## OpenClaw 2026.9 (despliegue 2026-09-15, VM `jarvis-gpu-us`, Ubuntu 22.04)
+
+Lo aprendido al desplegar desde cero sobre una versión de OpenClaw mucho más
+nueva que la del despliegue original, en el orden en que fue apareciendo:
+
+* **Node ≥ 24.16** (`engines.node` del paquete; el `nodejs` de apt en 22.04 es
+  v12). `scripts/install-openclaw` lo resuelve; en esta VM se usó `nvm`
+  (`~/.nvm`, alias `default` 24) y el `openclaw gateway install` generó el
+  unit apuntando al binario de nvm.
+* **`whisper.cpp` no está en los repos apt de 22.04**: la voz (STT/TTS) queda
+  sin instalar; `tools.media.audio.enabled: false` hasta compilarlo a mano.
+* **Esquema de config nuevo**: `openclaw doctor --fix` migra
+  `agents.defaults.memorySearch` → `memory.search`, `tools.exec.security/ask`
+  → `tools.exec.mode`, `tools.media.audio.models` → `tools.media.models` con
+  `capabilities`, y retira `compaction.reserveTokens*`. La plantilla ya está
+  en el esquema nuevo. `configure-telegram` sustituye además `__HOME__`,
+  `__REPO_DIR__` y el modelo/contexto de `.env` (la plantilla antigua tenía
+  `/home/jarvis` y `qwen3:4b` fijos, que no existían en esta VM).
+* **Herramientas de orquestación multiagente** (`sessions_*`, `subagents`,
+  `agents_list`, `conversations_*`, `dashboard`, goals, `portal`…): vienen
+  activas por defecto y, además de engordar el prompt, inyectan en cada turno
+  un bloque `Active exec sessions / Active Subagents` que un modelo local
+  toma como el tema de la conversación. Se deniegan todas en `tools.deny`.
+  Pendiente decidir si denegar también `openclaw` (permite al propio bot
+  reiniciar el gateway: ocurrió en producción).
+* **`heartbeat.target: "none"`**: sin esto el heartbeat escribe avisos en el
+  chat de Telegram.
+* **Adjuntos**: el plugin bundled `document-extract` viene desactivado; sin él
+  el modelo solo ve `[Attachment could not be read]`. Activado, el modelo
+  recibe `<file name="NOMBRE">` con un extracto (`pdfMaxPages: 3`, suficiente
+  para identificar el documento sin llenar el contexto). Nunca ve la ruta en
+  disco, así que `jarvis_upload` acepta el nombre del adjunto y lo localiza en
+  `media/inbound/` (OpenClaw guarda `[input-]<nombre saneado>---<uuid>.ext`,
+  recortando nombres largos).
+* **Contexto de Ollama (la causa de fondo de todo lo anterior "sin explicación")**:
+  `scripts/quickstart` no instala el override de systemd de
+  `scripts/install-ollama`, así que el Ollama del host servía con
+  `num_ctx=4096`; el prompt de OpenClaw ronda 25k tokens y se truncaba en
+  silencio (incidente nº 2 de `docs/TELEGRAM.md`). `quickstart` ahora avisa
+  si falta `OLLAMA_CONTEXT_LENGTH` en el servicio. Con 32k, `qwen2.5:32b` no
+  cabe entero en una L4 (24 GB frente a 23): ~10 % en CPU, primer turno ~60 s.
+* **Diagnóstico**: la transcripción real está en
+  `~/.openclaw/agents/main/agent/openclaw-agent.sqlite` (tabla
+  `transcript_events`); `openclaw agent --session-key agent:main:<x>` prueba en
+  una sesión aislada sin contaminar la de Telegram; `/new` tras cualquier
+  cambio de prompt, porque el historial contaminado perpetúa el fallo.
+
 ## Tamaño del prompt y modelos pequeños
 
 Incidente real (2026-07-13): con la configuración por defecto, el system prompt compilado por OpenClaw medía ~34.500 caracteres (~9-10k tokens): ~6.800 de la lista `<available_skills>` (18 skills irrelevantes: notion, weather, meme-maker, tmux…) y ~14.600 de las plantillas por defecto del workspace (`AGENTS.md`/`SOUL.md`/`TOOLS.md` con secciones de heartbeat, group chats, ejemplos de cámaras/TTS…). Con ese volumen de instrucciones en inglés, `qwen2.5:7b-instruct-q4_K_M` colapsaba: escribía las llamadas a herramientas como texto plano en Telegram (`{name: web_search, arguments: …}`), mezclaba chino y se quedaba atascado respondiendo `NO_REPLY` (se auto-envenenaba: una alucinación con "responde solo NO_REPLY" entraba en su propio historial).

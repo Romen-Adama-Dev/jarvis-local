@@ -62,6 +62,10 @@ if ! command -v ollama >/dev/null 2>&1; then
 elif ! curl -sf "$(env_value OLLAMA_HOST)/api/version" >/dev/null 2>&1; then
     echo "AVISO: ollama está instalado pero no responde en $(env_value OLLAMA_HOST)." >&2
     echo "       Arráncalo (systemctl start ollama) antes de probar /ask." >&2
+elif ! grep -qs "OLLAMA_CONTEXT_LENGTH" /etc/systemd/system/ollama.service.d/*.conf; then
+    echo "AVISO: el servicio ollama no tiene OLLAMA_CONTEXT_LENGTH configurado y servirá con" >&2
+    echo "       4096 tokens: el prompt de OpenClaw (~25k) se truncará en silencio y el bot" >&2
+    echo "       responderá incoherencias. Ejecuta scripts/install-ollama (docs/TELEGRAM.md)." >&2
 fi
 
 if ! command -v docker >/dev/null 2>&1; then
