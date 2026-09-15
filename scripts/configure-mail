@@ -40,7 +40,8 @@ set_env() {
 
 ask() {
   local var="$1" prompt="$2" default="${3:-}"
-  if [[ -n "${!var:-}" ]]; then
+  # Una variable exportada (aunque sea vacía, p. ej. CALDAV_URL=) evita la pregunta.
+  if [[ -n "${!var+x}" ]]; then
     return
   fi
   read -rp "$prompt${default:+ [$default]}: " "${var?}"
