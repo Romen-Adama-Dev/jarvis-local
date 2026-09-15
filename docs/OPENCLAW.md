@@ -58,8 +58,14 @@ nueva que la del despliegue original, en el orden en que fue apareciendo:
   v12). `scripts/install-openclaw` lo resuelve; en esta VM se usó `nvm`
   (`~/.nvm`, alias `default` 24) y el `openclaw gateway install` generó el
   unit apuntando al binario de nvm.
-* **`whisper.cpp` no está en los repos apt de 22.04**: la voz (STT/TTS) queda
-  sin instalar; `tools.media.audio.enabled: false` hasta compilarlo a mano.
+* **`whisper.cpp` no está en los repos apt de 22.04**: `scripts/install-openclaw`
+  lo compila desde fuente (tag fijado `v1.8.3`, solo CPU porque la GPU la
+  ocupa Ollama) e instala `whisper-cli` en `/usr/local/bin` con sus `.so` en
+  `/usr/local/lib/whisper.cpp` (ld.so.conf). La plantilla usa el placeholder
+  `__WHISPER_CLI__` (resuelto por `configure-telegram` con `command -v`).
+  Validado: wav de Piper (`es_ES-davefx-medium`) → ogg/opus → ffmpeg →
+  whisper `small-q5_1` transcribe exacto; ~20 s la primera nota (carga del
+  modelo + CPU compartida con el 10 % de Ollama), después menos.
 * **Esquema de config nuevo**: `openclaw doctor --fix` migra
   `agents.defaults.memorySearch` → `memory.search`, `tools.exec.security/ask`
   → `tools.exec.mode`, `tools.media.audio.models` → `tools.media.models` con
