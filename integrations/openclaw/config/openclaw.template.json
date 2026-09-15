@@ -336,7 +336,8 @@
       "searxng",
       "telegram",
       "memory-wiki",
-      "document-extract"
+      "document-extract",
+      "ollama"
     ]
   },
   "tts": {
