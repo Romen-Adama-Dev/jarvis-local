@@ -6,8 +6,10 @@ argumento. Ninguna de ellas sabe nada de confirmación ni de MCP — eso vive en
 `apps/api/jarvis_api/routers/email.py` y en el servidor MCP `jarvis-email`.
 """
 
+import base64
 from typing import Any
 
+from packages.core.attachments import Attachment
 from packages.msgraph.client import MsGraphClient
 
 _LIST_SELECT = "id,subject,from,receivedDateTime,bodyPreview"
@@ -34,9 +36,11 @@ async def send_mail(
     subject: str,
     body: str,
     cc: list[str] | None = None,
+    attachments: list[Attachment] | None = None,
 ) -> None:
     """Envía un correo (`POST /me/sendMail`). No hay confirmación aquí: quien llama
-    ya debe haberla obtenido (ver `ConfirmationService`)."""
+    ya debe haberla obtenido (ver `ConfirmationService`). Los adjuntos van inline, así
+    que Graph los limita a 3 MB en total."""
     message: dict[str, Any] = {
         "subject": subject,
         "body": {"contentType": "Text", "content": body},
@@ -44,4 +48,14 @@ async def send_mail(
     }
     if cc:
         message["ccRecipients"] = [{"emailAddress": {"address": addr}} for addr in cc]
+    if attachments:
+        message["attachments"] = [
+            {
+                "@odata.type": "#microsoft.graph.fileAttachment",
+                "name": attachment.filename,
+                "contentType": attachment.mime_type,
+                "contentBytes": base64.b64encode(attachment.content).decode("ascii"),
+            }
+            for attachment in attachments
+        ]
     await client.post("/me/sendMail", json={"message": message})

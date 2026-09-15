@@ -3,6 +3,7 @@ import json
 import httpx
 import pytest
 
+from packages.core.attachments import Attachment
 from packages.msgraph.client import MsGraphClient
 from packages.msgraph.mail import get_message, list_inbox, send_mail
 
@@ -94,4 +95,29 @@ async def test_send_mail_omits_cc_when_not_provided():
 
     client = _client(handler)
     await send_mail(client, to=["a@example.com"], subject="Asunto", body="Cuerpo")
+    await client.aclose()
+
+
+@pytest.mark.asyncio
+async def test_send_mail_includes_file_attachments_as_base64():
+    def handler(request: httpx.Request) -> httpx.Response:
+        body = json.loads(request.content)
+        assert body["message"]["attachments"] == [
+            {
+                "@odata.type": "#microsoft.graph.fileAttachment",
+                "name": "resumen.pdf",
+                "contentType": "application/pdf",
+                "contentBytes": "JVBERi0xLjc=",
+            }
+        ]
+        return httpx.Response(202)
+
+    client = _client(handler)
+    await send_mail(
+        client,
+        to=["a@example.com"],
+        subject="Asunto",
+        body="Cuerpo",
+        attachments=[Attachment("resumen.pdf", b"%PDF-1.7", "application/pdf")],
+    )
     await client.aclose()

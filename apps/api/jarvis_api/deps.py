@@ -7,7 +7,12 @@ from fastapi import Depends
 from qdrant_client import AsyncQdrantClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from apps.api.jarvis_api.adapters.calendar_backends import (
+    CalendarBackend,
+    calendar_backend_from_settings,
+)
 from apps.api.jarvis_api.adapters.db_audit import DbAuditSink
+from apps.api.jarvis_api.adapters.mail_backends import MailBackend, mail_backend_from_settings
 from apps.api.jarvis_api.adapters.redis_confirmation import RedisConfirmationStore
 from packages.core.db.session import make_engine, make_session_factory
 from packages.core.settings import Settings, get_settings
@@ -23,8 +28,8 @@ MSGRAPH_CALENDAR_SCOPES = ["Calendars.Read", "Calendars.ReadWrite"]
 # Scopes de correo (Fase 3). Fijos por capacidad, no configurables por entorno:
 # ver docs/EMAIL.md y docs/MSGRAPH.md.
 MSGRAPH_MAIL_SCOPES = ["Mail.Read", "Mail.Send"]
-# Un único cliente MsGraph autenticado cubre ambas capacidades (calendar.py y
-# email.py comparten MsGraphClientDep), así que se solicita la unión de scopes
+# Un único cliente MsGraph autenticado cubre ambas capacidades cuando
+# MAIL_PROVIDER/CALENDAR_PROVIDER=msgraph, así que se solicita la unión de scopes
 # en un solo token en vez de mantener dos clientes/autenticadores separados.
 MSGRAPH_SCOPES = MSGRAPH_CALENDAR_SCOPES + MSGRAPH_MAIL_SCOPES
 
@@ -83,6 +88,14 @@ def get_msgraph_client() -> MsGraphClient:
     return _msgraph_client()
 
 
+def get_mail_backend(settings: Settings = Depends(get_settings_dep)) -> MailBackend:
+    return mail_backend_from_settings(settings, _msgraph_client)
+
+
+def get_calendar_backend(settings: Settings = Depends(get_settings_dep)) -> CalendarBackend:
+    return calendar_backend_from_settings(settings, _msgraph_client)
+
+
 def get_authorizer(settings: Settings = Depends(get_settings_dep)) -> TelegramAuthorizer:
     return TelegramAuthorizer(settings.authorized_telegram_ids)
 
@@ -133,6 +146,8 @@ SettingsDep = Annotated[Settings, Depends(get_settings_dep)]
 RedisDep = Annotated[redis_asyncio.Redis, Depends(get_redis)]
 QdrantDep = Annotated[AsyncQdrantClient, Depends(get_qdrant)]
 MsGraphClientDep = Annotated[MsGraphClient, Depends(get_msgraph_client)]
+MailBackendDep = Annotated[MailBackend, Depends(get_mail_backend)]
+CalendarBackendDep = Annotated[CalendarBackend, Depends(get_calendar_backend)]
 InferenceRouterDep = Annotated[InferenceRouter, Depends(get_inference_router)]
 RagOrchestratorDep = Annotated[RagOrchestrator, Depends(get_rag_orchestrator)]
 AuthorizerDep = Annotated[TelegramAuthorizer, Depends(get_authorizer)]

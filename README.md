@@ -1,6 +1,6 @@
 # Jarvis Local
 
-Asistente de IA privado y local: RAG sobre documentación propia, memoria por usuario, control por Telegram y Microsoft Teams vía OpenClaw, agente MCP (correo, calendario y generación de documentos sobre Microsoft Graph) e inferencia con Ollama (habitual) y AirLLM (`/deep`, modelos grandes). El RAG y la inferencia son 100% locales: ningún documento, embedding, prompt o respuesta sale del servidor hacia APIs de modelos en la nube. Telegram y Teams son los transportes de conversación; el agente de correo/calendario sí sale además a Microsoft Graph con los datos propios de esa integración (ver `docs/MSGRAPH.md`).
+Asistente de IA privado y local: RAG sobre documentación propia, memoria por usuario, control por Telegram y Microsoft Teams vía OpenClaw, agente MCP (correo por IMAP/SMTP o Microsoft Graph, calendario por CalDAV o Graph, y documentos generados que se envían por el chat) e inferencia con Ollama (habitual) y AirLLM (`/deep`, modelos grandes). El RAG y la inferencia son 100% locales: ningún documento, embedding, prompt o respuesta sale del servidor hacia APIs de modelos en la nube. Telegram y Teams son los transportes de conversación; el agente de correo/calendario sí sale además al proveedor configurado (servidor IMAP/SMTP/CalDAV o Microsoft Graph) con los datos propios de esa integración (ver `docs/EMAIL.md` y `docs/CALENDAR.md`).
 
 Ver `docs/ARCHITECTURE.md` para el diseño completo y `docs/INSTALL.md` para la instalación reproducible desde cero. La elección automática de modelo Ollama según la VRAM disponible está en `docs/MODELS.md` (`scripts/select-models`).
 
@@ -10,12 +10,12 @@ En construcción por fases. Ver `docs/ACCEPTANCE.md` para el estado de los crite
 
 **Capacidades del agente (Fase 3, en integración):**
 
-* **Calendario** (`docs/CALENDAR.md`) — consulta de eventos y flujo borrador→confirmación para crear reuniones.
-* **Correo** (`docs/EMAIL.md`) — lectura de bandeja y flujo borrador→confirmación para enviar correo.
-* **Generación de documentos** (`docs/DOCGEN.md`) — DAFO y planes fundamentados en el RAG, exportables a Markdown/DOCX/PDF/PPTX.
+* **Calendario** (`docs/CALENDAR.md`) — consulta de eventos y flujo borrador→confirmación para crear reuniones, sobre CalDAV (Nextcloud, iCloud, Fastmail...) o Microsoft Graph.
+* **Correo** (`docs/EMAIL.md`) — lectura de bandeja y flujo borrador→confirmación para enviar correo, con documentos generados adjuntos, sobre IMAP/SMTP (cualquier proveedor) o Microsoft Graph.
+* **Generación de documentos** (`docs/DOCGEN.md`) — resúmenes, DAFO y planes fundamentados en el RAG, exportables a Markdown/DOCX/PDF/PPTX y enviados por Telegram.
 * **Microsoft Teams** (`docs/TEAMS.md`) — segundo canal de interacción junto a Telegram.
 
-Calendario y correo comparten una única autenticación OAuth2 contra Microsoft Graph (`docs/MSGRAPH.md`, `scripts/configure-msgraph`); ambas requieren `MSGRAPH_CLIENT_ID`/`MSGRAPH_TENANT_ID` configurados o responden con un error `provider_unavailable` explícito en vez de fallar.
+Correo y calendario se configuran con `scripts/configure-mail` (IMAP/SMTP + CalDAV con contraseña de aplicación, sin Azure) o, para Microsoft 365, con `MAIL_PROVIDER=msgraph`/`CALENDAR_PROVIDER=msgraph` y `scripts/configure-msgraph` (`docs/MSGRAPH.md`). Sin configurar responden con un error `provider_unavailable` explícito en vez de fallar.
 
 ## Contribuir
 
@@ -25,7 +25,7 @@ Ver `CONTRIBUTING.md`. Proyecto bajo licencia MIT (`LICENSE`).
 
 ```text
 apps/            API (FastAPI) y worker (arq)
-packages/        Dominio: core, security, documents, rag, inference, msgraph, docgen
+packages/        Dominio: core, security, documents, rag, inference, msgraph, imapsmtp, caldavcal, docgen
 services/airllm/ Microservicio AirLLM independiente
 integrations/    Skills de OpenClaw: jarvis-rag, jarvis-calendar, jarvis-email
 infra/           Docker Compose, unidades systemd, monitorización, nginx

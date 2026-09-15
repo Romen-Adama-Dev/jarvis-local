@@ -1,0 +1,149 @@
+#!/usr/bin/env bash
+# Configura el correo (IMAP/SMTP) y, opcionalmente, el calendario (CalDAV) de Jarvis
+# con cualquier proveedor estándar, sin Azure ni Google Cloud (ver docs/EMAIL.md y
+# docs/CALENDAR.md). Escribe las variables en .env (fuera de Git), prueba la conexión
+# sin enviar nada y recrea la API para que las cargue.
+#
+# Usa siempre una contraseña de aplicación, nunca la contraseña principal de la cuenta.
+# Variables ya exportadas (MAIL_USERNAME, MAIL_PASSWORD, CALDAV_URL...) evitan las
+# preguntas correspondientes.
+set -euo pipefail
+
+REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ENV_FILE="$REPO_DIR/.env"
+export PATH="$HOME/.local/bin:$PATH"
+
+if [[ ! -f "$ENV_FILE" ]]; then
+  echo "ERROR: no existe $ENV_FILE (ejecuta antes scripts/quickstart)." >&2
+  exit 1
+fi
+
+set_env() {
+  local key="$1" value="$2" tmp
+  if [[ "$value" == *$'\n'* || "$value" == *"'"* ]]; then
+    echo "ERROR: el valor de $key no puede contener saltos de línea ni comillas simples." >&2
+    exit 1
+  fi
+  if [[ ! "$value" =~ ^[A-Za-z0-9@._:/+-]*$ ]]; then
+    value="'$value'"
+  fi
+  tmp="$(mktemp)"
+  KEY="$key" VALUE="$value" awk '
+    BEGIN { k = ENVIRON["KEY"]; v = ENVIRON["VALUE"]; done = 0 }
+    index($0, k "=") == 1 { print k "=" v; done = 1; next }
+    { print }
+    END { if (!done) print k "=" v }
+  ' "$ENV_FILE" >"$tmp"
+  cat "$tmp" >"$ENV_FILE"
+  rm -f "$tmp"
+}
+
+ask() {
+  local var="$1" prompt="$2" default="${3:-}"
+  if [[ -n "${!var:-}" ]]; then
+    return
+  fi
+  read -rp "$prompt${default:+ [$default]}: " "${var?}"
+  if [[ -z "${!var}" ]]; then
+    printf -v "$var" '%s' "$default"
+  fi
+}
+
+echo "Proveedor de correo:"
+echo "  1) Gmail / Google Workspace (el calendario de Google no admite CalDAV con contraseña)"
+echo "  2) iCloud (correo y calendario)"
+echo "  3) Fastmail (correo y calendario)"
+echo "  4) Otro: Nextcloud, Zoho, Proton Bridge, servidor propio... (datos a mano)"
+echo "  5) Outlook.com / Hotmail (AVISO: Microsoft exige OAuth2 en IMAP/SMTP y ya no"
+echo "     acepta contraseñas; lo más probable es que no funcione)"
+ask PRESET "Opción [1-5]"
+
+CALDAV_DEFAULT=""
+case "$PRESET" in
+  1) IMAP_HOST=imap.gmail.com; SMTP_HOST=smtp.gmail.com; SMTP_PORT=587; SMTP_SECURITY=starttls ;;
+  2) IMAP_HOST=imap.mail.me.com; SMTP_HOST=smtp.mail.me.com; SMTP_PORT=587; SMTP_SECURITY=starttls
+     CALDAV_DEFAULT=https://caldav.icloud.com/ ;;
+  3) IMAP_HOST=imap.fastmail.com; SMTP_HOST=smtp.fastmail.com; SMTP_PORT=465; SMTP_SECURITY=ssl
+     CALDAV_DEFAULT=https://caldav.fastmail.com/dav/ ;;
+  4) ask IMAP_HOST "Servidor IMAP"
+     ask SMTP_HOST "Servidor SMTP"
+     ask SMTP_PORT "Puerto SMTP" 587
+     ask SMTP_SECURITY "Seguridad SMTP (starttls/ssl)" starttls ;;
+  5) IMAP_HOST=outlook.office365.com; SMTP_HOST=smtp-mail.outlook.com; SMTP_PORT=587
+     SMTP_SECURITY=starttls ;;
+  *) echo "ERROR: opción no válida." >&2; exit 1 ;;
+esac
+IMAP_PORT="${IMAP_PORT:-993}"
+
+ask MAIL_USERNAME "Dirección de correo de Jarvis (usuario)"
+if [[ -z "${MAIL_PASSWORD:-}" ]]; then
+  read -rsp "Contraseña de aplicación: " MAIL_PASSWORD
+  echo
+fi
+if [[ "$PRESET" == 1 ]]; then
+  MAIL_PASSWORD="${MAIL_PASSWORD// /}"  # Google la muestra en grupos de 4 con espacios
+fi
+if [[ -z "$MAIL_USERNAME" || -z "$MAIL_PASSWORD" ]]; then
+  echo "ERROR: usuario y contraseña de aplicación son obligatorios." >&2
+  exit 1
+fi
+
+ask CALDAV_URL "URL CalDAV (vacío = sin calendario)" "$CALDAV_DEFAULT"
+if [[ -n "$CALDAV_URL" ]]; then
+  ask CALDAV_CALENDAR_NAME "Nombre del calendario (vacío = el primero)"
+fi
+
+echo "== Guardando configuración en .env (fuera de Git) =="
+set_env MAIL_PROVIDER imap
+set_env IMAP_HOST "$IMAP_HOST"
+set_env IMAP_PORT "$IMAP_PORT"
+set_env SMTP_HOST "$SMTP_HOST"
+set_env SMTP_PORT "$SMTP_PORT"
+set_env SMTP_SECURITY "$SMTP_SECURITY"
+set_env MAIL_USERNAME "$MAIL_USERNAME"
+set_env MAIL_PASSWORD "$MAIL_PASSWORD"
+set_env CALENDAR_PROVIDER caldav
+set_env CALDAV_URL "$CALDAV_URL"
+set_env CALDAV_CALENDAR_NAME "${CALDAV_CALENDAR_NAME:-}"
+chmod 600 "$ENV_FILE"
+
+echo "== Probando la conexión (no se envía ningún correo) =="
+cd "$REPO_DIR"
+uv run --frozen python - <<'EOF'
+import asyncio
+import datetime
+
+from apps.api.jarvis_api.adapters.calendar_backends import calendar_backend_from_settings
+from apps.api.jarvis_api.adapters.mail_backends import imap_config_from_settings
+from packages.core.settings import Settings
+from packages.imapsmtp.mail import check_smtp_login, list_inbox
+
+
+def no_graph():
+    raise RuntimeError("MSGRAPH no se usa con este script")
+
+
+async def main() -> None:
+    settings = Settings()
+    config = imap_config_from_settings(settings)
+    inbox = await list_inbox(config, top=1)
+    print(f"IMAP OK ({len(inbox)} mensaje(s) leído(s) sin marcar)")
+    await check_smtp_login(config)
+    print("SMTP OK (sesión autenticada, nada enviado)")
+    if settings.caldav_url:
+        calendar = calendar_backend_from_settings(settings, no_graph)
+        now = datetime.datetime.now().replace(microsecond=0)
+        week = now + datetime.timedelta(days=7)
+        events = await calendar.get_calendar_view(now.isoformat(), week.isoformat())
+        print(f"CalDAV OK ({len(events)} evento(s) en los próximos 7 días)")
+
+
+asyncio.run(main())
+EOF
+
+if command -v docker >/dev/null 2>&1 && docker compose ps --services 2>/dev/null | grep -qx api; then
+  echo "== Recreando la API para cargar el nuevo .env =="
+  docker compose --profile app up -d api
+fi
+
+echo "Correo configurado. Pruébalo pidiéndole a Jarvis por Telegram: \"¿qué correos tengo?\"."
