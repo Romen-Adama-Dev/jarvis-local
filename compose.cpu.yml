@@ -1,0 +1,8 @@
+# Máquinas sin GPU NVIDIA (o sin NVIDIA Container Toolkit):
+#   docker compose -f compose.yml -f compose.cpu.yml up -d
+# init detecta 0 MiB de VRAM y elige el nivel "cpu" de scripts/select-models.
+services:
+  init:
+    gpus: !reset []
+  ollama:
+    gpus: !reset []

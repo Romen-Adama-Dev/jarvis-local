@@ -3,7 +3,7 @@
     "mode": "local",
     "auth": {
       "mode": "token",
-      "token": "__GENERADO_POR_OPENCLAW_DOCTOR__"
+      "token": "__OPENCLAW_GATEWAY_TOKEN__"
     }
   },
   "agents": {
@@ -67,13 +67,8 @@
   "mcp": {
     "servers": {
       "jarvis-rag": {
-        "command": "__HOME__/.local/bin/uv",
+        "command": "__REPO_DIR__/.venv/bin/python",
         "args": [
-          "run",
-          "--frozen",
-          "--project",
-          "__REPO_DIR__",
-          "python",
           "__REPO_DIR__/integrations/openclaw/skills/jarvis-rag/server.py"
         ],
         "env": {
@@ -85,13 +80,8 @@
         "requestTimeoutMs": 600000
       },
       "jarvis-calendar": {
-        "command": "__HOME__/.local/bin/uv",
+        "command": "__REPO_DIR__/.venv/bin/python",
         "args": [
-          "run",
-          "--frozen",
-          "--project",
-          "__REPO_DIR__",
-          "python",
           "__REPO_DIR__/integrations/openclaw/skills/jarvis-calendar/server.py"
         ],
         "env": {
@@ -101,13 +91,8 @@
         }
       },
       "jarvis-email": {
-        "command": "__HOME__/.local/bin/uv",
+        "command": "__REPO_DIR__/.venv/bin/python",
         "args": [
-          "run",
-          "--frozen",
-          "--project",
-          "__REPO_DIR__",
-          "python",
           "__REPO_DIR__/integrations/openclaw/skills/jarvis-email/server.py"
         ],
         "env": {
@@ -194,6 +179,8 @@
           "type": "cli",
           "command": "__WHISPER_CLI__",
           "args": [
+            "-t",
+            "__WHISPER_THREADS__",
             "-m",
             "/srv/jarvis/models/whisper/ggml-small-q5_1.bin",
             "-l",
@@ -211,7 +198,7 @@
   },
   "channels": {
     "telegram": {
-      "enabled": true,
+      "enabled": __TELEGRAM_ENABLED__,
       "tokenFile": "__HOME__/.openclaw/secrets/telegram_bot_token",
       "dmPolicy": "allowlist",
       "allowFrom": [

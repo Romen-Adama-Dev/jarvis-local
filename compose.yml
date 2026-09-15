@@ -1,4 +1,26 @@
+# Jarvis Local: `docker compose up -d` levanta el asistente completo (ver docs/DOCKER.md).
+#
+# Requisitos: Docker Engine con Compose v2.30+ y, para GPU, NVIDIA Container Toolkit
+# (sin GPU: docker compose -f compose.yml -f compose.cpu.yml up -d).
+# Configuración obligatoria para usar Telegram: TELEGRAM_BOT_TOKEN y
+# TELEGRAM_AUTHORIZED_USER_IDS en .env (cp .env.example .env). Los secretos y la elección
+# del modelo según la VRAM los genera el servicio init; sin .env también arranca, con
+# Telegram desactivado y la interfaz web de OpenClaw en http://127.0.0.1:18789.
+#
+# ollama, openclaw, api y worker usan network_mode: host y se hablan por 127.0.0.1; el
+# resto publica sus puertos solo en 127.0.0.1. Perfiles opcionales (COMPOSE_PROFILES):
+# vault, assistant, automation, webui, monitoring.
 name: jarvis-local
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+x-env-file: &env-file
+  - path: .env
+    required: false
 
 networks:
   jarvis_internal:
@@ -10,21 +32,83 @@ volumes:
   qdrant_data:
   redis_data:
   jarvis_srv:
+  # Secretos y modelos elegidos por init, leídos por el resto de servicios.
+  jarvis_runtime:
+  ollama_models:
+  openclaw_state:
 
 services:
+  # --- Arranque: secretos + modelos -------------------------------------------------
+  init:
+    image: jarvis-local:latest
+    command: ["init"]
+    user: "0:0"
+    gpus: all
+    env_file: *env-file
+    volumes:
+      - jarvis_runtime:/run/jarvis
+    restart: "no"
+    logging: *logging
+
+  ollama:
+    image: ollama/ollama:0.34.0
+    restart: unless-stopped
+    network_mode: host
+    gpus: all
+    # El contexto sale de la elección de init (o de .env) para no reservar de más en GPUs
+    # pequeñas o en CPU.
+    entrypoint: ["/bin/sh", "-c", ". /run/jarvis/models.env && export OLLAMA_CONTEXT_LENGTH && exec /bin/ollama serve"]
+    environment:
+      OLLAMA_HOST: "127.0.0.1:11434"
+      OLLAMA_KEEP_ALIVE: "-1"
+      OLLAMA_FLASH_ATTENTION: "1"
+      OLLAMA_KV_CACHE_TYPE: q8_0
+      # Peticiones simultáneas por modelo: el bot, el RAG y las secciones de un documento
+      # (DOCGEN_CONCURRENCY) no se hacen cola entre sí.
+      OLLAMA_NUM_PARALLEL: ${OLLAMA_NUM_PARALLEL:-4}
+    volumes:
+      - ${OLLAMA_MODELS_PATH:-ollama_models}:/root/.ollama/models
+      - jarvis_runtime:/run/jarvis:ro
+    depends_on:
+      init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 10s
+      retries: 30
+      start_period: 20s
+    logging: *logging
+
+  ollama-pull:
+    image: ollama/ollama:0.34.0
+    network_mode: host
+    entrypoint: ["/bin/sh", "/opt/jarvis/ollama-pull.sh"]
+    environment:
+      OLLAMA_HOST: "127.0.0.1:11434"
+    volumes:
+      - ./infra/docker/ollama-pull.sh:/opt/jarvis/ollama-pull.sh:ro
+      - jarvis_runtime:/run/jarvis:ro
+    depends_on:
+      ollama:
+        condition: service_healthy
+    restart: "no"
+    logging: *logging
+
+  # --- Aplicación ---------------------------------------------------------------------
   api:
     build: .
     image: jarvis-local:latest
     restart: unless-stopped
-    profiles: ["app"]
     network_mode: host
     command: ["api"]
-    env_file: .env
+    env_file: *env-file
     environment:
       JARVIS_API_HOST: "127.0.0.1"
       JARVIS_API_PORT: ${JARVIS_API_PORT:-8000}
     volumes:
       - jarvis_srv:/srv/jarvis
+      - jarvis_runtime:/run/jarvis:ro
     depends_on:
       postgres:
         condition: service_healthy
@@ -32,27 +116,25 @@ services:
         condition: service_healthy
       qdrant:
         condition: service_healthy
+      ollama:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "python", "-c", "import os,urllib.request;urllib.request.urlopen('http://127.0.0.1:'+os.environ.get('JARVIS_API_PORT','8000')+'/health', timeout=5)"]
       interval: 15s
       timeout: 5s
       retries: 5
       start_period: 120s
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "3"
+    logging: *logging
 
   worker:
     image: jarvis-local:latest
     restart: unless-stopped
-    profiles: ["app"]
     network_mode: host
     command: ["worker"]
-    env_file: .env
+    env_file: *env-file
     volumes:
       - jarvis_srv:/srv/jarvis
+      - jarvis_runtime:/run/jarvis:ro
     depends_on:
       api:
         condition: service_healthy
@@ -62,12 +144,40 @@ services:
       timeout: 10s
       retries: 5
       start_period: 30s
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "3"
+    logging: *logging
 
+  openclaw:
+    build:
+      context: .
+      dockerfile: integrations/openclaw/Dockerfile
+    image: jarvis-openclaw:latest
+    restart: unless-stopped
+    network_mode: host
+    # UID del dueño del estado si se reutiliza un ~/.openclaw existente (OPENCLAW_STATE_PATH).
+    user: "${JARVIS_UID:-1000}:${JARVIS_GID:-1000}"
+    env_file: *env-file
+    environment:
+      OPENCLAW_GATEWAY_PORT: "18789"
+    volumes:
+      - ${OPENCLAW_STATE_PATH:-openclaw_state}:/home/jarvis/.openclaw
+      - jarvis_runtime:/run/jarvis:ro
+    depends_on:
+      api:
+        condition: service_healthy
+      searxng:
+        condition: service_healthy
+      ollama-pull:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:18789/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 180s
+    stop_grace_period: 60s
+    logging: *logging
+
+  # --- Datos ----------------------------------------------------------------------------
   postgres:
     image: postgres:17.2-bookworm
     restart: unless-stopped
@@ -78,19 +188,19 @@ services:
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-jarvis}
       POSTGRES_USER: ${POSTGRES_USER:-jarvis}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?falta POSTGRES_PASSWORD en .env}
+      POSTGRES_PASSWORD_FILE: /run/jarvis/postgres_password
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - jarvis_runtime:/run/jarvis:ro
+    depends_on:
+      init:
+        condition: service_completed_successfully
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-jarvis} -d ${POSTGRES_DB:-jarvis}"]
       interval: 10s
       timeout: 5s
       retries: 5
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "3"
+    logging: *logging
 
   redis:
     image: redis:7.4-bookworm
@@ -107,11 +217,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "3"
+    logging: *logging
 
   qdrant:
     image: qdrant/qdrant:v1.12.5
@@ -127,35 +233,55 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "3"
+    logging: *logging
 
+  # Búsqueda web del agente (web_search de OpenClaw).
   searxng:
     image: searxng/searxng@sha256:11ffedd387dc9cf99e881250c67861470384e55194a86f76df76aa0034a28a1a
     restart: unless-stopped
-    profiles: ["assistant"]
     networks:
       - jarvis_internal
     ports:
       - "127.0.0.1:${SEARXNG_PORT:-8888}:8080"
+    entrypoint: ["/bin/sh", "-c", "export SEARXNG_SECRET=\"$$(cat /run/jarvis/searxng_secret)\" && exec /usr/local/searxng/entrypoint.sh"]
     environment:
       SEARXNG_BASE_URL: "http://127.0.0.1:${SEARXNG_PORT:-8888}/"
-      SEARXNG_SECRET: ${SEARXNG_SECRET:?falta SEARXNG_SECRET en .env}
     volumes:
       - ./infra/compose/searxng:/etc/searxng
+      - jarvis_runtime:/run/jarvis:ro
+    depends_on:
+      init:
+        condition: service_completed_successfully
     healthcheck:
       test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8080/healthz || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 5
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "3"
+    logging: *logging
+
+  # --- Opcionales -----------------------------------------------------------------------
+  # Vault de Obsidian en un repo git privado (docs/MEMORY.md): VAULT_GIT_URL y
+  # VAULT_SSH_KEY_PATH en .env, y COMPOSE_PROFILES=vault.
+  vault-sync:
+    image: alpine/git:latest
+    restart: unless-stopped
+    profiles: ["vault"]
+    user: "${JARVIS_UID:-1000}:${JARVIS_GID:-1000}"
+    entrypoint: ["/bin/sh", "/opt/jarvis/vault-sync-loop.sh"]
+    environment:
+      HOME: /tmp
+      JARVIS_VAULT_DIR: /state/wiki/main
+      VAULT_GIT_URL: ${VAULT_GIT_URL:-}
+      VAULT_SYNC_INTERVAL: ${VAULT_SYNC_INTERVAL:-300}
+    volumes:
+      - ${OPENCLAW_STATE_PATH:-openclaw_state}:/state
+      - ./infra/docker/vault-sync-loop.sh:/opt/jarvis/vault-sync-loop.sh:ro
+      - ./scripts/vault-sync:/scripts/vault-sync:ro
+      - ${VAULT_SSH_KEY_PATH:-./vault_ssh_key}:/run/vault/id_key:ro
+    depends_on:
+      openclaw:
+        condition: service_started
+    logging: *logging
 
   changedetection:
     image: ghcr.io/dgtlmoon/changedetection.io@sha256:5438423d5e906eff4e8f7886823482ad23f472bf7b8530ccaca89fb48c337882
@@ -174,11 +300,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "3"
+    logging: *logging
 
   n8n:
     image: n8nio/n8n:1.71.0
@@ -211,11 +333,7 @@ services:
       OFFLINE_MODE: "true"
     volumes:
       - ./infra/compose/webui_data:/app/backend/data
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "3"
+    logging: *logging
 
   prometheus:
     image: prom/prometheus:v3.0.1

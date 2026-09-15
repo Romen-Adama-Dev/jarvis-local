@@ -280,22 +280,36 @@ async def generate_document(
             return
 
         orchestrator = ctx["rag_orchestrator"]
+        settings = ctx["settings"]
         await mark_running(session, job)
         try:
             sections_plan = build_sections_plan(kind, topic)
-            sections: list[DocSection] = []
             total = len(sections_plan)
-            for i, (title, question) in enumerate(sections_plan):
-                answer = await orchestrator.query(question, filters=filters, top_k=6)
-                sections.append(
-                    DocSection(
-                        title=title,
-                        answer=answer.answer,
-                        sources=list(answer.sources),
-                        insufficient_evidence=answer.insufficient_evidence,
-                    )
+            # Las secciones son independientes: se responden en paralelo (acotado por
+            # DOCGEN_CONCURRENCY, que debe casar con OLLAMA_NUM_PARALLEL) en vez de en serie.
+            semaphore = asyncio.Semaphore(max(1, settings.docgen_concurrency))
+
+            async def answer_section(question: str):
+                async with semaphore:
+                    return await orchestrator.query(question, filters=filters, top_k=6)
+
+            tasks = [asyncio.create_task(answer_section(q)) for _, q in sections_plan]
+            try:
+                for done, finished in enumerate(asyncio.as_completed(tasks), start=1):
+                    await finished
+                    await mark_progress(session, job, int(done / total * 80))
+            finally:
+                for task in tasks:
+                    task.cancel()
+            sections = [
+                DocSection(
+                    title=title,
+                    answer=task.result().answer,
+                    sources=list(task.result().sources),
+                    insufficient_evidence=task.result().insufficient_evidence,
                 )
-                await mark_progress(session, job, int((i + 1) / total * 80))
+                for (title, _), task in zip(sections_plan, tasks, strict=True)
+            ]
 
             doc = GeneratedDoc(
                 kind=kind,
@@ -304,7 +318,6 @@ async def generate_document(
                 sections=sections,
             )
 
-            settings = ctx["settings"]
             generated_dir = settings.jarvis_data_dir / "generated"
             generated_dir.mkdir(parents=True, exist_ok=True)
             ext = DOCGEN_EXTENSIONS[fmt]
