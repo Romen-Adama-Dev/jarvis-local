@@ -8,6 +8,20 @@ WHISPER_MODEL_URL="https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggm
 PIPER_MODEL_DIR="/srv/jarvis/models/piper"
 PIPER_VOICE_BASE="https://huggingface.co/rhasspy/piper-voices/resolve/main/es/es_ES/davefx/medium/es_ES-davefx-medium"
 
+echo "== Node.js (requiere >=24.16; ver docs/OPENCLAW.md) =="
+# openclaw@latest sube su mínimo de Node de vez en cuando (engines.node en su
+# package.json); si esta instalación falla con EBADENGINE, sube NODE_MIN_MAJOR
+# y el 'setup_XX.x' de abajo a lo que pida el mensaje de error.
+NODE_MIN_MAJOR=24
+node_major() { node -e 'console.log(process.versions.node.split(".")[0])' 2>/dev/null || echo 0; }
+if command -v node >/dev/null 2>&1 && [[ "$(node_major)" -ge "$NODE_MIN_MAJOR" ]]; then
+    echo "Node.js ya instalado: $(node --version)"
+else
+    echo "Instalando Node.js 24.x LTS vía NodeSource (el repo de esta distro no trae una versión suficiente)"
+    curl -fsSL https://deb.nodesource.com/setup_24.x | sudo -E bash -
+    sudo apt-get install -y nodejs
+fi
+
 echo "== OpenClaw: instalación global de npm =="
 npm config set prefix "$NPM_PREFIX"
 if ! command -v "$NPM_PREFIX/bin/openclaw" >/dev/null 2>&1; then
@@ -22,11 +36,21 @@ openclaw plugins list 2>/dev/null | grep -q searxng || openclaw plugins install 
 
 echo "== STT local: whisper.cpp (+ffmpeg para convertir el opus de Telegram) =="
 command -v ffmpeg >/dev/null || sudo apt-get install -y ffmpeg
-command -v whisper-cli >/dev/null || sudo apt-get install -y whisper.cpp
-sudo mkdir -p "$WHISPER_MODEL_DIR"
-sudo chown "$USER:$USER" "$WHISPER_MODEL_DIR"
-if [[ ! -f "$WHISPER_MODEL_DIR/ggml-small-q5_1.bin" ]]; then
-  curl -sL -o "$WHISPER_MODEL_DIR/ggml-small-q5_1.bin" "$WHISPER_MODEL_URL"
+if command -v whisper-cli >/dev/null 2>&1; then
+    echo "whisper-cli ya instalado."
+elif apt-cache show whisper.cpp >/dev/null 2>&1; then
+    sudo apt-get install -y whisper.cpp
+else
+    echo "AVISO: el paquete 'whisper.cpp' no existe en los repos de esta distro. Las" >&2
+    echo "       notas de voz por Telegram no funcionarán hasta compilarlo a mano o" >&2
+    echo "       actualizar el host; se continúa sin STT." >&2
+fi
+if command -v whisper-cli >/dev/null 2>&1; then
+    sudo mkdir -p "$WHISPER_MODEL_DIR"
+    sudo chown "$USER:$USER" "$WHISPER_MODEL_DIR"
+    if [[ ! -f "$WHISPER_MODEL_DIR/ggml-small-q5_1.bin" ]]; then
+        curl -sL -o "$WHISPER_MODEL_DIR/ggml-small-q5_1.bin" "$WHISPER_MODEL_URL"
+    fi
 fi
 
 echo "== TTS local: Piper con voz es_ES =="
