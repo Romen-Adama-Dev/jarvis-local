@@ -1,0 +1,63 @@
+#!/usr/bin/env bash
+# Versiona el vault de Obsidian de Jarvis en un repo git PRIVADO y lo sincroniza cada
+# 5 minutos con un temporizador systemd de usuario (ver docs/MEMORY.md). En el portátil
+# basta clonar el repo, abrirlo como vault en Obsidian y usar el plugin Obsidian Git.
+#
+# Uso: scripts/install-vault-sync git@github.com:<usuario>/<repo-privado>.git
+set -euo pipefail
+
+REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+REMOTE="${1:?Uso: scripts/install-vault-sync <url-git-del-repo-privado>}"
+VAULT_DIR="${JARVIS_VAULT_DIR:-$HOME/.openclaw/wiki/main}"
+UNIT_DIR="$HOME/.config/systemd/user"
+
+if [[ ! -d "$VAULT_DIR" ]]; then
+  echo "ERROR: no existe el vault $VAULT_DIR (activa memory-wiki, ver docs/MEMORY.md)." >&2
+  exit 1
+fi
+
+echo "== Versionando el vault $VAULT_DIR =="
+cd "$VAULT_DIR"
+[[ -d .git ]] || git init -q -b main
+cat >.gitignore <<'EOF'
+# Estado interno del plugin memory-wiki (se regenera en el servidor)
+.openclaw-wiki/
+# Estado local de la app Obsidian en cada dispositivo
+.obsidian/workspace*.json
+.obsidian/cache
+.trash/
+EOF
+if git remote get-url origin >/dev/null 2>&1; then
+  git remote set-url origin "$REMOTE"
+else
+  git remote add origin "$REMOTE"
+fi
+JARVIS_VAULT_DIR="$VAULT_DIR" "$REPO_DIR/scripts/vault-sync"
+
+echo "== Instalando el temporizador jarvis-vault-sync (cada 5 minutos) =="
+mkdir -p "$UNIT_DIR"
+cat >"$UNIT_DIR/jarvis-vault-sync.service" <<EOF
+[Unit]
+Description=Sincroniza el vault de Obsidian de Jarvis con git
+
+[Service]
+Type=oneshot
+Environment=JARVIS_VAULT_DIR=$VAULT_DIR
+ExecStart=$REPO_DIR/scripts/vault-sync
+EOF
+cat >"$UNIT_DIR/jarvis-vault-sync.timer" <<'EOF'
+[Unit]
+Description=Sincroniza el vault de Obsidian de Jarvis cada 5 minutos
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=5min
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+EOF
+systemctl --user daemon-reload
+systemctl --user enable --now jarvis-vault-sync.timer
+
+echo "Vault sincronizado con $REMOTE. Logs: journalctl --user -u jarvis-vault-sync"

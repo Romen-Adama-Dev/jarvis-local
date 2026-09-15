@@ -27,7 +27,9 @@
   },
   "memory": {
     "search": {
-      "enabled": false
+      "enabled": true,
+      "provider": "ollama-embeddings",
+      "model": "embeddinggemma"
     }
   },
   "models": {
@@ -46,6 +48,17 @@
             ],
             "contextWindow": __OLLAMA_CONTEXT_LENGTH__,
             "maxTokens": 4096
+          }
+        ]
+      },
+      "ollama-embeddings": {
+        "baseUrl": "http://127.0.0.1:11434",
+        "apiKey": "ollama-local-no-auth",
+        "api": "ollama",
+        "models": [
+          {
+            "id": "embeddinggemma",
+            "name": "EmbeddingGemma (búsqueda en la memoria)"
           }
         ]
       }

@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# Sincroniza el vault de Obsidian de Jarvis (plugin memory-wiki) con su repo git
+# privado: commit de lo que haya cambiado en el servidor, rebase sobre lo que se haya
+# editado desde Obsidian en otros dispositivos y push. Lo ejecuta cada 5 minutos el
+# temporizador systemd de usuario que instala scripts/install-vault-sync; también se
+# puede lanzar a mano. Ver docs/MEMORY.md.
+set -euo pipefail
+
+VAULT_DIR="${JARVIS_VAULT_DIR:-$HOME/.openclaw/wiki/main}"
+cd "$VAULT_DIR"
+
+git add -A
+if ! git diff --cached --quiet; then
+  git commit -q -m "jarvis: memoria $(date -u +%Y-%m-%dT%H:%MZ)"
+fi
+
+# En el primer envío el repo remoto aún no tiene rama main.
+if git ls-remote --exit-code --heads origin main >/dev/null 2>&1; then
+  if ! git pull -q --rebase --autostash origin main; then
+    git rebase --abort 2>/dev/null || true
+    echo "ERROR: conflicto al integrar los cambios remotos del vault; resuélvelo a mano en $VAULT_DIR" >&2
+    exit 1
+  fi
+fi
+
+git push -q origin HEAD:main

@@ -118,29 +118,42 @@ A diferencia de correo/calendario, anotar una nota de memoria no tiene efecto
 externo, así que no pasa por `packages/security/confirmation.py` — Jarvis
 escribe directamente. `reports/` (auto-generado por `wiki lint`) ya cubre
 parte del control de calidad (contradicciones, páginas huérfanas, baja
-confianza); además, `~/.openclaw/wiki/main/` puede versionarse con `git init`
-igual que cualquier otro directorio si se quiere un historial revertible
-línea a línea — decisión pendiente, no crítica dado que `reports/` ya
-señala anomalías.
+confianza); además, el vault se versiona en un repo git privado (ver
+"Sincronización"), así que cada cambio de Jarvis queda como un commit revertible.
 
-## Sincronización: cómo lo abres de verdad en Obsidian
+## Sincronización con Obsidian (repo git privado)
 
-El vault vive en el servidor (`jarvis-gpu`); Obsidian corre en tu portátil o
-móvil. Hace falta sincronizar `~/.openclaw/wiki/main/`. Opciones, de menor a
-mayor fricción:
+El vault vive en el servidor; Obsidian corre en el portátil o el móvil. Se
+sincroniza con un repo git **privado** (contiene decisiones de proyecto,
+preferencias y resúmenes de correos):
 
-* **`git clone`/`git pull` manual** (si se decide versionar el vault) — sin
-  coste, sin servicio nuevo, sincronización a demanda.
-* **Syncthing** (self-hosted, P2P, sin servidor de terceros) — sincronización
-  continua, encaja con los criterios ya declarados en `docs/INTEGRACIONES.md`
-  (sin dependencia de APIs de pago, self-hosted).
-* **Obsidian Sync** (servicio de pago de los propios creadores de Obsidian) —
-  la más cómoda, pero rompe el criterio "sin dependencia de proveedores
-  externos de pago" que gobierna el resto del proyecto. No recomendado salvo
-  que lo aceptes explícitamente para esta pieza en concreto.
+```bash
+scripts/install-vault-sync git@github.com:<usuario>/jarvis-vault.git
+```
 
-**Pendiente de decidir contigo**: cuál de las dos primeras opciones montamos
-y en qué dispositivo(s) quieres el vault.
+El script hace `git init` del vault (ignora `.openclaw-wiki/`, estado interno del
+plugin, y el estado local de la app Obsidian), el primer push, e instala un
+temporizador systemd de usuario, `jarvis-vault-sync.timer`, que ejecuta
+`scripts/vault-sync` cada 5 minutos: commit de lo que haya escrito Jarvis,
+`pull --rebase` de lo editado desde otros dispositivos y push. Ante un conflicto
+aborta el rebase y lo deja para resolverlo a mano
+(`journalctl --user -u jarvis-vault-sync`).
+
+En el portátil: clonar el repo, abrir la carpeta como vault en Obsidian e instalar el
+plugin comunitario **Obsidian Git** con pull/push automáticos. Lo editado a mano llega
+al servidor en el siguiente ciclo, y `preserveHumanBlocks` evita que el compilador del
+wiki lo pise.
+
+Descartados: Syncthing (otro servicio P2P que mantener, sin historial) y Obsidian Sync
+(de pago, rompe el criterio de no depender de proveedores externos de pago).
+
+## Búsqueda semántica en la memoria
+
+`memory.search` usa embeddings locales de Ollama (`embeddinggemma`, multilingüe,
+~620 MB) mediante el proveedor `ollama-embeddings` de `models.providers`, sin APIs
+externas. Antes estaba desactivada (`enabled: false`, herencia de "sin OpenAI"), así que
+`memory_search` no encontraba lo anotado. Si se cambia el modelo de embeddings hay que
+reconstruir el índice: `openclaw memory index --force --agent main`.
 
 ## Verificación en esta VM
 
@@ -161,5 +174,5 @@ exportar.
 * Primera nota de proyecto real (`sources/proyectos/<slug>/resumen.md`) para
   validar que el flujo completo (escritura → `wiki lint`/compilación →
   `wiki_search`) funciona de punta a punta.
-* Decidir sincronización (Syncthing vs. `git clone` manual) y, si aplica,
-  `git init` del vault.
+* Llevar la sincronización del vault al despliegue con `docker compose up` (hoy es un
+  temporizador systemd del host).
