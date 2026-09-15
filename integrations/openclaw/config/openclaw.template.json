@@ -177,7 +177,7 @@
       "models": [
         {
           "type": "cli",
-          "command": "/usr/bin/whisper-cli",
+          "command": "__WHISPER_CLI__",
           "args": [
             "-m",
             "/srv/jarvis/models/whisper/ggml-small-q5_1.bin",

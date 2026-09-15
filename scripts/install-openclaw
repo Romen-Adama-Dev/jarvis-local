@@ -4,6 +4,7 @@ set -euo pipefail
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 NPM_PREFIX="$HOME/.npm-global"
 WHISPER_MODEL_DIR="/srv/jarvis/models/whisper"
+WHISPER_CPP_TAG="v1.8.3"
 WHISPER_MODEL_URL="https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small-q5_1.bin"
 PIPER_MODEL_DIR="/srv/jarvis/models/piper"
 PIPER_VOICE_BASE="https://huggingface.co/rhasspy/piper-voices/resolve/main/es/es_ES/davefx/medium/es_ES-davefx-medium"
@@ -41,9 +42,23 @@ if command -v whisper-cli >/dev/null 2>&1; then
 elif apt-cache show whisper.cpp >/dev/null 2>&1; then
     sudo apt-get install -y whisper.cpp
 else
-    echo "AVISO: el paquete 'whisper.cpp' no existe en los repos de esta distro. Las" >&2
-    echo "       notas de voz por Telegram no funcionarán hasta compilarlo a mano o" >&2
-    echo "       actualizar el host; se continúa sin STT." >&2
+    # Ubuntu 22.04 no empaqueta whisper.cpp: se compila desde fuente, solo CPU
+    # (la GPU la ocupa Ollama; una nota de voz tarda ~5 s en CPU con small-q5_1).
+    echo "El paquete 'whisper.cpp' no existe en los repos de esta distro: compilando desde fuente (${WHISPER_CPP_TAG})."
+    sudo apt-get install -y build-essential cmake
+    mkdir -p "$HOME/src"
+    if [[ ! -d "$HOME/src/whisper.cpp" ]]; then
+        git clone -q --depth 1 --branch "$WHISPER_CPP_TAG" https://github.com/ggml-org/whisper.cpp.git "$HOME/src/whisper.cpp"
+    fi
+    cmake -S "$HOME/src/whisper.cpp" -B "$HOME/src/whisper.cpp/build" -DCMAKE_BUILD_TYPE=Release \
+        -DGGML_CUDA=OFF -DWHISPER_BUILD_TESTS=OFF >/dev/null
+    cmake --build "$HOME/src/whisper.cpp/build" --config Release -j"$(nproc)" --target whisper-cli >/dev/null
+    sudo install -m 755 "$HOME/src/whisper.cpp/build/bin/whisper-cli" /usr/local/bin/whisper-cli
+    # whisper-cli enlaza dinámicamente con libwhisper/libggml del árbol de build
+    sudo mkdir -p /usr/local/lib/whisper.cpp
+    sudo find "$HOME/src/whisper.cpp/build" -name "lib*.so*" -exec cp -a {} /usr/local/lib/whisper.cpp/ \;
+    echo "/usr/local/lib/whisper.cpp" | sudo tee /etc/ld.so.conf.d/whisper.cpp.conf >/dev/null
+    sudo ldconfig
 fi
 if command -v whisper-cli >/dev/null 2>&1; then
     sudo mkdir -p "$WHISPER_MODEL_DIR"

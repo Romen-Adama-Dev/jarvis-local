@@ -2,6 +2,6 @@
 set -euo pipefail
 OUTPUT_PATH="$1"
 TEXT="$2"
-printf '%s' "$TEXT" | /home/jarvis/.local/bin/piper \
+printf '%s' "$TEXT" | "$(dirname "$(readlink -f "$0")")/piper" \
   -m /srv/jarvis/models/piper/es_ES-davefx-medium.onnx \
   -f "$OUTPUT_PATH"
