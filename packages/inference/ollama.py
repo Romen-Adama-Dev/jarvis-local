@@ -21,7 +21,7 @@ _TOKENIZER = tiktoken.get_encoding("cl100k_base")
 # campo "tools" del endpoint /api/chat: se determina empíricamente (ver
 # docs/BENCHMARKS.md) probando una llamada real con "tools". Este conjunto
 # refleja las familias verificadas como compatibles en ese benchmark.
-_TOOL_CAPABLE_FAMILIES = {"llama", "qwen2"}
+_TOOL_CAPABLE_FAMILIES = {"llama", "qwen2", "gemma4"}
 
 
 class OllamaProvider:
@@ -61,6 +61,9 @@ class OllamaProvider:
             "model": target_model,
             "messages": [{"role": m.role.value, "content": m.content} for m in messages],
             "stream": False,
+            # Los modelos con "thinking" (gemma4, qwen3...) razonan por defecto: para responder
+            # sobre contexto RAG solo añade latencia. Los modelos sin thinking lo ignoran.
+            "think": False,
         }
         options = {k: v for k, v in kwargs.items() if k in {"temperature", "num_ctx", "top_p"}}
         if options:

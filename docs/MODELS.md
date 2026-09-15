@@ -27,13 +27,28 @@ validar todavía en hardware real.
 | `vram_7000` | ≥ 7000, < 11000 | `qwen2.5:7b` | `llama3.1:8b` | 32768 |
 | `vram_11000` | ≥ 11000, < 15000 | `qwen2.5:7b` | `qwen2.5:14b` | 32768 |
 | `vram_15000` | ≥ 15000, < 21000 | `qwen2.5:14b` | `qwen2.5:14b` | 32768 |
-| `vram_21000` | ≥ 21000, < 38000 | `qwen2.5:14b` | `qwen2.5:32b` | 16384 |
+| `vram_21000` | ≥ 21000, < 38000 | `gemma4:26b-a4b-it-qat` | `gemma4:26b-a4b-it-qat` | 32768 |
 | `vram_38000` | ≥ 38000, < 47000 | `qwen2.5:14b` | `qwen2.5:32b` | 32768 |
 | `vram_47000` | ≥ 47000 | `qwen2.5:32b` | `qwen2.5:72b` | 32768 |
 
-> ⚠️ Solo `vram_7000` (fila resaltada por ser la benchmarkeada) está medido
-> en hardware real. El resto: úsalos como punto de partida razonable y valida
-> con `scripts/benchmark-models` antes de confiar en ellos para producción.
+> ⚠️ Medidos en hardware real: `vram_7000` (GTX 1070, benchmark completo) y
+> `vram_21000` (NVIDIA L4, ver abajo). El resto: úsalos como punto de partida
+> razonable y valida con `scripts/benchmark-models` antes de confiar en ellos.
+
+### `vram_21000`: NVIDIA L4 23 GB (2026-09-15)
+
+Contexto 32768, `OLLAMA_FLASH_ATTENTION=1`, `OLLAMA_KV_CACHE_TYPE=q8_0`, Ollama 0.34.
+Prueba de herramientas con las de Jarvis vía `/v1/chat/completions` (la API que usa
+OpenClaw): pedir un resumen en PDF, preguntar por la documentación y charlar.
+
+| Modelo | En GPU | Generación | Herramientas |
+|---|---|---|---|
+| `qwen2.5:32b` (anterior) | 24 GB, 10 % CPU | 6,9 tok/s | ✅ |
+| `qwen3.6:35b-a3b` (MoE, 3B activos) | 22 GB, 7 % CPU | 49,7 tok/s | ✅ PDF y RAG; en la charla agotó 400 tokens razonando sin responder |
+| **`gemma4:26b-a4b-it-qat`** (MoE, 4B activos) | **14 GB, 100 % GPU** | **70,4 tok/s** | ✅ las tres |
+
+Gemma 4 razona por defecto: la API de RAG lo desactiva con `think: false` y OpenClaw
+con `reasoning_effort: "none"`. Deja además ~8 GB libres para embeddings y reranker.
 
 ## Uso
 

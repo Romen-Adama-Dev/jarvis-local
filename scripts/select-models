@@ -89,7 +89,9 @@ case "${TIER}" in
     vram_7000)    PRIMARY=qwen2.5:7b;  POWERFUL=llama3.1:8b; CTX=32768 ;;
     vram_11000)   PRIMARY=qwen2.5:7b;  POWERFUL=qwen2.5:14b; CTX=32768 ;;
     vram_15000)   PRIMARY=qwen2.5:14b; POWERFUL=qwen2.5:14b; CTX=32768 ;;
-    vram_21000)   PRIMARY=qwen2.5:14b; POWERFUL=qwen2.5:32b; CTX=16384 ;;
+    # Medido en NVIDIA L4 (23 GB): cabe entero (14 GB) a ~70 tok/s; qwen2.5:32b no cabía
+    # (10 % en CPU, ~7 tok/s). Ver docs/MODELS.md.
+    vram_21000)   PRIMARY=gemma4:26b-a4b-it-qat; POWERFUL=gemma4:26b-a4b-it-qat; CTX=32768 ;;
     vram_38000)   PRIMARY=qwen2.5:14b; POWERFUL=qwen2.5:32b; CTX=32768 ;;
     vram_47000)   PRIMARY=qwen2.5:32b; POWERFUL=qwen2.5:72b; CTX=32768 ;;
     *)
