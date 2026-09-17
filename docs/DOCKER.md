@@ -83,26 +83,9 @@ docker compose exec openclaw cat /run/jarvis/openclaw_gateway_token
 
 ### Desde tu tailnet (recomendado)
 
-1. En el panel de Tailscale (**DNS**): activa **MagicDNS** y **HTTPS Certificates**.
-2. En `.env`, añade `tailscale` a `COMPOSE_PROFILES` y `docker compose up -d`.
-3. Une el servidor a tu tailnet, una sola vez (queda guardado en el volumen
-   `tailscale_state`), de una de estas dos formas:
-   * **Con tu cuenta** (GitHub, Google…): abre el enlace que aparece en
-     `docker compose logs tailscale | grep login.tailscale.com` e inicia sesión con la
-     misma cuenta que usas en el móvil o el portátil. Después,
-     `docker compose restart openclaw`.
-   * **Sin interacción**: crea una clave en **Settings → Keys** y ponla en `TS_AUTHKEY`
-     antes del primer arranque.
-
-El servicio `tailscale` une el servidor a tu tailnet como `TAILSCALE_HOSTNAME` (por
-defecto `jarvis`) y OpenClaw lo publica con `tailscale serve` (`gateway.tailscale.mode`):
-abre `https://jarvis.<tu-tailnet>.ts.net` desde cualquier dispositivo del tailnet. Nada
-queda expuesto a internet. Las sesiones que llegan por Serve se autentican con la
-identidad de Tailscale (sin pegar el token); para exigir el token también, pon
-`gateway.auth.allowTailscale: false` en la plantilla.
-
-La primera vez que tarde en aparecer el certificado, recarga a los pocos segundos. Para
-comprobarlo: `docker compose exec openclaw tailscale serve status`.
+Con el perfil `tailscale`, el panel queda en `https://jarvis.<tu-tailnet>.ts.net` desde el
+móvil o el portátil, sin abrir puertos. Configuración paso a paso, funcionamiento y
+problemas frecuentes en `docs/ACCESO-REMOTO.md`.
 
 ### Por túnel SSH
 

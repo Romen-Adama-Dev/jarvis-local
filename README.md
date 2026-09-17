@@ -9,7 +9,7 @@ cp .env.example .env   # rellena TELEGRAM_BOT_TOKEN y TELEGRAM_AUTHORIZED_USER_I
 docker compose up -d
 ```
 
-Requiere Docker con Compose v2.30+ y, para GPU, NVIDIA Container Toolkit. Los secretos y el modelo adecuado a tu GPU se generan solos en el primer arranque. Detalles en `docs/DOCKER.md`.
+Requiere Docker con Compose v2.30+ y, para GPU, NVIDIA Container Toolkit. Los secretos y el modelo adecuado a tu GPU se generan solos en el primer arranque. Detalles en `docs/DOCKER.md`; para abrir el panel de OpenClaw desde el móvil o el portátil por Tailscale, `docs/ACCESO-REMOTO.md`.
 
 Ver `docs/ARCHITECTURE.md` para el diseño completo y `docs/INSTALL.md` para la instalación reproducible desde cero. La elección automática de modelo Ollama según la VRAM disponible está en `docs/MODELS.md` (`scripts/select-models`).
 
