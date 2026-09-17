@@ -49,3 +49,8 @@ for dir in /var/lib/tailscale /var/run/tailscale; do
     chmod 700 "$dir"
   fi
 done
+
+# Entrada de /etc/passwd para el UID de Jarvis en imágenes que no la traen: ssh se niega a
+# funcionar sin ella ("No user exists for uid"), y vault-sync hace push por SSH.
+printf 'root:x:0:0:root:/root:/bin/sh\njarvis:x:%s:%s:Jarvis:/tmp:/bin/sh\n' \
+  "${JARVIS_UID:-1000}" "${JARVIS_GID:-1000}" >"$RUNTIME_DIR/passwd"
