@@ -38,6 +38,10 @@ volumes:
   openclaw_state:
   tailscale_state:
   tailscale_socket:
+  couchdb_data:
+  couchdb_config:
+  livesync_bridge_config:
+  livesync_bridge_state:
 
 services:
   # --- Arranque: secretos + modelos -------------------------------------------------
@@ -315,6 +319,9 @@ services:
     environment:
       TS_AUTHKEY: ${TS_AUTHKEY:-}
       TS_HOSTNAME: ${TAILSCALE_HOSTNAME:-jarvis}
+      COMPOSE_PROFILES: ${COMPOSE_PROFILES:-}
+      LIVESYNC_HTTPS_PORT: ${LIVESYNC_HTTPS_PORT:-8443}
+      COUCHDB_PORT: ${COUCHDB_PORT:-5984}
     volumes:
       - ./infra/docker/tailscale-entrypoint.sh:/opt/jarvis/tailscale-entrypoint.sh:ro
       - tailscale_state:/var/lib/tailscale
@@ -328,6 +335,94 @@ services:
       timeout: 10s
       retries: 20
       start_period: 30s
+    logging: *logging
+
+  # Obsidian en el móvil y el portátil con Self-hosted LiveSync (docs/OBSIDIAN.md):
+  # CouchDB publicado solo por Tailscale y livesync-bridge entre CouchDB y el vault.
+  # COMPOSE_PROFILES=tailscale,livesync.
+  couchdb:
+    image: couchdb:3.5.2
+    restart: unless-stopped
+    profiles: ["livesync"]
+    networks:
+      - jarvis_internal
+    ports:
+      - "127.0.0.1:${COUCHDB_PORT:-5984}:5984"
+    entrypoint: ["/bin/sh", "-c", "export COUCHDB_PASSWORD=\"$$(cat /run/jarvis/couchdb_password)\" && exec tini -- /docker-entrypoint.sh /opt/couchdb/bin/couchdb"]
+    environment:
+      COUCHDB_USER: ${COUCHDB_USER:-jarvis}
+    volumes:
+      - couchdb_data:/opt/couchdb/data
+      - couchdb_config:/opt/couchdb/etc/local.d
+      - jarvis_runtime:/run/jarvis:ro
+    depends_on:
+      init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:5984/_up >/dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    logging: *logging
+
+  livesync-init:
+    image: denoland/deno:2.6.9
+    profiles: ["livesync"]
+    networks:
+      - jarvis_internal
+    entrypoint: ["/bin/sh", "/opt/jarvis/livesync-init.sh"]
+    environment:
+      LIVESYNC_UTILS_REF: 85a12e311c8b5d2a56de402d5923508f2687d5b2
+      COUCHDB_USER: ${COUCHDB_USER:-jarvis}
+      LIVESYNC_DATABASE: ${LIVESYNC_DATABASE:-jarvis_vault}
+      LIVESYNC_URL: ${LIVESYNC_URL:-}
+      LIVESYNC_HTTPS_PORT: ${LIVESYNC_HTTPS_PORT:-8443}
+      JARVIS_UID: ${JARVIS_UID:-1000}
+      JARVIS_GID: ${JARVIS_GID:-1000}
+    volumes:
+      - ./infra/docker/livesync-init.sh:/opt/jarvis/livesync-init.sh:ro
+      - jarvis_runtime:/run/jarvis
+      - livesync_bridge_config:/bridge
+      - livesync_bridge_state:/bridge-state
+      - tailscale_socket:/var/run/tailscale:ro
+      - ${OPENCLAW_STATE_PATH:-openclaw_state}:/state
+    depends_on:
+      couchdb:
+        condition: service_healthy
+      tailscale:
+        condition: service_healthy
+        required: false
+    restart: "no"
+    logging: *logging
+
+  livesync-bridge:
+    build:
+      context: https://github.com/vrtmrz/livesync-bridge.git#c3760beaa0851214da4860903445d7f6420ca025
+    image: jarvis-livesync-bridge:c3760be
+    restart: unless-stopped
+    profiles: ["livesync"]
+    networks:
+      - jarvis_internal
+    # Mismo UID que OpenClaw para que las notas editadas desde Obsidian sigan siendo suyas.
+    user: "${JARVIS_UID:-1000}:${JARVIS_GID:-1000}"
+    environment:
+      LSB_CONFIG: /bridge/config.json
+      # Caché de Deno escribible con el UID de Jarvis (la de la imagen es del usuario deno);
+      # incluye location_data, el registro de qué archivos ya se subieron.
+      DENO_DIR: /bridge-state
+    volumes:
+      - livesync_bridge_config:/bridge:ro
+      - livesync_bridge_state:/bridge-state
+      - ${OPENCLAW_STATE_PATH:-openclaw_state}:/state
+    tmpfs:
+      # Repo git del vault y estado interno de memory-wiki: no se sincronizan con Obsidian.
+      - /state/wiki/main/.git
+      - /state/wiki/main/.openclaw-wiki
+    depends_on:
+      livesync-init:
+        condition: service_completed_successfully
+      openclaw:
+        condition: service_started
     logging: *logging
 
   changedetection:

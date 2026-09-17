@@ -121,31 +121,28 @@ parte del control de calidad (contradicciones, páginas huérfanas, baja
 confianza); además, el vault se versiona en un repo git privado (ver
 "Sincronización"), así que cada cambio de Jarvis queda como un commit revertible.
 
-## Sincronización con Obsidian (repo git privado)
+## Sincronización con Obsidian
 
-El vault vive en el servidor; Obsidian corre en el portátil o el móvil. Se
-sincroniza con un repo git **privado** (contiene decisiones de proyecto,
-preferencias y resúmenes de correos):
+El vault vive en el servidor; Obsidian corre en el portátil o el móvil. Dos capas, ambas
+en docker compose:
 
-```bash
-scripts/install-vault-sync git@github.com:<usuario>/jarvis-vault.git
-```
+* **Tiempo real (perfil `livesync`)**: plugin Self-hosted LiveSync de Obsidian contra un
+  CouchDB publicado solo por Tailscale, y `livesync-bridge` entre CouchDB y los archivos
+  del vault. Configuración y uso en `docs/OBSIDIAN.md`.
+* **Historial (perfil `vault`)**: `vault-sync` versiona el vault en un repo git
+  **privado** (contiene decisiones de proyecto, preferencias y resúmenes de correos)
+  cada `VAULT_SYNC_INTERVAL` segundos (300 por defecto): commit de lo que haya cambiado,
+  `pull --rebase` y push. Ignora `.openclaw-wiki/` y el estado local de la app Obsidian.
+  Ante un conflicto aborta el rebase y lo deja para resolverlo a mano
+  (`docker compose logs vault-sync`). Variables: `VAULT_GIT_URL` (URL SSH) y
+  `VAULT_SSH_KEY_PATH` (clave con permiso de escritura en ese repo).
 
-El script hace `git init` del vault (ignora `.openclaw-wiki/`, estado interno del
-plugin, y el estado local de la app Obsidian), el primer push, e instala un
-temporizador systemd de usuario, `jarvis-vault-sync.timer`, que ejecuta
-`scripts/vault-sync` cada 5 minutos: commit de lo que haya escrito Jarvis,
-`pull --rebase` de lo editado desde otros dispositivos y push. Ante un conflicto
-aborta el rebase y lo deja para resolverlo a mano
-(`journalctl --user -u jarvis-vault-sync`).
+Fuera de docker, `scripts/install-vault-sync git@github.com:<usuario>/jarvis-vault.git`
+instala lo mismo como temporizador systemd de usuario.
 
-En el portátil: clonar el repo, abrir la carpeta como vault en Obsidian e instalar el
-plugin comunitario **Obsidian Git** con pull/push automáticos. Lo editado a mano llega
-al servidor en el siguiente ciclo, y `preserveHumanBlocks` evita que el compilador del
-wiki lo pise.
-
-Descartados: Syncthing (otro servicio P2P que mantener, sin historial) y Obsidian Sync
-(de pago, rompe el criterio de no depender de proveedores externos de pago).
+Descartados: Obsidian Git en el móvil (lento y frágil en iOS), Syncthing (sin cliente
+oficial en iOS, sin historial) y Obsidian Sync (de pago, rompe el criterio de no depender
+de proveedores externos de pago).
 
 ## Búsqueda semántica en la memoria
 
@@ -174,5 +171,3 @@ exportar.
 * Primera nota de proyecto real (`sources/proyectos/<slug>/resumen.md`) para
   validar que el flujo completo (escritura → `wiki lint`/compilación →
   `wiki_search`) funciona de punta a punta.
-* Llevar la sincronización del vault al despliegue con `docker compose up` (hoy es un
-  temporizador systemd del host).
