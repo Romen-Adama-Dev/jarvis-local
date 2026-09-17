@@ -43,6 +43,7 @@ Perfiles opcionales (`COMPOSE_PROFILES` en `.env`, separados por comas):
 
 | Perfil | Servicios |
 |---|---|
+| `tailscale` | Interfaz web de OpenClaw por HTTPS desde tu tailnet (`TS_AUTHKEY`; ver abajo) |
 | `vault` | `vault-sync`: vault de Obsidian en un repo git privado (`VAULT_GIT_URL`, `VAULT_SSH_KEY_PATH`; ver `docs/MEMORY.md`) |
 | `monitoring` | Prometheus + Grafana |
 | `assistant` | changedetection |
@@ -61,7 +62,8 @@ Orden de arranque: `init` → `postgres`/`searxng`/`ollama` → `ollama-pull` y 
   suyos. No cambies `POSTGRES_PASSWORD` después del primer arranque (la base de datos ya
   se inicializó con la anterior).
 * **Modelos**: con `OLLAMA_PRIMARY_MODEL` vacío, `init` detecta la VRAM y elige nivel
-  (`docs/MODELS.md`); `JARVIS_MODEL_TIER` fuerza un nivel concreto.
+  (`docs/MODELS.md`); `JARVIS_MODEL_TIER` fuerza un nivel concreto. Con
+  `OLLAMA_PRUNE_UNUSED=true`, `ollama-pull` borra los modelos que no estén en uso.
 * **OpenClaw**: `openclaw.json` se genera en cada arranque desde
   `integrations/openclaw/config/openclaw.template.json` y `.env`, y `AGENTS.md` se copia
   desde `integrations/openclaw/workspace/`. La configuración vive en el repo: los cambios
@@ -73,13 +75,46 @@ Orden de arranque: `init` → `postgres`/`searxng`/`ollama` → `ollama-pull` y 
 
 ## Interfaz web de OpenClaw
 
-Escucha solo en `127.0.0.1:18789` del servidor. Desde tu equipo:
+El gateway escucha solo en `127.0.0.1:18789` del servidor. Token para entrar:
+
+```bash
+docker compose exec openclaw cat /run/jarvis/openclaw_gateway_token
+```
+
+### Desde tu tailnet (recomendado)
+
+1. En el panel de Tailscale (**DNS**): activa **MagicDNS** y **HTTPS Certificates**.
+2. En `.env`, añade `tailscale` a `COMPOSE_PROFILES` y `docker compose up -d`.
+3. Une el servidor a tu tailnet, una sola vez (queda guardado en el volumen
+   `tailscale_state`), de una de estas dos formas:
+   * **Con tu cuenta** (GitHub, Google…): abre el enlace que aparece en
+     `docker compose logs tailscale | grep login.tailscale.com` e inicia sesión con la
+     misma cuenta que usas en el móvil o el portátil. Después,
+     `docker compose restart openclaw`.
+   * **Sin interacción**: crea una clave en **Settings → Keys** y ponla en `TS_AUTHKEY`
+     antes del primer arranque.
+
+El servicio `tailscale` une el servidor a tu tailnet como `TAILSCALE_HOSTNAME` (por
+defecto `jarvis`) y OpenClaw lo publica con `tailscale serve` (`gateway.tailscale.mode`):
+abre `https://jarvis.<tu-tailnet>.ts.net` desde cualquier dispositivo del tailnet. Nada
+queda expuesto a internet. Las sesiones que llegan por Serve se autentican con la
+identidad de Tailscale (sin pegar el token); para exigir el token también, pon
+`gateway.auth.allowTailscale: false` en la plantilla.
+
+La primera vez que tarde en aparecer el certificado, recarga a los pocos segundos. Para
+comprobarlo: `docker compose exec openclaw tailscale serve status`.
+
+### Por túnel SSH
 
 ```bash
 ssh -L 18789:127.0.0.1:18789 usuario@servidor
-# abre http://localhost:18789 y pega el token:
-docker compose exec openclaw cat /run/jarvis/openclaw_gateway_token
+# abre http://localhost:18789 y pega el token
 ```
+
+## Obsidian
+
+El vault no tiene interfaz web: se abre con la app Obsidian en el portátil o el móvil,
+sincronizada con el repo git privado del perfil `vault` (ver `docs/MEMORY.md`).
 
 ## Actualizar
 

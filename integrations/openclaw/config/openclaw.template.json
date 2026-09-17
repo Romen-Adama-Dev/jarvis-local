@@ -1,6 +1,10 @@
 {
   "gateway": {
     "mode": "local",
+    "bind": "loopback",
+    "tailscale": {
+      "mode": "__TAILSCALE_MODE__"
+    },
     "auth": {
       "mode": "token",
       "token": "__OPENCLAW_GATEWAY_TOKEN__"
