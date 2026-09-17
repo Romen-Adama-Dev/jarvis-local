@@ -45,6 +45,7 @@ Perfiles opcionales (`COMPOSE_PROFILES` en `.env`, separados por comas):
 |---|---|
 | `tailscale` | Interfaz web de OpenClaw por HTTPS desde tu tailnet (`TS_AUTHKEY`; ver abajo) |
 | `vault` | `vault-sync`: vault de Obsidian en un repo git privado (`VAULT_GIT_URL`, `VAULT_SSH_KEY_PATH`; ver `docs/MEMORY.md`) |
+| `livesync` | `couchdb`, `livesync-init` y `livesync-bridge`: Obsidian en el móvil y el portátil en tiempo real, por Tailscale (`docs/OBSIDIAN.md`) |
 | `monitoring` | Prometheus + Grafana |
 | `assistant` | changedetection |
 | `automation` | n8n |
@@ -96,8 +97,8 @@ ssh -L 18789:127.0.0.1:18789 usuario@servidor
 
 ## Obsidian
 
-El vault no tiene interfaz web: se abre con la app Obsidian en el portátil o el móvil,
-sincronizada con el repo git privado del perfil `vault` (ver `docs/MEMORY.md`).
+Con los perfiles `tailscale` y `livesync`, el vault de memoria se abre y edita desde
+Obsidian en el móvil o el portátil con sincronización en tiempo real: `docs/OBSIDIAN.md`.
 
 ## Actualizar
 

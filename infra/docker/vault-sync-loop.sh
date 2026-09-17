@@ -19,7 +19,8 @@ until [ -d "$VAULT_DIR" ]; do
 done
 
 cd "$VAULT_DIR"
-[ -d .git ] || git init -q -b main
+# livesync-init puede haber creado .git vacía de antemano.
+[ -f .git/HEAD ] || git init -q -b main
 if [ ! -f .gitignore ]; then
   cat >.gitignore <<'EOF'
 # Estado interno del plugin memory-wiki (se regenera en el servidor)

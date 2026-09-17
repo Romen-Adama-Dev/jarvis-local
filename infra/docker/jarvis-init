@@ -28,6 +28,10 @@ ensure_secret postgres_password "${POSTGRES_PASSWORD:-}" 24
 ensure_secret jarvis_api_internal_token "${JARVIS_API_INTERNAL_TOKEN:-}" 24
 ensure_secret searxng_secret "${SEARXNG_SECRET:-}" 32
 ensure_secret openclaw_gateway_token "${OPENCLAW_GATEWAY_TOKEN:-}" 24
+# Perfil livesync: CouchDB, cifrado de extremo a extremo del vault y Setup URI.
+ensure_secret couchdb_password "${COUCHDB_PASSWORD:-}" 24
+ensure_secret livesync_passphrase "${LIVESYNC_PASSPHRASE:-}" 24
+ensure_secret livesync_uri_passphrase "${LIVESYNC_URI_PASSPHRASE:-}" 16
 
 MODELS_ENV="$RUNTIME_DIR/models.env"
 if [[ -n "${OLLAMA_PRIMARY_MODEL:-}" ]]; then
