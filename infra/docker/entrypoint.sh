@@ -7,7 +7,8 @@ RUNTIME_DIR="${JARVIS_RUNTIME_DIR:-/run/jarvis}"
 # definido en el entorno (.env) tiene prioridad, salvo los valores de ejemplo.
 load_runtime() {
   local var="$1" file="$RUNTIME_DIR/$2" current="${!1:-}"
-  if [[ ( -z "$current" || "$current" == change-me ) && -s "$file" ]]; then
+  # init copia al volumen cualquier POSTGRES_PASSWORD de .env (incluido "change-me").
+  if [[ ( -z "$current" || ( "$current" == change-me && "$var" != POSTGRES_PASSWORD ) ) && -s "$file" ]]; then
     export "$var=$(cat "$file")"
   fi
 }

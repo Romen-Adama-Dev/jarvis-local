@@ -359,7 +359,8 @@ services:
       init:
         condition: service_completed_successfully
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:5984/_up >/dev/null"]
+      # Tras livesync-init, CouchDB exige usuario también en /_up.
+      test: ["CMD-SHELL", "curl -fsS -u \"$$COUCHDB_USER:$$(cat /run/jarvis/couchdb_password)\" http://127.0.0.1:5984/_up >/dev/null"]
       interval: 10s
       timeout: 5s
       retries: 12
