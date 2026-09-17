@@ -7,7 +7,7 @@ description: Resumen del TFM (memoria), estado real del repo frente a esa memori
 
 > Documento de trabajo. Une tres cosas: qué dice la memoria (TFM), qué tiene ya el
 > repositorio `jarvis-local`, y qué queremos añadir (agente: correo, reuniones,
-> generación de documentos, Telegram/Teams). Fecha: septiembre 2026.
+> generación de documentos, Telegram/Teams). Fecha: septiembre 2026 (actualizado el 17).
 
 ---
 
@@ -47,22 +47,25 @@ Leyenda: ✅ hecho · 🟡 parcial · ⬜ por hacer
 | Capacidad / pieza | Memoria (TFM) describe | Repo `jarvis-local` tiene | Queremos añadir |
 |---|---|---|---|
 | **Ingesta + RAG** (PDF → chunks → embeddings → Qdrant → respuesta con fuente) | ✅ núcleo del proyecto | ✅ `packages/rag`, `packages/documents`, Qdrant | 🟡 mejor ingesta (Docling: escaneados/tablas) |
-| **Inferencia local** (Ollama normal, AirLLM `/deep`) | ✅ | ✅ Ollama en host por GPU; `services/airllm`; **auto-selección de modelo por VRAM detectada** (`scripts/select-models`, cerrado en `feature/model-autoselect`) | — |
+| **Inferencia local** (Ollama normal, AirLLM `/deep`) | ✅ | ✅ Ollama en contenedor con GPU (versión fijada); `services/airllm`; **auto-selección de modelo por VRAM** (`scripts/select-models`, la aplica `init`); `gemma4:26b-a4b-it-qat` en GPUs de 21-38 GB; limpieza opcional de modelos sin usar (`OLLAMA_PRUNE_UNUSED`) | 🟡 AirLLM `/deep` sin verificar en compose |
 | **Abstención sin evidencia** | ✅ | ✅ `packages/rag/orchestrator.py` | — |
 | **API + worker** | ✅ | ✅ FastAPI (`apps/api`) + arq (`apps/worker`) | — |
-| **Infra reproducible** (Postgres/Redis/Qdrant, Docker) | ✅ | ✅ `compose.yml` con profiles, `scripts/` idempotentes, `scripts/quickstart` "clona y arranca" | — |
+| **Infra reproducible** (Postgres/Redis/Qdrant, Docker) | ✅ | ✅ **todo Jarvis con `docker compose up`** (`docs/DOCKER.md`): `init` genera secretos y elige modelo, OpenClaw con voz y skills MCP en imagen propia, perfiles opcionales; `compose.cpu.yml` sin GPU | 🟡 CI que construya las imágenes y pruebe el arranque |
 | **Embeddings** | ✅ | ✅ FastEmbed (denso + disperso) | 🟡 reranker local (mejora recuperación) |
-| **Transporte Telegram** | 🟡 capa opcional | ✅ `integrations/openclaw`, config Telegram | 🟡 endurecer (borrador→confirmación) |
+| **Transporte Telegram** | 🟡 capa opcional | ✅ `integrations/openclaw`, config Telegram; indexación de PDFs recibidos con confirmación; entrega de documentos generados | — |
 | **Agente / orquestación** | 🟡 OpenClaw mencionado | ✅ OpenClaw + skills MCP (`jarvis-rag`, `jarvis-email`, `jarvis-calendar`, vía `FastMCP`) | — |
-| **Búsqueda web** | — | ✅ SearXNG (perfil assistant) | — |
+| **Búsqueda web** | — | ✅ SearXNG, arranca por defecto (`web_search` de OpenClaw) | — |
 | **Automatización** | — | ✅ n8n (perfil automation) | 🟡 flujos de correo/calendario |
-| **Observabilidad** | ✅ supervisión | ✅ Prometheus + Grafana, watchdog | — |
-| **Voz local (STT/TTS)** | ✅ | ✅ scripted en `scripts/install-openclaw` (whisper.cpp + Piper es_ES) | 🟡 validar end-to-end en esta VM |
-| **Contestar correos** | ⬜ (roadmap) | ✅ MCP correo con backend IMAP/SMTP para cualquier proveedor (`packages/imapsmtp`) o Graph (`packages/msgraph/mail.py`); skill `jarvis-email`, borrador→confirmación, adjuntos de doc-gen | 🟡 configurar la cuenta de Jarvis (`scripts/configure-mail`) y validar end-to-end |
-| **Agendar / planificar reuniones** | ⬜ (roadmap) | ✅ MCP calendario con backend CalDAV (`packages/caldavcal`) o Graph (`packages/msgraph/calendar.py`); skill `jarvis-calendar`, propuesta→confirmación | 🟡 configurar CalDAV y validar end-to-end |
-| **Generar documentos desde cero** | ⬜ (roadmap) | ✅ `packages/docgen` (resúmenes/DAFO/planes desde el RAG, docx/pptx/pdf/md, entregados por Telegram, `docs/DOCGEN.md`) | 🟡 validar entrega por Telegram |
+| **Observabilidad** | ✅ supervisión | 🟡 perfil `monitoring` (Prometheus + Grafana) sin configurar para el despliegue compose | ⬜ métricas de Ollama/GPU, API y OpenClaw; alertas (Fase 6) |
+| **Voz local (STT/TTS)** | ✅ | ✅ whisper.cpp (AVX2) + Piper es_ES dentro de la imagen de OpenClaw | — |
+| **Contestar correos** | ⬜ (roadmap) | ✅ MCP correo con backend IMAP/SMTP para cualquier proveedor (`packages/imapsmtp`) o Graph (`packages/msgraph/mail.py`); skill `jarvis-email`, borrador→confirmación, adjuntos de doc-gen; cuenta Gmail de Jarvis configurada | 🟡 validar end-to-end con correos reales |
+| **Agendar / planificar reuniones** | ⬜ (roadmap) | ✅ MCP calendario con backend CalDAV (`packages/caldavcal`) o Graph (`packages/msgraph/calendar.py`); skill `jarvis-calendar`, propuesta→confirmación | ⬜ configurar un calendario CalDAV (hoy sin calendario) y validar |
+| **Generar documentos desde cero** | ⬜ (roadmap) | ✅ `packages/docgen` (resúmenes/DAFO/planes desde el RAG, docx/pptx/pdf/md, secciones en paralelo, entregados por Telegram con `MEDIA:`, `docs/DOCGEN.md`) | — |
 | **Microsoft Teams** | ⬜ | 🟡 canal `msteams` soportado en OpenClaw (`scripts/configure-teams`, `docs/TEAMS.md`) | ⬜ **túnel público (Cloudflare Tunnel) + manifiesto de la app**, sin versionar todavía |
 | **Licencia + gobernanza** | ⬜ declarado pendiente | ✅ `LICENSE` (MIT) + `CONTRIBUTING.md` | — |
+| **Memoria evolutiva** | — | ✅ `memory-core` + `memory-wiki` de OpenClaw, vault Obsidian versionado en git privado (`vault-sync`), búsqueda semántica con `embeddinggemma` (`docs/MEMORY.md`) | 🟡 primera nota de proyecto real de punta a punta |
+| **Obsidian en móvil y portátil** | — | ✅ Self-hosted LiveSync: CouchDB por Tailscale + `livesync-bridge` con el vault, cifrado E2E (perfil `livesync`, `docs/OBSIDIAN.md`) | 🟡 validar edición desde el iPhone hacia el vault |
+| **Acceso remoto al panel** | — | ✅ Tailscale en compose; panel de OpenClaw en `https://<host>.<tailnet>.ts.net` sin puertos abiertos, gateway solo en loopback (`docs/ACCESO-REMOTO.md`) | — |
 
 ---
 
@@ -108,17 +111,17 @@ fuentes y aprobación humana en cada acción con efectos externos.
 
 ## 4. Plan por fases (roadmap accionable)
 
-**Fase 0 — Base reproducible (cerrada en `feature/model-autoselect`).**
+**Fase 0 — Base reproducible (✅ cerrada).**
 Auto-selección de modelo Ollama por VRAM detectada (`scripts/select-models`,
 `docs/MODELS.md`) y `scripts/quickstart` "clona y arranca". **LICENSE** (MIT)
 y **CONTRIBUTING.md** → cierra el pendiente "open source formal" del TFM.
 
-**Fase 1 — Capa MCP (fundacional).**
+**Fase 1 — Capa MCP (✅ cerrada: skills `jarvis-rag`, `jarvis-email` y `jarvis-calendar` como servidores MCP de OpenClaw).**
 Introducir un cliente/host MCP en el worker o junto a OpenClaw. Primer servidor MCP
 de prueba (p. ej. filesystem o el propio RAG expuesto como MCP). Criterio de éxito:
 el agente llama a una herramienta MCP local y responde con trazabilidad.
 
-**Fase 2 — Generación de documentos (en marcha en `feature/doc-generation`).**
+**Fase 2 — Generación de documentos (✅ cerrada).**
 *Skill* doc-gen: DAFO o plan de coordinación, con secciones fijas por tipo de
 documento, cada una resuelta con una llamada independiente a
 `HybridRagOrchestrator.query(...)` (el mismo motor que `/ask`/`/deep`: sin
@@ -128,11 +131,10 @@ sección sin evidencia lo dice explícitamente en vez de inventar). Salida en
 y `.pdf` (Pandoc + XeLaTeX vía subproceso, sin plantilla LaTeX vendorizada por
 licencia; `scripts/install-docgen` o la imagen Docker). Expuesta como trabajo
 asíncrono (`POST /v1/documents/generate`, igual que `/deep-query`) y como
-herramienta MCP `jarvis_generate_doc` en la skill `jarvis-rag`. Limitación
-conocida: el archivo generado no se envía aún por Telegram/Teams, queda en el
-servidor (ver `docs/DOCGEN.md`).
+herramienta MCP `jarvis_generate_doc` en la skill `jarvis-rag`. El archivo
+generado se entrega por Telegram (ver `docs/DOCGEN.md`).
 
-**Fase 3 — Correo (borrador + aprobación).**
+**Fase 3 — Correo (borrador + aprobación) (✅ implementada; IMAP/SMTP añadido el 15-09 para usarlo sin Azure; falta validación con correo real).**
 MCP de correo local. Flujo: leer → resumir → **redactar borrador** → confirmación
 por Telegram → enviar. Reutiliza tu patrón de confirmación/TTL.
 La base de autenticación OAuth2 compartida con Graph (Fase 3 y Fase 4) está
@@ -148,7 +150,7 @@ reutiliza el `payload` genérico de `ConfirmationService` (añadido en
 `feature/mcp-msgraph-base`) en vez de un mecanismo nuevo; scopes de Graph
 necesarios: `Mail.Read`, `Mail.Send`.
 
-**Fase 4 — Calendario / reuniones.** **En marcha en `feature/mcp-calendar`**
+**Fase 4 — Calendario / reuniones (✅ implementada, CalDAV añadido el 15-09; sin calendario configurado todavía).** Nació en `feature/mcp-calendar`
 (ver `docs/CALENDAR.md`). Sobre la base de `feature/mcp-msgraph-base`
 (`packages/msgraph/calendar.py`: `get_calendar_view`/`create_event` vía Graph,
 scopes `Calendars.Read`/`Calendars.ReadWrite`), expone `/v1/calendar/events`
@@ -161,7 +163,7 @@ propuesto hasta la confirmación. Nuevo servidor MCP `jarvis-calendar`
 un evento nunca invita a terceros de forma autónoma**, solo tras confirmación
 explícita del propietario cuando la propuesta incluye invitados.
 
-**Fase 5 — Segundo canal: Teams** (en marcha en `feature/mcp-teams-channel`).
+**Fase 5 — Segundo canal: Teams** (🟡 soportado en configuración; bloqueado por el registro de Azure Bot, que no se puede usar).
 Canal oficial `@openclaw/msteams` (no un servidor MCP nuevo: la skill
 `jarvis-rag` ya sirve a cualquier canal). Mismo backend, otro transporte.
 Requiere registro de Azure Bot (paso único del propietario) y un túnel
@@ -176,9 +178,25 @@ endpoint permanente, o instancia separada) y corpus de demo pendiente de
 definir. Retomar cuando se acerque la fecha de defensa; no bloquea las fases
 1-5 de capacidades del agente.
 
+**Fase 5.2 — Despliegue reproducible y acceso (✅ cerrada, 15-17 septiembre).**
+Todo con `docker compose up` (`docs/DOCKER.md`); acceso remoto al panel por Tailscale
+(`docs/ACCESO-REMOTO.md`); memoria en Obsidian del móvil y el portátil con LiveSync
+(`docs/OBSIDIAN.md`); limpieza opcional de modelos de Ollama sin usar.
+
 **Fase 6 — Endurecer y medir.**
 UAT con estos flujos, métricas de ahorro de tiempo (cierra el otro pendiente del
-TFM), y decisión OpenClaw vs. cliente MCP ligero (Hermes/ZeroClaw).
+TFM), y decisión OpenClaw vs. cliente MCP ligero (Hermes/ZeroClaw). Tareas concretas:
+
+* **Monitorización**: perfil `monitoring` adaptado a compose (Ollama, GPU con
+  `dcgm-exporter`, API, CouchDB) y alertas básicas.
+* **Copias de seguridad y restauración** probadas de PostgreSQL, Qdrant, estado de
+  OpenClaw y CouchDB (criterios 21-22 de `docs/ACCEPTANCE.md`).
+* **CI**: tests, ruff y pyright en cada PR, y construcción de las imágenes de compose.
+* **Validaciones de punta a punta pendientes**: correo real, calendario CalDAV, AirLLM
+  `/deep`, edición desde Obsidian en el iPhone, prueba sin Internet (criterio 27).
+* **Actualizar `docs/ACCEPTANCE.md`**, que refleja el estado de julio (Fase 9).
+* Limpieza: rama remota `fix/openclaw-2026.9-deploy`, imagen `alpine/git` sin versión
+  fijada en `vault-sync`.
 
 ---
 
