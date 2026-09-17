@@ -289,6 +289,13 @@ services:
       - ./infra/docker/vault-sync-loop.sh:/opt/jarvis/vault-sync-loop.sh:ro
       - ./scripts/vault-sync:/scripts/vault-sync:ro
       - ${VAULT_SSH_KEY_PATH:-./vault_ssh_key}:/run/vault/id_key:ro
+      # Usuario para JARVIS_UID generado por init: ssh no funciona sin él.
+      - type: volume
+        source: jarvis_runtime
+        target: /etc/passwd
+        read_only: true
+        volume:
+          subpath: passwd
     depends_on:
       openclaw:
         condition: service_started
