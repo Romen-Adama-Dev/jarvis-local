@@ -43,6 +43,10 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 FROM node:24-bookworm-slim AS node
 
+# CLI de Tailscale para `tailscale serve`/`whois` contra el tailscaled del servicio
+# tailscale (misma versión que su imagen en compose.yml).
+FROM tailscale/tailscale:v1.102.3 AS tailscale
+
 FROM python:3.12-slim-bookworm
 ARG OPENCLAW_VERSION
 RUN apt-get update \
@@ -57,6 +61,7 @@ RUN ln -s ../lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
     && npm cache clean --force
 
 COPY --from=whisper /build/bin/whisper-cli /usr/local/bin/whisper-cli
+COPY --from=tailscale /usr/local/bin/tailscale /usr/local/bin/tailscale
 COPY --from=voice-models /models /srv/jarvis/models
 COPY --from=app /opt/piper /opt/piper
 COPY --from=app /app /app

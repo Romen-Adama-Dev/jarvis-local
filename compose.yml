@@ -36,6 +36,8 @@ volumes:
   jarvis_runtime:
   ollama_models:
   openclaw_state:
+  tailscale_state:
+  tailscale_socket:
 
 services:
   # --- Arranque: secretos + modelos -------------------------------------------------
@@ -47,6 +49,8 @@ services:
     env_file: *env-file
     volumes:
       - jarvis_runtime:/run/jarvis
+      - tailscale_state:/var/lib/tailscale
+      - tailscale_socket:/var/run/tailscale
     restart: "no"
     logging: *logging
 
@@ -86,6 +90,7 @@ services:
     entrypoint: ["/bin/sh", "/opt/jarvis/ollama-pull.sh"]
     environment:
       OLLAMA_HOST: "127.0.0.1:11434"
+      OLLAMA_PRUNE_UNUSED: ${OLLAMA_PRUNE_UNUSED:-false}
     volumes:
       - ./infra/docker/ollama-pull.sh:/opt/jarvis/ollama-pull.sh:ro
       - jarvis_runtime:/run/jarvis:ro
@@ -161,7 +166,13 @@ services:
     volumes:
       - ${OPENCLAW_STATE_PATH:-openclaw_state}:/home/jarvis/.openclaw
       - jarvis_runtime:/run/jarvis:ro
+      # Socket de tailscaled (perfil tailscale): el gateway publica la interfaz web con
+      # `tailscale serve` y verifica la identidad de quien entra con `tailscale whois`.
+      - tailscale_socket:/var/run/tailscale
     depends_on:
+      tailscale:
+        condition: service_healthy
+        required: false
       api:
         condition: service_healthy
       searxng:
@@ -281,6 +292,35 @@ services:
     depends_on:
       openclaw:
         condition: service_started
+    logging: *logging
+
+  # Acceso a la interfaz web de OpenClaw desde tu tailnet por HTTPS
+  # (https://<TAILSCALE_HOSTNAME>.<tailnet>.ts.net): TS_AUTHKEY en .env y
+  # COMPOSE_PROFILES=tailscale. Ver docs/DOCKER.md.
+  tailscale:
+    image: tailscale/tailscale:v1.102.3
+    restart: unless-stopped
+    profiles: ["tailscale"]
+    network_mode: host
+    # Mismo UID que openclaw: tailscaled solo deja configurar `serve` a su propio usuario.
+    user: "${JARVIS_UID:-1000}:${JARVIS_GID:-1000}"
+    entrypoint: ["/bin/sh", "/opt/jarvis/tailscale-entrypoint.sh"]
+    environment:
+      TS_AUTHKEY: ${TS_AUTHKEY:-}
+      TS_HOSTNAME: ${TAILSCALE_HOSTNAME:-jarvis}
+    volumes:
+      - ./infra/docker/tailscale-entrypoint.sh:/opt/jarvis/tailscale-entrypoint.sh:ro
+      - tailscale_state:/var/lib/tailscale
+      - tailscale_socket:/var/run/tailscale
+    depends_on:
+      init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "tailscale", "--socket", "/var/run/tailscale/tailscaled.sock", "status"]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+      start_period: 30s
     logging: *logging
 
   changedetection:

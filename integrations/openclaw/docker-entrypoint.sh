@@ -47,9 +47,16 @@ else
   chmod 600 "$STATE_DIR/secrets/telegram_bot_token"
 fi
 
+# Con el perfil tailscale activo, el gateway publica la interfaz web en el tailnet.
+TAILSCALE_MODE=off
+if tailscale status >/dev/null 2>&1; then
+  TAILSCALE_MODE=serve
+fi
+
 echo "== Generando $CONFIG desde la plantilla =="
 sed -e "s/__TELEGRAM_USER_ID__/${TELEGRAM_USER_ID}/g" \
   -e "s/__TELEGRAM_ENABLED__/${TELEGRAM_ENABLED}/g" \
+  -e "s/__TAILSCALE_MODE__/${TAILSCALE_MODE}/g" \
   -e "s/__JARVIS_API_INTERNAL_TOKEN__/${JARVIS_API_INTERNAL_TOKEN}/g" \
   -e "s/__OPENCLAW_GATEWAY_TOKEN__/${OPENCLAW_GATEWAY_TOKEN}/g" \
   -e "s|__HOME__|${HOME}|g" \
@@ -84,5 +91,5 @@ if [[ ! -f "$STATE_DIR/.jarvis-exec-policy" ]]; then
   touch "$STATE_DIR/.jarvis-exec-policy"
 fi
 
-echo "== Gateway OpenClaw en 127.0.0.1:${OPENCLAW_GATEWAY_PORT:-18789} =="
+echo "== Gateway OpenClaw en 127.0.0.1:${OPENCLAW_GATEWAY_PORT:-18789} (Tailscale: ${TAILSCALE_MODE}) =="
 exec openclaw gateway --port "${OPENCLAW_GATEWAY_PORT:-18789}"

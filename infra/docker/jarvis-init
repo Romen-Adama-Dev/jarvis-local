@@ -41,3 +41,11 @@ else
   : >"$MODELS_ENV"
   JARVIS_ENV_FILE="$MODELS_ENV" /app/scripts/select-models
 fi
+
+# Volúmenes de Tailscale (perfil tailscale): tailscaled corre con el UID de openclaw.
+for dir in /var/lib/tailscale /var/run/tailscale; do
+  if [[ -d "$dir" ]]; then
+    chown "${JARVIS_UID:-1000}:${JARVIS_GID:-1000}" "$dir"
+    chmod 700 "$dir"
+  fi
+done
