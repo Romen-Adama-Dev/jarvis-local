@@ -151,6 +151,7 @@ Sin puerto: es el 443 de HTTPS. Puedes añadirlo a la pantalla de inicio (es una
 |---|---|
 | La página no carga en el móvil | La app de Tailscale está desconectada, o usas otra cuenta. Comprueba que el servidor aparece en la lista de dispositivos de la app. |
 | `http://100.x.x.x:18789` o `jarvis:18789` no responde | Esperado: el gateway solo escucha en loopback. Usa `https://jarvis.<tailnet>.ts.net`. |
+| `tailscale` en `unhealthy` en el primer arranque | Pasaron más de ~5 minutos sin abrir el enlace de inicio de sesión. El enlace sigue valiendo: inicia sesión y ejecuta `docker compose up -d` y `docker compose restart openclaw`. |
 | Logs de OpenClaw con `Tailscale: off` | OpenClaw arrancó antes de que el servidor estuviera en el tailnet: `docker compose restart openclaw`. |
 | Error de certificado o `tls-cert-pending` | HTTPS Certificates desactivado en el panel de DNS, o aún se está emitiendo: espera y recarga. |
 | `disconnected (1008): pairing required` | Navegador sin identidad de dispositivo (p. ej. modo privado). Aprueba desde el servidor: `docker compose exec openclaw openclaw devices list` y `… devices approve <requestId>`. |
