@@ -8,6 +8,7 @@ from apps.api.jarvis_api.schemas import (
     RagQueryResponse,
     SourceRef,
 )
+from apps.api.jarvis_api.scoping import resolve_scope, scoped_filters
 from packages.core.db.models import Job
 from packages.core.errors import ProviderUnavailableError
 from packages.rag.orchestrator import RagAnswer
@@ -36,9 +37,15 @@ def _to_response(result: RagAnswer) -> RagQueryResponse:
 
 
 @router.post("/query", response_model=RagQueryResponse)
-async def query(payload: RagQueryRequest, orchestrator: RagOrchestratorDep) -> RagQueryResponse:
+async def query(
+    payload: RagQueryRequest, orchestrator: RagOrchestratorDep, session: DbSession
+) -> RagQueryResponse:
+    scope = await resolve_scope(session, payload.company, payload.project)
     result = await orchestrator.query(
-        payload.query, deep=False, filters=payload.filters, top_k=payload.top_k
+        payload.query,
+        deep=False,
+        filters=scoped_filters(payload.filters, scope),
+        top_k=payload.top_k,
     )
     return _to_response(result)
 
@@ -52,6 +59,7 @@ async def deep_query(
             "El modo profundo (AirLLM) está deshabilitado en este despliegue "
             "(AIRLLM_ENABLED=false)"
         )
+    scope = await resolve_scope(session, payload.company, payload.project)
     job = Job(job_type="deep_query", status="queued", result={"query": payload.query})
     session.add(job)
     await session.commit()
@@ -59,6 +67,10 @@ async def deep_query(
 
     pool = await get_arq_pool()
     await pool.enqueue_job(
-        "deep_rag_query", str(job.id), payload.query, payload.filters, payload.top_k
+        "deep_rag_query",
+        str(job.id),
+        payload.query,
+        scoped_filters(payload.filters, scope),
+        payload.top_k,
     )
     return JobResponse.model_validate(job)

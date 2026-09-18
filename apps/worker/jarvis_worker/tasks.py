@@ -19,6 +19,7 @@ from packages.core.jobs import (
     mark_running,
 )
 from packages.core.logging import get_logger
+from packages.core.scope import scope_from_metadata
 from packages.docgen.render_docx import render_docx
 from packages.docgen.render_markdown import render_markdown
 from packages.docgen.render_pdf import render_pdf_via_pandoc
@@ -88,6 +89,7 @@ async def _run_ingestion(
     await _remove_existing_vectors(ctx, session, document.id)
 
     now = datetime.datetime.now(datetime.UTC).isoformat()
+    scope = scope_from_metadata(document.doc_metadata).payload()
     points = []
     chunk_rows = []
     for chunk in chunks:
@@ -104,6 +106,8 @@ async def _run_ingestion(
                 text=chunk.text,
                 created_at=now,
                 tags=[],
+                company=scope["company"],
+                project=scope["project"],
             )
         )
         chunk_rows.append(
@@ -371,6 +375,7 @@ async def meeting_minutes(
     title: str,
     meeting_date: str,
     fmt: str,
+    company: str = "",
 ) -> None:
     """Grabación → transcripción (GPU si la hay) → acta estructurada → PDF/Word/Markdown.
 
@@ -442,6 +447,7 @@ async def meeting_minutes(
             job,
             {
                 "project": project,
+                "company": company,
                 "format": fmt,
                 "duration": duration,
                 "language": transcript.language,

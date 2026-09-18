@@ -64,7 +64,9 @@ async def lifespan(app: FastAPI):
     embedding_provider = await asyncio.to_thread(FastEmbedProvider, cache_dir=cache_dir)
     reranker = None
     if settings.rag_reranker_enabled:
-        reranker = await asyncio.to_thread(FastEmbedReranker, cache_dir=cache_dir)
+        reranker = await asyncio.to_thread(
+            FastEmbedReranker, cache_dir=cache_dir, model_name=settings.rag_reranker_model
+        )
     orchestrator = HybridRagOrchestrator(
         get_qdrant(),
         settings.qdrant_collection,

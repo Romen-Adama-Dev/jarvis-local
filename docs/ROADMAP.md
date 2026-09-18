@@ -47,6 +47,7 @@ Leyenda: ✅ hecho · 🟡 parcial · ⬜ por hacer
 | Capacidad / pieza | Memoria (TFM) describe | Repo `jarvis-local` tiene | Queremos añadir |
 |---|---|---|---|
 | **Ingesta + RAG** (PDF → chunks → embeddings → Qdrant → respuesta con fuente) | ✅ núcleo del proyecto | ✅ `packages/rag`, `packages/documents`, Qdrant | 🟡 mejor ingesta (Docling: escaneados/tablas) |
+| **Multiempresa: documentación aislada por empresa y proyecto** | 🟡 (propuesta: colecciones separadas por cliente) | ✅ general / empresa / proyecto en el payload de Qdrant con `company` como tenant (`is_tenant`); la API impone el filtro en RAG, modo profundo y documentos generados; nombres tolerantes, reasignación sin reindexar y sitio reservado en el contexto para lo propio (`docs/EMPRESAS.md`); validado: sin fugas entre dos empresas | ⬜ permisos por usuario con varios usuarios |
 | **Inferencia local** (Ollama normal, AirLLM `/deep`) | ✅ | ✅ Ollama en contenedor con GPU (versión fijada); `services/airllm`; **auto-selección de modelo por VRAM** (`scripts/select-models`, la aplica `init`); `gemma4:26b-a4b-it-qat` en GPUs de 21-38 GB; limpieza opcional de modelos sin usar (`OLLAMA_PRUNE_UNUSED`) | 🟡 AirLLM `/deep` sin verificar en compose |
 | **Abstención sin evidencia** | ✅ | ✅ `packages/rag/orchestrator.py` | — |
 | **API + worker** | ✅ | ✅ FastAPI (`apps/api`) + arq (`apps/worker`) | — |

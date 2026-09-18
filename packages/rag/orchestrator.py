@@ -10,7 +10,9 @@ from packages.rag.embeddings import EmbeddingProvider
 from packages.rag.reranker import RerankerProvider
 from packages.rag.store import RetrievedChunk, hybrid_search
 
-MAX_CONTEXT_CHARS = 6000
+# ~3.000-4.000 tokens de contexto: con 6.000 caracteres, cuatro fragmentos largos del
+# PMBOK dejaban fuera el quinto, que era el de la empresa por la que se preguntaba.
+MAX_CONTEXT_CHARS = 12000
 MIN_EVIDENCE_SCORE = 0.01
 POWERFUL_MODEL_CONTEXT_THRESHOLD_CHARS = 3000
 RERANK_FETCH_MULTIPLIER = 4
@@ -110,6 +112,25 @@ async def _rerank(
     return [chunk for chunk, _ in ranked[:top_k]]
 
 
+SCOPED_RESERVED_CHUNKS = 2
+
+
+def _reserve_scoped(
+    reranked: list[RetrievedChunk], candidates: list[RetrievedChunk], *, limit: int
+) -> list[RetrievedChunk]:
+    """Con una consulta de empresa o proyecto, sus propios documentos tienen sitio en el
+    contexto aunque el reranker prefiera párrafos de la documentación general (que suele
+    ser mucho más extensa): los `limit` mejores fragmentos con empresa de la búsqueda
+    híbrida entran justo después del primero."""
+    present = {c.point_id for c in reranked}
+    have = sum(1 for c in reranked if c.company)
+    missing = [c for c in candidates if c.company and c.point_id not in present]
+    extra = missing[: max(0, limit - have)]
+    if not extra:
+        return reranked
+    return [*reranked[:1], *extra, *reranked[1:]][: len(reranked)]
+
+
 def _build_context_block(chunks: list[RetrievedChunk]) -> str:
     parts = []
     for i, chunk in enumerate(chunks, start=1):
@@ -193,7 +214,10 @@ class HybridRagOrchestrator:
             )
 
         if self._reranker is not None:
+            candidates = retrieved
             retrieved = await _rerank(self._reranker, query, retrieved, top_k=top_k)
+            if (filters or {}).get("scope", {}).get("company"):
+                retrieved = _reserve_scoped(retrieved, candidates, limit=SCOPED_RESERVED_CHUNKS)
 
         deduplicated = _deduplicate(retrieved)
         budgeted = _apply_context_budget(deduplicated, self._max_context_chars)

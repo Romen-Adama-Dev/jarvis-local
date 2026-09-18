@@ -21,6 +21,10 @@ class Settings(BaseSettings):
     qdrant_collection: str = "jarvis_documents"
 
     rag_reranker_enabled: bool = True
+    # Cross-encoder de FastEmbed. El multilingüe "jinaai/jina-reranker-v2-base-multilingual"
+    # ordena mucho mejor en español (y es más rápido), pero su licencia es CC-BY-NC-4.0:
+    # solo para uso no comercial. Ver packages/rag/reranker.py.
+    rag_reranker_model: str = "BAAI/bge-reranker-base"
 
     redis_host: str = "127.0.0.1"
     redis_port: int = 6379

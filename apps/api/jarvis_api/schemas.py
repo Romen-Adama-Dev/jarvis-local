@@ -69,6 +69,10 @@ class SourceRef(BaseModel):
 
 class RagQueryRequest(BaseModel):
     query: str
+    # Ámbito: sin empresa solo se busca en la documentación global; con empresa, también
+    # en la suya; con proyecto, además en la del proyecto (packages/core/scope.py).
+    company: str = ""
+    project: str = ""
     filters: dict = Field(default_factory=dict)
     top_k: int = 8
     conversation_id: uuid.UUID | None = None
@@ -87,6 +91,8 @@ class GenerateDocumentRequest(BaseModel):
     kind: str
     topic: str
     format: str = "pdf"
+    company: str = ""
+    project: str = ""
     filters: dict = Field(default_factory=dict)
     telegram_user_id: int | None = None
 
@@ -109,8 +115,20 @@ class DocumentListResponse(BaseModel):
     documents: list[DocumentResponse]
 
 
+class ScopeInfo(BaseModel):
+    company: str
+    project: str
+    documents: int
+
+
 class ProjectListResponse(BaseModel):
     projects: list[str]
+    scopes: list[ScopeInfo] = Field(default_factory=list)
+
+
+class DocumentScopeRequest(BaseModel):
+    company: str = ""
+    project: str = ""
 
 
 class JobResponse(BaseModel):
