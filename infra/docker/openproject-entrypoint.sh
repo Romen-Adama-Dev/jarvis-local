@@ -21,7 +21,8 @@ export SECRET_KEY_BASE="$(secret openproject_secret_key_base)"
 export DATABASE_URL="postgres://openproject:$(secret openproject_db_password)@postgres:5432/openproject?pool=20&encoding=unicode&reconnect=true"
 export OPENPROJECT_SEED_ADMIN_USER_PASSWORD="$(secret openproject_admin_password)"
 
-internal="127.0.0.1:${OPENPROJECT_PORT:-8090},localhost:${OPENPROJECT_PORT:-8090}"
+# Lista en formato JSON: separada por comas se toma como un único nombre.
+internal="[\"127.0.0.1:${OPENPROJECT_PORT:-8090}\", \"localhost:${OPENPROJECT_PORT:-8090}\"]"
 dnsname="$(cat /var/run/tailscale-info/dnsname 2>/dev/null || true)"
 if [[ -n "$dnsname" ]]; then
   export OPENPROJECT_HOST__NAME="${dnsname}:${OPENPROJECT_HTTPS_PORT:-8445}"
