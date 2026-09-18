@@ -252,4 +252,4 @@ def test_update_sets_start_date(op, fake):
 
 def test_describe_shows_period():
     wp = _wp(8, "Maquetación", "Tarea", startDate="2026-09-21", dueDate="2026-09-23")
-    assert "2026-09-21 → 2026-09-23" in describe_work_package(wp)
+    assert "del 2026-09-21 al 2026-09-23" in describe_work_package(wp)

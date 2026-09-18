@@ -112,7 +112,7 @@ async def _rerank(
     return [chunk for chunk, _ in ranked[:top_k]]
 
 
-SCOPED_RESERVED_CHUNKS = 2
+SCOPED_RESERVED_CHUNKS = 3
 
 
 def _reserve_scoped(
@@ -120,8 +120,8 @@ def _reserve_scoped(
 ) -> list[RetrievedChunk]:
     """Con una consulta de empresa o proyecto, sus propios documentos tienen sitio en el
     contexto aunque el reranker prefiera párrafos de la documentación general (que suele
-    ser mucho más extensa): los `limit` mejores fragmentos con empresa de la búsqueda
-    híbrida entran justo después del primero."""
+    ser mucho más extensa): los `limit` mejores fragmentos propios (en el orden de su
+    búsqueda híbrida) entran justo después del primero."""
     present = {c.point_id for c in reranked}
     have = sum(1 for c in reranked if c.company)
     missing = [c for c in candidates if c.company and c.point_id not in present]
@@ -213,11 +213,26 @@ class HybridRagOrchestrator:
                 ),
             )
 
+        scope = (filters or {}).get("scope") or {}
+        own: list[RetrievedChunk] = []
+        if scope.get("company"):
+            # Segunda búsqueda solo en lo propio: unos pocos fragmentos cortos de un proyecto
+            # pueden no llegar ni a candidatos frente a cientos de la documentación general.
+            own = await hybrid_search(
+                self._qdrant,
+                self._collection,
+                dense_vectors[0],
+                sparse_vectors[0],
+                top_k=SCOPED_RESERVED_CHUNKS * 2,
+                filters={**(filters or {}), "scope": {**scope, "own_only": True}},
+            )
+            present = {c.point_id for c in retrieved}
+            retrieved = retrieved + [c for c in own if c.point_id not in present]
+
         if self._reranker is not None:
-            candidates = retrieved
             retrieved = await _rerank(self._reranker, query, retrieved, top_k=top_k)
-            if (filters or {}).get("scope", {}).get("company"):
-                retrieved = _reserve_scoped(retrieved, candidates, limit=SCOPED_RESERVED_CHUNKS)
+        if own:
+            retrieved = _reserve_scoped(retrieved[:top_k], own, limit=SCOPED_RESERVED_CHUNKS)
 
         deduplicated = _deduplicate(retrieved)
         budgeted = _apply_context_budget(deduplicated, self._max_context_chars)
