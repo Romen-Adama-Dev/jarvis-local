@@ -14,10 +14,36 @@ Se elige con `CALENDAR_PROVIDER` en `.env`:
 | `CALENDAR_PROVIDER` | Implementación | Cuentas | Requisitos |
 |---|---|---|---|
 | `caldav` (por defecto) | `packages/caldavcal/calendar.py` (biblioteca `caldav`) | Nextcloud, iCloud, Fastmail, Radicale, SOGo, Baïkal, Zimbra... | URL CalDAV + usuario y contraseña de aplicación |
+| `openproject` | `packages/openproject/calendar.py` | Las reuniones de OpenProject (perfil `pm`) | Nada más: usa la clave de API de Jarvis que genera `init` |
 | `msgraph` | `packages/msgraph/calendar.py` | Microsoft 365 / Outlook | Registro de app en Azure AD (`docs/MSGRAPH.md`), scopes `Calendars.Read` y `Calendars.ReadWrite` |
 
 Google Calendar no admite CalDAV con contraseña de aplicación (solo OAuth2): con una
-cuenta de Gmail, deja el calendario sin configurar o usa otro proveedor para él.
+cuenta de Gmail, usa `openproject` (las invitaciones llegan igualmente a Google Calendar,
+ver abajo) u otro proveedor.
+
+### OpenProject como calendario (`CALENDAR_PROVIDER=openproject`)
+
+Con el perfil `pm` activo, la agenda de Jarvis son las **reuniones de OpenProject**: las
+que se crean desde Telegram, desde la web o al importar un acta. Así reuniones, tareas y
+actas viven en el mismo sitio.
+
+* **Consultar** (`jarvis_calendar_availability`): reuniones de todos los proyectos en el
+  rango y, como avisos de día completo ("Vence #id"), las tareas e hitos abiertos que
+  vencen esos días. Cada línea lleva el enlace a OpenProject por Tailscale.
+* **Crear** (`jarvis_calendar_propose_event` → confirmación): la reunión va al proyecto
+  que se nombre (`project`) o, si no, al proyecto `Agenda` (se crea solo; nombre en
+  `OPENPROJECT_CALENDAR_PROJECT`). `location` admite sala o enlace de videollamada y
+  `body` queda como punto del orden del día.
+* **Invitados**: los que son usuarios de OpenProject entran como participantes y
+  OpenProject les manda la invitación con el .ics; el resto recibe un correo con la
+  invitación (.ics, `METHOD:REQUEST`) desde la cuenta de Jarvis. El propietario (usuario
+  `admin`) participa siempre.
+* **En tu móvil**: el admin tiene el correo de Jarvis (o `OPENPROJECT_ADMIN_MAIL`), así
+  que cada invitación llega a ese buzón y Gmail la añade a Google Calendar (y de ahí al
+  calendario del iPhone si tienes la cuenta de Google en él). Alternativa sin correo:
+  en OpenProject, **Reuniones → Suscribirse al calendario**, copia la URL `.ics` y
+  añádela en el iPhone en Ajustes → Calendario → Cuentas → Añadir cuenta → Otra →
+  Añadir calendario suscrito (necesita Tailscale conectado para actualizarse).
 
 ### Configurar CalDAV
 
@@ -74,6 +100,9 @@ El `SKILL.md` de `jarvis-calendar` deja explícito que el agente solo debe llama
 propuesta concreta.
 
 ## Pendiente
+
+* Con `openproject`: mover o cancelar reuniones y reuniones recurrentes se hacen desde la
+  web por ahora.
 
 * Editar o cancelar eventos existentes: no hay herramienta MCP para ello todavía,
   solo creación.
