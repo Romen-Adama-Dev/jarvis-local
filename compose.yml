@@ -9,7 +9,7 @@
 #
 # ollama, openclaw, api y worker usan network_mode: host y se hablan por 127.0.0.1; el
 # resto publica sus puertos solo en 127.0.0.1. Perfiles opcionales (COMPOSE_PROFILES):
-# vault, assistant, automation, webui, monitoring.
+# tailscale, livesync, pm, vault, assistant, automation, webui, monitoring.
 name: jarvis-local
 
 x-logging: &logging
@@ -21,6 +21,37 @@ x-logging: &logging
 x-env-file: &env-file
   - path: .env
     required: false
+
+# Gestión de proyectos con OpenProject (docs/OPENPROJECT.md): tableros, tickets, Gantt,
+# hitos y riesgos, manejados desde Telegram con el servidor MCP jarvis-pm.
+# COMPOSE_PROFILES=pm (con tailscale se publica en https://<nombre>.ts.net:8445).
+x-openproject: &openproject
+  image: openproject/openproject:17.8.0-slim
+  profiles: ["pm"]
+  networks:
+    - jarvis_internal
+  entrypoint: ["/opt/jarvis/openproject-entrypoint.sh"]
+  environment:
+    OPENPROJECT_PORT: ${OPENPROJECT_PORT:-8090}
+    OPENPROJECT_HTTPS_PORT: ${OPENPROJECT_HTTPS_PORT:-8445}
+    OPENPROJECT_DEFAULT__LANGUAGE: ${OPENPROJECT_LANGUAGE:-es}
+    OPENPROJECT_SEED_LOCALE: ${OPENPROJECT_LANGUAGE:-es}
+    OPENPROJECT_SEED_ADMIN_USER_NAME: ${OPENPROJECT_ADMIN_NAME:-Administrador}
+    OPENPROJECT_SEED_ADMIN_USER_MAIL: ${OPENPROJECT_ADMIN_MAIL:-admin@jarvis.invalid}
+    OPENPROJECT_SEED_ADMIN_USER_PASSWORD_RESET: "false"
+    OPENPROJECT_RAILS__CACHE__STORE: memcache
+    OPENPROJECT_CACHE__MEMCACHE__SERVER: openproject-cache:11211
+    # Sin servidor de edición colaborativa (hocuspocus): los documentos se editan de uno en uno.
+    OPENPROJECT_COLLABORATIVE__EDITING__HOCUSPOCUS__URL: ""
+    OPENPROJECT_HSTS: "false"
+    RAILS_MIN_THREADS: 4
+    RAILS_MAX_THREADS: 16
+  volumes:
+    - ./infra/docker/openproject-entrypoint.sh:/opt/jarvis/openproject-entrypoint.sh:ro
+    - openproject_assets:/var/openproject/assets
+    - jarvis_runtime:/run/jarvis:ro
+    - tailscale_socket:/var/run/tailscale:ro
+  logging: *logging
 
 networks:
   jarvis_internal:
@@ -42,6 +73,7 @@ volumes:
   couchdb_config:
   livesync_bridge_config:
   livesync_bridge_state:
+  openproject_assets:
 
 services:
   # --- Arranque: secretos + modelos -------------------------------------------------
@@ -322,6 +354,8 @@ services:
       COMPOSE_PROFILES: ${COMPOSE_PROFILES:-}
       LIVESYNC_HTTPS_PORT: ${LIVESYNC_HTTPS_PORT:-8443}
       COUCHDB_PORT: ${COUCHDB_PORT:-5984}
+      OPENPROJECT_HTTPS_PORT: ${OPENPROJECT_HTTPS_PORT:-8445}
+      OPENPROJECT_PORT: ${OPENPROJECT_PORT:-8090}
     volumes:
       - ./infra/docker/tailscale-entrypoint.sh:/opt/jarvis/tailscale-entrypoint.sh:ro
       - tailscale_state:/var/lib/tailscale
@@ -425,6 +459,78 @@ services:
       openclaw:
         condition: service_started
     logging: *logging
+
+  # Gestión de proyectos con OpenProject (docs/OPENPROJECT.md): x-openproject arriba.
+  openproject-db-init:
+    image: postgres:17.2-bookworm
+    profiles: ["pm"]
+    networks:
+      - jarvis_internal
+    entrypoint: ["/bin/sh", "/opt/jarvis/openproject-db-init.sh"]
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-jarvis}
+      POSTGRES_DB: ${POSTGRES_DB:-jarvis}
+    volumes:
+      - ./infra/docker/openproject-db-init.sh:/opt/jarvis/openproject-db-init.sh:ro
+      - jarvis_runtime:/run/jarvis:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+    logging: *logging
+
+  openproject-cache:
+    image: memcached:1.6.39-alpine
+    restart: unless-stopped
+    profiles: ["pm"]
+    networks:
+      - jarvis_internal
+    logging: *logging
+
+  # Migraciones, datos iniciales y aprovisionamiento de Jarvis (tipo Riesgo, usuario y
+  # clave de API): se ejecuta y termina en cada arranque.
+  openproject-setup:
+    <<: *openproject
+    command: ["bash", "-c", "./docker/prod/seeder && bundle exec rails runner /opt/jarvis/openproject-setup.rb"]
+    volumes:
+      - ./infra/docker/openproject-entrypoint.sh:/opt/jarvis/openproject-entrypoint.sh:ro
+      - ./infra/docker/openproject-setup.rb:/opt/jarvis/openproject-setup.rb:ro
+      - openproject_assets:/var/openproject/assets
+      - jarvis_runtime:/run/jarvis:ro
+      - tailscale_socket:/var/run/tailscale:ro
+    depends_on:
+      openproject-db-init:
+        condition: service_completed_successfully
+      openproject-cache:
+        condition: service_started
+      tailscale:
+        condition: service_healthy
+        required: false
+    restart: "no"
+
+  openproject:
+    <<: *openproject
+    command: ["./docker/prod/web"]
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${OPENPROJECT_PORT:-8090}:8080"
+    depends_on:
+      openproject-setup:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "-o", "/dev/null", "-H", "Host: 127.0.0.1:${OPENPROJECT_PORT:-8090}", "-H", "X-Forwarded-Proto: https", "http://127.0.0.1:8080/health_checks/default"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 120s
+
+  openproject-worker:
+    <<: *openproject
+    command: ["./docker/prod/worker"]
+    restart: unless-stopped
+    depends_on:
+      openproject-setup:
+        condition: service_completed_successfully
 
   changedetection:
     image: ghcr.io/dgtlmoon/changedetection.io@sha256:5438423d5e906eff4e8f7886823482ad23f472bf7b8530ccaca89fb48c337882

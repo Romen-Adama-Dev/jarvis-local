@@ -46,6 +46,7 @@ Perfiles opcionales (`COMPOSE_PROFILES` en `.env`, separados por comas):
 | `tailscale` | Interfaz web de OpenClaw por HTTPS desde tu tailnet (`TS_AUTHKEY`; ver abajo) |
 | `vault` | `vault-sync`: vault de Obsidian en un repo git privado (`VAULT_GIT_URL`, `VAULT_SSH_KEY_PATH`; ver `docs/MEMORY.md`) |
 | `livesync` | `couchdb`, `livesync-init` y `livesync-bridge`: Obsidian en el móvil y el portátil en tiempo real, por Tailscale (`docs/OBSIDIAN.md`) |
+| `pm` | OpenProject (`openproject`, `openproject-worker`, `openproject-setup`, `openproject-db-init`, `openproject-cache`): tableros, tickets, Gantt, hitos y riesgos manejados desde Telegram con la skill `jarvis-pm`; con `tailscale`, en `https://<nombre>.ts.net:8445` (`docs/OPENPROJECT.md`) |
 | `monitoring` | Prometheus + Grafana |
 | `assistant` | changedetection |
 | `automation` | n8n |
@@ -99,6 +100,12 @@ ssh -L 18789:127.0.0.1:18789 usuario@servidor
 
 Con los perfiles `tailscale` y `livesync`, el vault de memoria se abre y edita desde
 Obsidian en el móvil o el portátil con sincronización en tiempo real: `docs/OBSIDIAN.md`.
+
+## Gestión de proyectos
+
+Con el perfil `pm`, OpenProject lleva tareas, hitos, riesgos y el seguimiento de cada
+proyecto, organizado por empresas; Jarvis lo maneja desde Telegram y tú lo ves en el
+navegador por Tailscale: `docs/OPENPROJECT.md`.
 
 ## Actualizar
 
