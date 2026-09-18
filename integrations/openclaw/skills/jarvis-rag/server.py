@@ -1,3 +1,4 @@
+import contextlib
 import html
 import os
 import re
@@ -242,6 +243,23 @@ def jarvis_status() -> str:
         marker = "OK" if dep["healthy"] else "FALLO"
         lines.append(f"- {dep['name']}: {marker} {dep.get('detail', '')}".rstrip())
     return "\n".join(lines)
+
+
+@mcp.tool()
+def jarvis_services() -> str:
+    """Directorio de servicios de Jarvis: qué hay (OpenProject, panel, Obsidian, API,
+    Qdrant...), dónde se abre cada uno desde el PC o el móvil (Tailscale) o dentro del
+    servidor, y si está en marcha ahora. Actualiza también la nota SERVICIOS.md del vault."""
+    sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
+    from packages.core import services
+
+    items = services.statuses()
+    with contextlib.suppress(OSError):
+        services.write_vault_note(JARVIS_VAULT_DIR)
+    return (
+        services.render_text(items, ip=services.tailnet_ip())
+        + "\nEl mismo directorio está en Obsidian: SERVICIOS.md (raíz del vault)."
+    )
 
 
 @mcp.tool()

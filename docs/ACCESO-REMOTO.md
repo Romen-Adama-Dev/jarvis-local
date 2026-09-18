@@ -195,3 +195,24 @@ portátil o el móvil, sincronizada con el repo git privado del perfil `vault`
 | `integrations/openclaw/Dockerfile` | Copia la CLI `tailscale` en la imagen de OpenClaw |
 | `integrations/openclaw/docker-entrypoint.sh` | Elige `serve` u `off` según haya tailscaled conectado |
 | `integrations/openclaw/config/openclaw.template.json` | `gateway.bind: "loopback"` y `gateway.tailscale.mode` |
+
+## Directorio de servicios
+
+Qué hay en el servidor, dónde se abre cada cosa y si está en marcha:
+
+* **Por Telegram o en el panel**: pregunta a Jarvis *«¿qué servicios hay?»* (herramienta
+  `jarvis_services`): enlaces por Tailscale para el PC o el móvil, direcciones internas del
+  servidor y estado en vivo.
+* **En Obsidian**: la nota `SERVICIOS.md` en la raíz del vault, regenerada en cada arranque
+  de OpenClaw (y cada vez que se pide el directorio).
+* **En el servidor**: `docker compose exec openclaw /app/.venv/bin/python -m packages.core.services`.
+
+Por Tailscale se publican el panel de OpenClaw (`https://<nombre>.ts.net`), OpenProject
+(`:8445`, perfil `pm`) y CouchDB de LiveSync (`:8443`, perfil `livesync`). El resto (API,
+Ollama, Qdrant, SearXNG, PostgreSQL, Redis) escucha solo en `127.0.0.1`: desde el PC, túnel
+SSH (`ssh -L 8000:127.0.0.1:8000 <servidor>`) y la dirección local.
+
+El directorio no contiene contraseñas (el vault se sincroniza con el móvil y con GitHub):
+indica el comando que muestra cada una en el servidor. El catálogo está en
+`packages/core/services.py`; un servicio nuevo se añade ahí.
+

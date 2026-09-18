@@ -79,7 +79,12 @@
           "JARVIS_API_URL": "http://127.0.0.1:8000",
           "JARVIS_API_INTERNAL_TOKEN": "__JARVIS_API_INTERNAL_TOKEN__",
           "JARVIS_DATA_ROOT": "/srv/jarvis",
-          "JARVIS_OUTBOX_DIR": "__HOME__/.openclaw/workspace-jarvis/outbox"
+          "JARVIS_OUTBOX_DIR": "__HOME__/.openclaw/workspace-jarvis/outbox",
+          "COMPOSE_PROFILES": "__COMPOSE_PROFILES__",
+          "OPENPROJECT_PORT": "__OPENPROJECT_PORT__",
+          "OPENPROJECT_HTTPS_PORT": "__OPENPROJECT_HTTPS_PORT__",
+          "COUCHDB_PORT": "__COUCHDB_PORT__",
+          "LIVESYNC_HTTPS_PORT": "__LIVESYNC_HTTPS_PORT__"
         },
         "requestTimeoutMs": 600000
       },
