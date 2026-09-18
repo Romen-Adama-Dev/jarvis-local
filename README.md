@@ -43,6 +43,9 @@ Perfiles opcionales en `COMPOSE_PROFILES` (`.env`):
 * **Correo** por IMAP/SMTP (Gmail u otro con contraseña de aplicación) o Microsoft 365:
   leer, redactar y enviar con confirmación, adjuntar documentos, pasar un correo a
   tarea (`docs/EMAIL.md`). OpenProject envía por la misma cuenta.
+* **Una sola memoria** en Obsidian: red de conocimiento con empresas, proyectos,
+  personas, hitos, riesgos, reuniones y documentos enlazados (vista de grafo), compartida
+  con la wiki de OpenProject; "recuerda que…" por Telegram la amplía (`docs/OBSIDIAN.md`).
 * **Documentos generados** desde el RAG (resumen, DAFO, planes) en DOCX/PPTX/PDF
   (`docs/DOCGEN.md`), **voz** local (whisper + Piper), **búsqueda web** con SearXNG y
   **directorio de servicios** con enlaces y estado.

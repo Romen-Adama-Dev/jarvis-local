@@ -2,7 +2,7 @@
 set -euo pipefail
 
 TOKEN_FILE="${JARVIS_TELEGRAM_TOKEN_FILE:-$HOME/.openclaw/secrets/telegram_bot_token}"
-CHAT_ID="${JARVIS_TELEGRAM_CHAT_ID:-6483749154}"
+CHAT_ID="${JARVIS_TELEGRAM_CHAT_ID:?define JARVIS_TELEGRAM_CHAT_ID (tu ID de Telegram)}"
 STATE_FILE="${XDG_STATE_HOME:-$HOME/.local/state}/jarvis-watchdog.state"
 DISK_THRESHOLD="${JARVIS_DISK_THRESHOLD:-90}"
 
