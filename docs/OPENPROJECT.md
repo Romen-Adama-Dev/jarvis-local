@@ -28,6 +28,9 @@ navegador (PC, móvil) ──Tailscale──► https://jarvis.<tailnet>.ts.net:
 * Jarvis actúa como el usuario **Jarvis (asistente)**, así que en el historial de cada
   tarea se ve qué hizo él y qué hiciste tú. No borra nada; los únicos correos son las
   invitaciones a reuniones que confirmes.
+* **Wiki**: la página *Memoria de Jarvis* de cada proyecto es su nota del vault de
+  Obsidian (se edita allí) y el resto de páginas de la wiki se copian al vault
+  (`docs/OBSIDIAN.md`, "Una sola memoria").
 * **Reuniones y calendario**: con `CALENDAR_PROVIDER=openproject` el calendario de Jarvis
   son las reuniones de OpenProject (`docs/CALENDAR.md`).
 * **Correo**: OpenProject envía avisos e invitaciones por la cuenta SMTP de Jarvis
