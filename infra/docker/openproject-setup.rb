@@ -12,7 +12,8 @@
 api_key = File.read("/run/jarvis/openproject_api_key").strip
 raise "clave de API vacía" if api_key.empty?
 
-admin = User.where(admin: true).where.not(login: "jarvis").order(:id).first
+# Solo usuarios humanos: la tabla también guarda el usuario de sistema (admin, sin login).
+admin = User.user.where(admin: true).where.not(login: "jarvis").order(:id).first
 
 # --- 1. Tipo Riesgo ---------------------------------------------------------------------
 task_type = Type.find_by(name: "Tarea") || Type.where(is_milestone: false).order(:position).first
