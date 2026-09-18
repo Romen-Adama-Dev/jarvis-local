@@ -70,6 +70,11 @@ for dir in /var/lib/tailscale /var/run/tailscale; do
     chmod 700 "$dir"
   fi
 done
+# Nombre del nodo para otros servicios (OpenProject corre con su propio UID).
+if [[ -d /var/run/tailscale-info ]]; then
+  chown "${JARVIS_UID:-1000}:${JARVIS_GID:-1000}" /var/run/tailscale-info
+  chmod 755 /var/run/tailscale-info
+fi
 
 # Entrada de /etc/passwd para el UID de Jarvis en imágenes que no la traen: ssh se niega a
 # funcionar sin ella ("No user exists for uid"), y vault-sync hace push por SSH.

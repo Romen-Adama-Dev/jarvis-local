@@ -50,7 +50,7 @@ x-openproject: &openproject
     - ./infra/docker/openproject-entrypoint.sh:/opt/jarvis/openproject-entrypoint.sh:ro
     - openproject_assets:/var/openproject/assets
     - jarvis_runtime:/run/jarvis:ro
-    - tailscale_socket:/var/run/tailscale:ro
+    - tailscale_info:/var/run/tailscale-info:ro
   logging: *logging
 
 networks:
@@ -69,6 +69,9 @@ volumes:
   openclaw_state:
   tailscale_state:
   tailscale_socket:
+  # Solo el nombre del nodo en el tailnet (dnsname), legible por cualquier servicio: el
+  # directorio del socket es privado porque el socket permite controlar tailscaled.
+  tailscale_info:
   couchdb_data:
   couchdb_config:
   livesync_bridge_config:
@@ -87,6 +90,7 @@ services:
       - jarvis_runtime:/run/jarvis
       - tailscale_state:/var/lib/tailscale
       - tailscale_socket:/var/run/tailscale
+      - tailscale_info:/var/run/tailscale-info
     restart: "no"
     logging: *logging
 
@@ -362,6 +366,7 @@ services:
       - ./infra/docker/tailscale-entrypoint.sh:/opt/jarvis/tailscale-entrypoint.sh:ro
       - tailscale_state:/var/lib/tailscale
       - tailscale_socket:/var/run/tailscale
+      - tailscale_info:/var/run/tailscale-info
     depends_on:
       init:
         condition: service_completed_successfully
@@ -499,7 +504,7 @@ services:
       - ./infra/docker/openproject-setup.rb:/opt/jarvis/openproject-setup.rb:ro
       - openproject_assets:/var/openproject/assets
       - jarvis_runtime:/run/jarvis:ro
-      - tailscale_socket:/var/run/tailscale:ro
+      - tailscale_info:/var/run/tailscale-info:ro
     depends_on:
       openproject-db-init:
         condition: service_completed_successfully

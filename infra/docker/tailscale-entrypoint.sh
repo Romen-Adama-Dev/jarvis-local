@@ -25,6 +25,10 @@ tailscale --socket="$SOCKET" up --hostname="${TS_HOSTNAME:-jarvis}" \
   until tailscale --socket="$SOCKET" status >/dev/null 2>&1; do sleep 5; done
   tailscale --socket="$SOCKET" status --json --peers=false \
     | sed -n 's/^[[:space:]]*"DNSName": "\(.*\)\.",$/\1/p' | head -n 1 >/var/run/tailscale/dnsname
+  if [ -d /var/run/tailscale-info ]; then
+    cp /var/run/tailscale/dnsname /var/run/tailscale-info/dnsname
+    chmod 644 /var/run/tailscale-info/dnsname
+  fi
   port="${LIVESYNC_HTTPS_PORT:-8443}"
   case ",${COMPOSE_PROFILES:-}," in
     *,livesync,*)
