@@ -79,16 +79,29 @@ tailnet y relanza `docker compose up -d livesync-init`.
 
    Pásalos al dispositivo por canales distintos (p. ej. el URI por una nota y la
    contraseña escribiéndola), o cópialos desde una sesión SSH en el propio dispositivo.
+   Si no puedes copiar desde la terminal, envía el URI a tu chat de Telegram con el bot
+   y cópialo desde allí (la contraseña, aparte):
+
+   ```bash
+   set -a && . ./.env && set +a
+   curl -s "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+     --data-urlencode "chat_id=${TELEGRAM_AUTHORIZED_USER_IDS%%,*}" \
+     --data-urlencode "parse_mode=HTML" \
+     --data-urlencode "text=<code>$(docker compose exec -T openclaw cat /run/jarvis/livesync_setup_uri)</code>"
+   ```
 
 2. En el dispositivo: Tailscale conectado.
 3. En Obsidian: crea un vault **nuevo y vacío** (p. ej. `Jarvis`). No reutilices uno
    sincronizado con Obsidian Git o iCloud para evitar duplicados.
 4. **Ajustes → Plugins de la comunidad** → activa los plugins de la comunidad → busca
    e instala **Self-hosted LiveSync** → actívalo.
-5. Abre la paleta de comandos (en iPhone, desliza hacia abajo en una nota) →
-   **Self-hosted LiveSync: Use the copied setup URI** (o el asistente que aparece al
-   activar el plugin → *Use Setup URI*) → pega el URI → escribe la contraseña del URI.
-6. Cuando pregunte, elige que este dispositivo **reciba** los datos del servidor
+5. Abre la paleta de comandos (en iPhone, desliza hacia abajo en una nota); los comandos
+   del plugin aparecen como **Self-hosted sync: …**. Usa *Use the copied setup URI* (o
+   el asistente que aparece al activar el plugin → *Use Setup URI*) → pega el URI →
+   escribe la contraseña del URI.
+6. En el asistente elige **My remote server is already set up, I want to join it**
+   (no *I am setting up a new server*, que reinicializa la base de datos). Cuando
+   pregunte, elige que este dispositivo **reciba** los datos del servidor
    (*fetch from remote*), no que los suba: el servidor ya tiene el vault completo.
 7. Espera a que termine la primera descarga. A partir de ahí los cambios van y vienen
    en segundos: lo que anota Jarvis aparece en Obsidian, y lo que edites llega al vault
@@ -115,6 +128,7 @@ servidor.
 | Error de cifrado o notas ilegibles | La `passphrase` del dispositivo no coincide con `livesync_passphrase`. Vuelve a configurar con el Setup URI. |
 | Notas duplicadas o con sufijo de conflicto | Se editó la misma nota a la vez en dos sitios; LiveSync lo marca como conflicto para resolverlo en Obsidian. |
 | `livesync-bridge` en reinicio continuo | `docker compose logs livesync-bridge`; si es la caché de Deno, borra el volumen `livesync_bridge_state` y rearranca (vuelve a escanear el vault). |
+| Notas creadas en el móvil que no llegan al vault del servidor | Obsidian en segundo plano (iOS pausa la sincronización) o sin Tailscale: ábrelo y lanza *Self-hosted sync: Replicate now*. Si CouchDB las recibió (`docker compose logs couchdb \| grep _bulk_docs`) pero no aparecen en el vault, `docker compose restart livesync-bridge` (visto el 18-09 en la primera sincronización del iPhone). |
 | Cambios del vault que no llegan a Obsidian | El puente detecta cambios por eventos del sistema de archivos; tras cambios hechos con el contenedor parado, se recogen al arrancar (`scanOfflineChanges`). |
 
 ## Seguridad
