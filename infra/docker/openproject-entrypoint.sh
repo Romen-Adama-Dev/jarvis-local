@@ -22,7 +22,7 @@ export DATABASE_URL="postgres://openproject:$(secret openproject_db_password)@po
 export OPENPROJECT_SEED_ADMIN_USER_PASSWORD="$(secret openproject_admin_password)"
 
 internal="127.0.0.1:${OPENPROJECT_PORT:-8090},localhost:${OPENPROJECT_PORT:-8090}"
-dnsname="$(cat /var/run/tailscale/dnsname 2>/dev/null || true)"
+dnsname="$(cat /var/run/tailscale-info/dnsname 2>/dev/null || true)"
 if [[ -n "$dnsname" ]]; then
   export OPENPROJECT_HOST__NAME="${dnsname}:${OPENPROJECT_HTTPS_PORT:-8445}"
   export OPENPROJECT_HTTPS=true
