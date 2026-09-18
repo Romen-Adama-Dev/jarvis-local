@@ -486,6 +486,22 @@ def _resolve_audio(file_path: str) -> Path | None:
     return max(matches, key=lambda p: p.stat().st_mtime).resolve()
 
 
+@mcp.tool()
+def jarvis_remember(about: str, text: str) -> str:
+    """Guarda algo que Jarvis debe recordar sobre un proyecto, una empresa o una persona
+    ("recuerda que el cliente prefiere reuniones por la mañana"). Va a la nota de `about`
+    en Obsidian, que es la memoria común: también sale en la wiki del proyecto en
+    OpenProject y en las búsquedas de memoria. `about` es el nombre tal cual."""
+    sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
+    from packages.knowledge.red import remember
+
+    try:
+        note = remember(JARVIS_VAULT_DIR, about, text)
+    except (LookupError, OSError) as exc:
+        return f"No se guardó: {exc}"
+    return f"Anotado en {note.relative_to(JARVIS_VAULT_DIR)}."
+
+
 def _save_minutes_in_vault(job_id: str, result: dict) -> str:
     """Acta en el vault (memoria del proyecto, visible en Obsidian) e indexada en el RAG."""
     minutes = result["minutes"]
