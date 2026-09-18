@@ -63,6 +63,8 @@ sed -e "s/__TELEGRAM_USER_ID__/${TELEGRAM_USER_ID}/g" \
   -e "s|__REPO_DIR__|${APP_DIR}|g" \
   -e "s|__OLLAMA_PRIMARY_MODEL__|${OLLAMA_PRIMARY_MODEL}|g" \
   -e "s/__OLLAMA_CONTEXT_LENGTH__/${OLLAMA_CONTEXT_LENGTH:-32768}/g" \
+  -e "s/__OPENPROJECT_PORT__/${OPENPROJECT_PORT:-8090}/g" \
+  -e "s/__OPENPROJECT_HTTPS_PORT__/${OPENPROJECT_HTTPS_PORT:-8445}/g" \
   -e "s|__WHISPER_CLI__|/usr/local/bin/whisper-cli|g" \
   -e "s/__WHISPER_THREADS__/$(nproc)/g" \
   "$TEMPLATE" >"$CONFIG"

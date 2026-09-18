@@ -18,8 +18,9 @@ until tailscale --socket="$SOCKET" status --json >/dev/null 2>&1; do sleep 1; do
 tailscale --socket="$SOCKET" up --hostname="${TS_HOSTNAME:-jarvis}" \
   ${TS_AUTHKEY:+--auth-key="$TS_AUTHKEY"} --timeout=0 &
 
-# Cuando el nodo está conectado: nombre DNS para otros servicios (Setup URI de LiveSync)
-# y, con el perfil livesync, CouchDB publicado en el tailnet por HTTPS.
+# Cuando el nodo está conectado: nombre DNS para otros servicios (Setup URI de LiveSync,
+# enlaces de OpenProject) y los servicios de los perfiles activos publicados en el tailnet
+# por HTTPS: CouchDB (livesync) y OpenProject (pm).
 (
   until tailscale --socket="$SOCKET" status >/dev/null 2>&1; do sleep 5; done
   tailscale --socket="$SOCKET" status --json --peers=false \
@@ -29,6 +30,14 @@ tailscale --socket="$SOCKET" up --hostname="${TS_HOSTNAME:-jarvis}" \
     *,livesync,*)
       tailscale --socket="$SOCKET" serve --bg --yes --https="$port" \
         "http://127.0.0.1:${COUCHDB_PORT:-5984}"
+      ;;
+    *) tailscale --socket="$SOCKET" serve --yes --https="$port" off >/dev/null 2>&1 || true ;;
+  esac
+  port="${OPENPROJECT_HTTPS_PORT:-8445}"
+  case ",${COMPOSE_PROFILES:-}," in
+    *,pm,*)
+      tailscale --socket="$SOCKET" serve --bg --yes --https="$port" \
+        "http://127.0.0.1:${OPENPROJECT_PORT:-8090}"
       ;;
     *) tailscale --socket="$SOCKET" serve --yes --https="$port" off >/dev/null 2>&1 || true ;;
   esac

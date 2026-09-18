@@ -15,13 +15,13 @@ umask 022
 is_placeholder() { [[ -z "$1" || "$1" == change-me || "$1" == generar-con-openssl-rand-hex-32 ]]; }
 
 ensure_secret() {
-  local name="$1" env_value="$2" bytes="$3" file="$RUNTIME_DIR/$1"
+  local name="$1" env_value="$2" bytes="$3" file="$RUNTIME_DIR/$1" suffix="${4:-}"
   # La contraseña de PostgreSQL ya está grabada en la base de datos existente: cualquier
   # valor de .env se respeta, también el antiguo "change-me" de .env.example.
   if [[ "$name" == postgres_password && -n "$env_value" ]] || ! is_placeholder "$env_value"; then
     printf '%s' "$env_value" >"$file"
   elif [[ ! -s "$file" ]]; then
-    python -c "import secrets, sys; sys.stdout.write(secrets.token_hex($bytes))" >"$file"
+    python -c "import secrets, sys; sys.stdout.write(secrets.token_hex($bytes) + '$suffix')" >"$file"
     echo "secreto generado: $name"
   fi
 }
@@ -34,6 +34,13 @@ ensure_secret openclaw_gateway_token "${OPENCLAW_GATEWAY_TOKEN:-}" 24
 ensure_secret couchdb_password "${COUCHDB_PASSWORD:-}" 24
 ensure_secret livesync_passphrase "${LIVESYNC_PASSPHRASE:-}" 24
 ensure_secret livesync_uri_passphrase "${LIVESYNC_URI_PASSPHRASE:-}" 16
+# Perfil pm (OpenProject): firma de sesiones, base de datos, admin web y clave de API que
+# openproject-setup registra para el usuario Jarvis y usa el servidor MCP jarvis-pm.
+ensure_secret openproject_secret_key_base "${OPENPROJECT_SECRET_KEY_BASE:-}" 64
+ensure_secret openproject_db_password "${OPENPROJECT_DB_PASSWORD:-}" 24
+# La del admin web cumple la política de contraseñas de OpenProject (mayúsculas y símbolos).
+ensure_secret openproject_admin_password "${OPENPROJECT_ADMIN_PASSWORD:-}" 12 "-Jv"
+ensure_secret openproject_api_key "${OPENPROJECT_API_KEY:-}" 32
 
 MODELS_ENV="$RUNTIME_DIR/models.env"
 if [[ -n "${OLLAMA_PRIMARY_MODEL:-}" ]]; then

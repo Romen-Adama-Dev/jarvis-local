@@ -64,7 +64,8 @@ Leyenda: ✅ hecho · 🟡 parcial · ⬜ por hacer
 | **Microsoft Teams** | ⬜ | 🟡 canal `msteams` soportado en OpenClaw (`scripts/configure-teams`, `docs/TEAMS.md`) | ⬜ **túnel público (Cloudflare Tunnel) + manifiesto de la app**, sin versionar todavía |
 | **Licencia + gobernanza** | ⬜ declarado pendiente | ✅ `LICENSE` (MIT) + `CONTRIBUTING.md` | — |
 | **Memoria evolutiva** | — | ✅ `memory-core` + `memory-wiki` de OpenClaw, vault Obsidian versionado en git privado (`vault-sync`), búsqueda semántica con `embeddinggemma` (`docs/MEMORY.md`) | 🟡 primera nota de proyecto real de punta a punta |
-| **Obsidian en móvil y portátil** | — | ✅ Self-hosted LiveSync: CouchDB por Tailscale + `livesync-bridge` con el vault, cifrado E2E (perfil `livesync`, `docs/OBSIDIAN.md`) | 🟡 validar edición desde el iPhone hacia el vault |
+| **Obsidian en móvil y portátil** | — | ✅ Self-hosted LiveSync: CouchDB por Tailscale + `livesync-bridge` con el vault, cifrado E2E (perfil `livesync`, `docs/OBSIDIAN.md`); iPhone configurado el 18-09 | 🟡 comprobar que iPhone→vault llega sin reiniciar el puente |
+| **Seguimiento y control de proyectos** | 🟡 (gestión del conocimiento; el seguimiento lo hace el PM a mano) | ✅ OpenProject 17.8 (perfil `pm`, `docs/OPENPROJECT.md`): empresas → proyectos, tareas, hitos, **riesgos**, Gantt y tableros por Tailscale; skill MCP `jarvis-pm` (6 herramientas) validada con Gemma: alta de riesgos, cambios de estado e informe de seguimiento desde el chat | ⬜ actas de reunión que creen tareas (siguiente rama) |
 | **Acceso remoto al panel** | — | ✅ Tailscale en compose; panel de OpenClaw en `https://<host>.<tailnet>.ts.net` sin puertos abiertos, gateway solo en loopback (`docs/ACCESO-REMOTO.md`) | — |
 
 ---

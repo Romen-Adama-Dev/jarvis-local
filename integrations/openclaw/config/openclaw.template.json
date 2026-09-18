@@ -94,6 +94,16 @@
           "JARVIS_OWNER_TELEGRAM_ID": "__TELEGRAM_USER_ID__"
         }
       },
+      "jarvis-pm": {
+        "command": "__REPO_DIR__/.venv/bin/python",
+        "args": [
+          "__REPO_DIR__/integrations/openclaw/skills/jarvis-pm/server.py"
+        ],
+        "env": {
+          "OPENPROJECT_URL": "http://127.0.0.1:__OPENPROJECT_PORT__",
+          "OPENPROJECT_HTTPS_PORT": "__OPENPROJECT_HTTPS_PORT__"
+        }
+      },
       "jarvis-email": {
         "command": "__REPO_DIR__/.venv/bin/python",
         "args": [
