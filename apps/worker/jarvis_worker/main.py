@@ -43,7 +43,9 @@ async def on_startup(ctx: dict[str, Any]) -> None:
         settings.ollama_host, settings.ollama_primary_model, timeout_seconds=900
     )
     docgen_reranker = (
-        FastEmbedReranker(cache_dir=cache_dir) if settings.rag_reranker_enabled else None
+        FastEmbedReranker(cache_dir=cache_dir, model_name=settings.rag_reranker_model)
+        if settings.rag_reranker_enabled
+        else None
     )
     ctx["rag_orchestrator"] = HybridRagOrchestrator(
         ctx["qdrant_client"],
@@ -61,7 +63,11 @@ async def on_startup(ctx: dict[str, Any]) -> None:
             timeout_seconds=settings.airllm_timeout_seconds,
         )
         ctx["airllm_provider"] = airllm_provider
-        reranker = FastEmbedReranker(cache_dir=cache_dir) if settings.rag_reranker_enabled else None
+        reranker = (
+            FastEmbedReranker(cache_dir=cache_dir, model_name=settings.rag_reranker_model)
+            if settings.rag_reranker_enabled
+            else None
+        )
         ctx["deep_orchestrator"] = HybridRagOrchestrator(
             ctx["qdrant_client"],
             settings.qdrant_collection,

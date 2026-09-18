@@ -26,6 +26,7 @@ async def create_minutes(
     session: DbSession,
     settings: SettingsDep,
     project: str = "",
+    company: str = "",
     title: str = "",
     meeting_date: str = "",
     format: str = "pdf",
@@ -76,6 +77,7 @@ async def create_minutes(
         title,
         meeting_date or datetime.date.today().isoformat(),
         format,
+        company,
     )
     return JobResponse.model_validate(job)
 

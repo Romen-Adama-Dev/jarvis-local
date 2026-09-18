@@ -21,6 +21,9 @@ class ChunkPoint:
     text: str
     created_at: str
     tags: list[str]
+    # Ámbito (packages/core/scope.py): identificadores de empresa y proyecto, o None.
+    company: str | None = None
+    project: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -33,23 +36,45 @@ class RetrievedChunk:
     section: str | None
     text: str
     score: float
+    # Empresa del documento (None = documentación general).
+    company: str | None = None
 
 
 async def ensure_collection(
     client: AsyncQdrantClient, collection_name: str, dense_dimension: int
 ) -> None:
-    exists = await client.collection_exists(collection_name)
-    if exists:
-        return
-    await client.create_collection(
-        collection_name=collection_name,
-        vectors_config={
-            DENSE_VECTOR_NAME: models.VectorParams(
-                size=dense_dimension, distance=models.Distance.COSINE
+    if not await client.collection_exists(collection_name):
+        await client.create_collection(
+            collection_name=collection_name,
+            vectors_config={
+                DENSE_VECTOR_NAME: models.VectorParams(
+                    size=dense_dimension, distance=models.Distance.COSINE
+                )
+            },
+            sparse_vectors_config={SPARSE_VECTOR_NAME: models.SparseVectorParams()},
+        )
+    await ensure_scope_indexes(client, collection_name)
+
+
+async def ensure_scope_indexes(client: AsyncQdrantClient, collection_name: str) -> None:
+    """Índices de ámbito. `company` como tenant: Qdrant agrupa en disco los puntos de cada
+    empresa y las búsquedas filtradas por empresa rinden como colecciones separadas, sin
+    duplicar el índice (multitenancy por payload). Idempotente."""
+    info = await client.get_collection(collection_name)
+    existing = info.payload_schema or {}
+    if "company" not in existing:
+        await client.create_payload_index(
+            collection_name,
+            "company",
+            field_schema=models.KeywordIndexParams(
+                type=models.KeywordIndexType.KEYWORD, is_tenant=True
+            ),
+        )
+    for field in ("project", "document_id"):
+        if field not in existing:
+            await client.create_payload_index(
+                collection_name, field, field_schema=models.PayloadSchemaType.KEYWORD
             )
-        },
-        sparse_vectors_config={SPARSE_VECTOR_NAME: models.SparseVectorParams()},
-    )
 
 
 async def upsert_chunks(
@@ -80,6 +105,8 @@ async def upsert_chunks(
                     "text": point.text,
                     "created_at": point.created_at,
                     "tags": point.tags,
+                    "company": point.company,
+                    "project": point.project,
                 },
             )
         )
@@ -103,8 +130,53 @@ async def delete_by_document(
     )
 
 
+async def set_document_scope(
+    client: AsyncQdrantClient, collection_name: str, document_id: str, payload: dict
+) -> None:
+    """Cambia empresa/proyecto de todos los fragmentos de un documento sin reindexarlo."""
+    await client.set_payload(
+        collection_name=collection_name,
+        payload=payload,
+        points=models.FilterSelector(
+            filter=models.Filter(
+                must=[
+                    models.FieldCondition(
+                        key="document_id", match=models.MatchValue(value=document_id)
+                    )
+                ]
+            )
+        ),
+    )
+
+
+def _is_empty(key: str) -> models.IsEmptyCondition:
+    return models.IsEmptyCondition(is_empty=models.PayloadField(key=key))
+
+
+def _match(key: str, value: str) -> models.FieldCondition:
+    return models.FieldCondition(key=key, match=models.MatchValue(value=value))
+
+
+def scope_filter(company_id: str, project_id: str) -> models.Filter:
+    """Qué documentos ve una consulta: los globales siempre; los de la empresa (sin
+    proyecto) si hay empresa; los del proyecto si hay proyecto. Nunca los de otra empresa
+    ni los de otro proyecto."""
+    visible: list[models.Condition] = [_is_empty("company")]
+    if company_id and project_id:
+        visible += [
+            models.Filter(must=[_match("company", company_id), _is_empty("project")]),
+            models.Filter(must=[_match("company", company_id), _match("project", project_id)]),
+        ]
+    elif company_id:
+        visible.append(_match("company", company_id))
+    return models.Filter(should=visible)
+
+
 def _build_filter(filters: dict) -> models.Filter | None:
     conditions: list[models.Condition] = []
+    if "scope" in filters:
+        scope = filters["scope"] or {}
+        conditions.append(scope_filter(scope.get("company", ""), scope.get("project", "")))
     if document_id := filters.get("document_id"):
         conditions.append(
             models.FieldCondition(key="document_id", match=models.MatchValue(value=document_id))
@@ -168,6 +240,7 @@ async def hybrid_search(
                 section=payload.get("section"),
                 text=payload.get("text", ""),
                 score=point.score,
+                company=payload.get("company"),
             )
         )
     return chunks
