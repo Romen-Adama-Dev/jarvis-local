@@ -367,7 +367,7 @@ def describe_work_package(wp: dict) -> str:
     parts = [f"#{wp['id']} [{links['type']['title']}] {wp['subject']}", links["status"]["title"]]
     due = wp.get("dueDate") or wp.get("date")
     if wp.get("startDate") and wp.get("dueDate"):
-        parts.append(f"{wp['startDate']} → {wp['dueDate']}")
+        parts.append(f"del {wp['startDate']} al {wp['dueDate']}")
     elif due:
         parts.append(f"vence {due}")
     if links.get("assignee", {}).get("title"):

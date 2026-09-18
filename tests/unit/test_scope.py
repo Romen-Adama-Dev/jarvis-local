@@ -127,3 +127,11 @@ def test_scoped_chunks_get_reserved_slots():
     assert [c.point_id for c in out] == ["a", "x", "y", "b"]
     already = [_chunk("x", "globex"), _chunk("a"), _chunk("y", "globex")]
     assert _reserve_scoped(already, candidates, limit=2) == already
+
+
+def test_own_only_filter_excludes_global():
+    visible = _visible(scope_filter("acme", "erp", own_only=True))
+    assert len(visible) == 2
+    assert not any(isinstance(c, models.IsEmptyCondition) for c in visible)
+    # Sin empresa no hay "propio": sigue viendo lo general.
+    assert len(_visible(scope_filter("", "", own_only=True))) == 1
