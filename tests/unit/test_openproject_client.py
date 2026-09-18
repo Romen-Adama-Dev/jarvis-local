@@ -253,3 +253,8 @@ def test_update_sets_start_date(op, fake):
 def test_describe_shows_period():
     wp = _wp(8, "Maquetación", "Tarea", startDate="2026-09-21", dueDate="2026-09-23")
     assert "del 2026-09-21 al 2026-09-23" in describe_work_package(wp)
+
+
+def test_update_changes_subject(op, fake):
+    op.update_work_package(50, subject="  Contratar laespiga.es ")
+    assert fake.body("PATCH", "/work_packages/50")["subject"] == "Contratar laespiga.es"

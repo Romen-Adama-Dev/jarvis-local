@@ -270,6 +270,7 @@ class OpenProjectClient:
         wp_id: int,
         *,
         status: str = "",
+        subject: str = "",
         percent_done: int | None = None,
         start_date: str = "",
         due_date: str = "",
@@ -278,6 +279,8 @@ class OpenProjectClient:
     ) -> dict:
         current = self.work_package(wp_id)
         body: dict[str, Any] = {"lockVersion": current["lockVersion"], "_links": {}}
+        if subject.strip():
+            body["subject"] = subject.strip()
         if status:
             new_status = self._match(self.statuses(), status, "El estado")
             body["_links"]["status"] = {"href": new_status["_links"]["self"]["href"]}

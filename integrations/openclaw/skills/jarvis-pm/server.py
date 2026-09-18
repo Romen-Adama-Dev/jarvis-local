@@ -174,6 +174,7 @@ def pm_create_task(
 def pm_update_task(
     task_id: int,
     status: str = "",
+    subject: str = "",
     percent_done: int = -1,
     start_date: str = "",
     due_date: str = "",
@@ -181,12 +182,14 @@ def pm_update_task(
     comment: str = "",
 ) -> str:
     """Actualiza un paquete de trabajo por su número (#id): estado (Nuevo, En curso,
-    Cerrado...), porcentaje hecho (0-100), fechas de inicio y fin (AAAA-MM-DD),
-    responsable y/o un comentario. Solo cambia lo que se indique."""
+    Cerrado...), título (`subject`, p. ej. para corregir un error), porcentaje hecho
+    (0-100), fechas de inicio y fin (AAAA-MM-DD), responsable y/o un comentario. Solo
+    cambia lo que se indique."""
     op = _op()
     wp = op.update_work_package(
         task_id,
         status=status,
+        subject=subject,
         percent_done=percent_done if percent_done >= 0 else None,
         start_date=start_date,
         due_date=due_date,

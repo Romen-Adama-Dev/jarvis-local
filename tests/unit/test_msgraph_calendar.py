@@ -49,7 +49,9 @@ async def test_create_event_posts_expected_graph_payload_shape():
             ],
             "body": {"contentType": "Text", "content": "Agenda: revisar hitos"},
         }
-        return httpx.Response(201, json={"id": "evt1", "webLink": "https://outlook.office.com/evt1"})
+        return httpx.Response(
+            201, json={"id": "evt1", "webLink": "https://outlook.office.com/evt1"}
+        )
 
     client = _client(handler)
     event = await create_event(
