@@ -159,8 +159,8 @@ openclaw wiki status   # confirma vault, modo, render, bridge
 openclaw wiki doctor    # audita la configuración
 ```
 
-Ejecutado ya en `jarvis-gpu`: `Render mode: obsidian`, `Bridge: enabled`,
-vault en `/home/adamacaetanoramirez/.openclaw/wiki/main`. El aviso "Bridge
+Ejecutado ya en la VM: `Render mode: obsidian`, `Bridge: enabled`,
+vault en `~/.openclaw/wiki/main`. El aviso "Bridge
 mode is enabled but the active memory plugin is not exporting any public
 memory artifacts yet" es esperable con cero conversaciones registradas
 todavía; se resuelve solo en cuanto `memory-core` tenga sesiones que

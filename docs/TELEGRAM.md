@@ -4,7 +4,7 @@ Un único bot, administrado íntegramente por OpenClaw (long polling, sin webhoo
 
 ## Bot
 
-* Bot creado por el usuario vía `@BotFather` (`/newbot`). Nombre: **Jarvis-UE**, usuario `@RomenAdamaDev_bot`.
+* Bot creado por el usuario vía `@BotFather` (`/newbot`). Nombre y usuario a tu elección (p. ej. `@MiJarvis_bot`).
 * Token guardado fuera del repositorio en `~/.openclaw/secrets/telegram_bot_token` (permisos `600`), referenciado desde `openclaw.json` mediante `channels.telegram.tokenFile` (nunca como valor literal en config ni en git).
 
 ## Autorización

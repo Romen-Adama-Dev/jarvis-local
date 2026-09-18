@@ -111,6 +111,55 @@ En el portátil, si antes usabas el plugin Obsidian Git con `jarvis-vault`, pás
 LiveSync en un vault nuevo y deja ese clon de git sin plugin: git queda solo para el
 servidor.
 
+## Una sola memoria: red de conocimiento, Jarvis y OpenProject
+
+El vault es **la** memoria de Jarvis. Lo que sabe de tus proyectos está en él como una red
+de notas enlazadas, y OpenProject y Jarvis leen y escriben esa misma red:
+
+```
+OpenProject (proyectos, tareas, hitos, riesgos, reuniones, wiki) ─┐
+Actas del vault · documentos del RAG ─────────────────────────────┤
+                                                                  ▼
+                         vault de Obsidian: red de conocimiento ── LiveSync ─► iPhone, portátil
+                           │            ▲                     └── git ─► jarvis-vault (historial)
+    wiki de OpenProject ◄──┘            └── Jarvis: "recuerda que…" (jarvis_remember)
+    ("Memoria de Jarvis")                   y memory_search sobre todo el vault
+```
+
+* **`knowledge`** (perfiles `vault` o `livesync`, `packages/knowledge/red.py`) regenera
+  cada `KNOWLEDGE_REFRESH_SECONDS` (10 min) una nota por empresa, proyecto, persona, hito,
+  riesgo, reunión y documento, más los conceptos *Gestión de riesgos*, *Hitos y
+  cronograma*, *Reuniones y actas*, *Documentación* y *Equipo*, y la nota raíz
+  **Red de conocimiento**. Las actas reciben un bloque "Red" con enlaces a su proyecto y a
+  los asistentes. Las notas llevan el frontmatter del wiki de OpenClaw (`pageType`,
+  `entityType`, `relationships`), así que Jarvis las usa como memoria estructurada.
+* **`openproject-wiki-sync`** (perfil `pm`) publica la nota de cada empresa y proyecto en
+  la wiki de OpenProject (página **Memoria de Jarvis**) y copia al vault las demás páginas
+  de la wiki de OpenProject (`sources/openproject/<proyecto>/wiki/`).
+* **Jarvis**: "recuerda que en Web corporativa el cliente prefiere los viernes" →
+  `jarvis_remember` lo añade a la sección **Notas** de esa nota; sale en Obsidian, en la
+  wiki del proyecto y en `memory_search`.
+
+Dónde escribir cada cosa:
+
+| Quieres... | Escríbelo en |
+|---|---|
+| Notas tuyas sobre un proyecto, empresa o persona | Su nota en Obsidian, **fuera** del bloque `jarvis:red` (p. ej. en `## Notas`). Se conserva al regenerar y se publica en OpenProject |
+| Documentación de proyecto para el equipo | La wiki de OpenProject (cualquier página salvo *Memoria de Jarvis*): llega al vault |
+| Tareas, fechas, riesgos | OpenProject (o por Telegram); la red se actualiza sola |
+
+Lo que hay entre `<!-- jarvis:red:start -->` y `<!-- jarvis:red:end -->` se regenera;
+*Memoria de Jarvis* en OpenProject se sobrescribe desde Obsidian. Nada se borra solo: si
+quitas algo de OpenProject, su nota se queda hasta que la borres.
+
+### Verlo como red
+
+Abre la **vista de grafo** (icono del grafo o `Ctrl/Cmd+G`). Para distinguir los tipos,
+en *Grupos* añade uno por etiqueta con su color: `tag:#empresa`, `tag:#proyecto`,
+`tag:#persona`, `tag:#riesgo`, `tag:#hito`, `tag:#reunion`, `tag:#documento`,
+`tag:#concepto`. Con *Filtros → Archivos huérfanos* desactivado se ocultan los índices del
+plugin. Los ajustes de la vista son de cada dispositivo.
+
 ## Comprobar que funciona
 
 * Crea una nota en el móvil y mira en el servidor:

@@ -324,6 +324,28 @@ services:
       retries: 5
     logging: *logging
 
+  # Red de conocimiento en el vault de Obsidian (docs/OBSIDIAN.md): empresas, proyectos,
+  # personas, hitos, riesgos, reuniones y documentos como notas enlazadas.
+  knowledge:
+    image: jarvis-local:latest
+    restart: unless-stopped
+    profiles: ["vault", "livesync"]
+    network_mode: host
+    user: "${JARVIS_UID:-1000}:${JARVIS_GID:-1000}"
+    command: ["python", "-m", "packages.knowledge.red", "--vault", "/state/wiki/main",
+              "--every", "${KNOWLEDGE_REFRESH_SECONDS:-600}"]
+    env_file: *env-file
+    volumes:
+      - ${OPENCLAW_STATE_PATH:-openclaw_state}:/state
+      - jarvis_runtime:/run/jarvis:ro
+      - tailscale_info:/var/run/tailscale-info:ro
+    depends_on:
+      api:
+        condition: service_healthy
+      openclaw:
+        condition: service_started
+    logging: *logging
+
   # --- Opcionales -----------------------------------------------------------------------
   # Vault de Obsidian en un repo git privado (docs/MEMORY.md): VAULT_GIT_URL y
   # VAULT_SSH_KEY_PATH en .env, y COMPOSE_PROFILES=vault.
@@ -542,6 +564,35 @@ services:
       timeout: 5s
       retries: 10
       start_period: 120s
+
+  # Una sola memoria: publica las notas del vault en la wiki de cada proyecto y copia al
+  # vault las páginas de la wiki de OpenProject (infra/docker/openproject-wiki-sync.rb).
+  openproject-wiki-sync:
+    <<: *openproject
+    command: ["bash", "-c", "bundle exec rails runner /opt/jarvis/openproject-wiki-sync.rb"]
+    restart: unless-stopped
+    # Dueño del vault (como vault-sync y knowledge), no el usuario app de la imagen.
+    user: "${JARVIS_UID:-1000}:${JARVIS_GID:-1000}"
+    environment:
+      HOME: /tmp
+      JARVIS_VAULT_DIR: /state/wiki/main
+      WIKI_SYNC_INTERVAL: ${KNOWLEDGE_REFRESH_SECONDS:-600}
+      OPENPROJECT_DEFAULT__LANGUAGE: ${OPENPROJECT_LANGUAGE:-es}
+      OPENPROJECT_PORT: ${OPENPROJECT_PORT:-8090}
+      OPENPROJECT_HTTPS_PORT: ${OPENPROJECT_HTTPS_PORT:-8445}
+      OPENPROJECT_RAILS__CACHE__STORE: memcache
+      OPENPROJECT_CACHE__MEMCACHE__SERVER: openproject-cache:11211
+      OPENPROJECT_EMAIL__DELIVERY__METHOD: none
+    volumes:
+      - ./infra/docker/openproject-entrypoint.sh:/opt/jarvis/openproject-entrypoint.sh:ro
+      - ./infra/docker/openproject-wiki-sync.rb:/opt/jarvis/openproject-wiki-sync.rb:ro
+      - openproject_assets:/var/openproject/assets
+      - jarvis_runtime:/run/jarvis:ro
+      - tailscale_info:/var/run/tailscale-info:ro
+      - ${OPENCLAW_STATE_PATH:-openclaw_state}:/state
+    depends_on:
+      openproject:
+        condition: service_healthy
 
   openproject-worker:
     <<: *openproject

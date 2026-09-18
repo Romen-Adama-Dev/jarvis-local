@@ -7,7 +7,7 @@ description: Resumen del TFM (memoria), estado real del repo frente a esa memori
 
 > Documento de trabajo. Une tres cosas: qué dice la memoria (TFM), qué tiene ya el
 > repositorio `jarvis-local`, y qué queremos añadir (agente: correo, reuniones,
-> generación de documentos, Telegram/Teams). Fecha: septiembre 2026 (actualizado el 18).
+> generación de documentos, Telegram/Teams). Fecha: septiembre 2026 (actualizado el 18 por la noche).
 
 ---
 
@@ -65,6 +65,7 @@ Leyenda: ✅ hecho · 🟡 parcial · ⬜ por hacer
 | **Microsoft Teams** | ⬜ | 🟡 canal `msteams` soportado en OpenClaw (`scripts/configure-teams`, `docs/TEAMS.md`) | ⬜ **túnel público (Cloudflare Tunnel) + manifiesto de la app**, sin versionar todavía |
 | **Licencia + gobernanza** | ⬜ declarado pendiente | ✅ `LICENSE` (MIT) + `CONTRIBUTING.md` | — |
 | **Memoria evolutiva** | — | ✅ `memory-core` + `memory-wiki` de OpenClaw, vault Obsidian versionado en git privado (`vault-sync`), búsqueda semántica con `embeddinggemma` (`docs/MEMORY.md`) | 🟡 primera nota de proyecto real de punta a punta |
+| **Red de conocimiento / memoria única** | — | ✅ notas enlazadas generadas desde OpenProject, actas y RAG; wiki de OpenProject sincronizada en ambos sentidos; `jarvis_remember` (`docs/OBSIDIAN.md`) | ⬜ personas deduplicadas con alias, relaciones entre riesgos y tareas, síntesis semanales automáticas |
 | **Obsidian en móvil y portátil** | — | ✅ Self-hosted LiveSync: CouchDB por Tailscale + `livesync-bridge` con el vault, cifrado E2E (perfil `livesync`, `docs/OBSIDIAN.md`); iPhone configurado el 18-09 | 🟡 comprobar que iPhone→vault llega sin reiniciar el puente |
 | **Seguimiento y control de proyectos** | 🟡 (gestión del conocimiento; el seguimiento lo hace el PM a mano) | ✅ OpenProject 17.8 (perfil `pm`, `docs/OPENPROJECT.md`): empresas → proyectos, tareas, hitos, **riesgos**, Gantt y tableros por Tailscale; skill MCP `jarvis-pm` (9 herramientas) validada con Gemma: alta de riesgos, cambios de estado, informe de seguimiento, reuniones y correo → tarea desde el chat; simulación completa de un proyecto (Panadería La Espiga › Web corporativa) el 18-09 | ⬜ plantillas de proyecto (Water-Scrum-Fall), presupuesto y horas |
 | **Actas de reunión automáticas** | 🟡 (STT local para notas de voz) | ✅ grabación → faster-whisper large-v3-turbo en GPU (1 h ≈ 2 min) → acta estructurada con Gemma (resumen, decisiones, acciones con responsable y fecha, riesgos) → PDF/Word, nota en Obsidian, RAG del proyecto y, con confirmación, tareas, riesgos y la **reunión cerrada con su acta** (decisiones y tareas como resultados) en OpenProject (`docs/ACTAS.md`); validado de punta a punta desde el agente | ⬜ separación de hablantes (diarización local) |
@@ -197,6 +198,14 @@ lleva al iPhone. Las actas importadas quedan como reunión cerrada; `pm_meetings
 `pm_task_from_email` en `jarvis-pm`. `scripts/check-integrations` comprueba que cada
 integración responde de verdad.
 
+**Fase 5.4 — Una sola memoria (✅ 18 septiembre, misma rama).**
+Red de conocimiento en el vault (`packages/knowledge/red.py`, servicio `knowledge`):
+empresas, proyectos, personas, hitos, riesgos, reuniones y documentos como notas enlazadas
+con el frontmatter del wiki de OpenClaw; conceptos hub y nota raíz. `openproject-wiki-sync`
+publica la nota de cada proyecto en la wiki de OpenProject y trae al vault sus páginas;
+`jarvis_remember` escribe lo que el usuario pide recordar en esa misma red. Obsidian,
+Jarvis y OpenProject comparten una memoria.
+
 **Fase 6 — Endurecer y medir.**
 UAT con estos flujos, métricas de ahorro de tiempo (cierra el otro pendiente del
 TFM), y decisión OpenClaw vs. cliente MCP ligero (Hermes/ZeroClaw). Tareas concretas:
@@ -214,10 +223,19 @@ TFM), y decisión OpenClaw vs. cliente MCP ligero (Hermes/ZeroClaw). Tareas conc
 * Limpieza: rama remota `fix/openclaw-2026.9-deploy`, imagen `alpine/git` sin versión
   fijada en `vault-sync`.
 
+### 4.0 Estado al cierre del 18-09-2026
+
+En `main`: OpenProject como centro de reuniones, calendario y correo (Fase 5.3) y una sola
+memoria en Obsidian compartida con Jarvis y OpenProject (Fase 5.4). En la VM corren
+`CALENDAR_PROVIDER=openproject`, los servicios `knowledge` y `openproject-wiki-sync`, y
+`scripts/check-integrations` da 35/35. Simulación de referencia: Panadería La Espiga ›
+Web corporativa (etiqueta `v0.6-simulacion` para el estado anterior).
+
 ### 4.1 Qué queda por implementar (a 18-09-2026)
 
 | Área | Pendiente | Prioridad |
 |---|---|---|
+| Privacidad (antes de publicar el repo) | Convertir el workspace de OpenClaw (`USER.md`, `IDENTITY.md`, `TOOLS.md`, `AGENTS.md`) en plantillas con el nombre del propietario desde `.env`; decidir si se reescribe el historial de git para quitar datos personales antiguos | Alta |
 | Operación (Fase 6) | Monitorización en compose (falta `infra/monitoring/prometheus.yml`, `dcgm-exporter`, alertas); copias de seguridad y restauración probadas (PostgreSQL con OpenProject, Qdrant, OpenClaw, CouchDB, adjuntos de OpenProject); CI con tests, ruff, pyright, build de imágenes y `scripts/check-integrations` | Alta |
 | Documentación | `docs/ACCEPTANCE.md` sigue en el estado de julio | Alta |
 | Validaciones | AirLLM `/deep` en compose; Obsidian iPhone → vault sin reiniciar el puente; funcionamiento sin Internet (criterio 27) | Alta |
@@ -225,6 +243,7 @@ TFM), y decisión OpenClaw vs. cliente MCP ligero (Hermes/ZeroClaw). Tareas conc
 | Correo | Correo entrante en OpenProject (respuestas a avisos como comentarios) con un buzón aparte para no chocar con Jarvis; clasificación automática de la bandeja | Media |
 | Proyectos | Plantillas Water-Scrum-Fall en OpenProject; horas y presupuesto; informe semanal automático | Media |
 | Actas | Diarización (quién habla) local | Media |
+| Memoria | Alias de personas (hoy solo se unen las variantes del propietario); síntesis semanal por proyecto en el vault; que las notas de persona también vayan a OpenProject | Media |
 | Multiusuario | Varias personas en Telegram con permisos por empresa/proyecto (RAG y OpenProject) | Media |
 | Teams | Bloqueado por el registro de Azure Bot | Baja |
 | TFM | UAT con usuarios, medición del ahorro de tiempo, web de demo para la defensa (Fase 5.1) | Según fecha de defensa |
