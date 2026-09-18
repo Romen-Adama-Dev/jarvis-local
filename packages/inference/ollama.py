@@ -68,6 +68,9 @@ class OllamaProvider:
         options = {k: v for k, v in kwargs.items() if k in {"temperature", "num_ctx", "top_p"}}
         if options:
             payload["options"] = options
+        # Salida estructurada: "json" o un esquema JSON que Ollama impone al generar.
+        if kwargs.get("format"):
+            payload["format"] = kwargs["format"]
 
         start = time.perf_counter()
         try:

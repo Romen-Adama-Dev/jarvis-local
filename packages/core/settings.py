@@ -87,6 +87,13 @@ class Settings(BaseSettings):
     confirmation_ttl_seconds: int = 600
     # Secciones de un documento generadas a la vez (casar con OLLAMA_NUM_PARALLEL).
     docgen_concurrency: int = 4
+    # Actas de reunión (packages/meetings): transcripción con faster-whisper en la GPU si
+    # la hay ("auto"), si no en CPU. "large-v3-turbo" tarda ~2 min por hora de audio en
+    # GPU; en CPU conviene "small" o "medium" (MEETINGS_WHISPER_MODEL).
+    meetings_whisper_model: str = "large-v3-turbo"
+    meetings_whisper_device: str = "auto"
+    meetings_language: str = "es"
+    meetings_max_upload_mb: int = 500
     rate_limit_per_minute: int = 30
 
     @property

@@ -12,6 +12,7 @@ from apps.api.jarvis_api.schemas import EmailConfirmRequest, EmailDraftRequest, 
 from packages.core.attachments import Attachment
 from packages.core.db.models import Job
 from packages.core.errors import NotFoundError, ValidationFailedError
+from packages.core.jobs import FILE_JOB_TYPES
 
 router = APIRouter(prefix="/v1/email", tags=["email"])
 
@@ -40,7 +41,7 @@ async def _generated_attachment(session: AsyncSession, job_id: str) -> Attachmen
         job = await session.get(Job, uuid.UUID(job_id))
     except ValueError as exc:
         raise ValidationFailedError(f"Identificador de trabajo inválido: {job_id}") from exc
-    if job is None or job.job_type != "generate_document":
+    if job is None or job.job_type not in FILE_JOB_TYPES:
         raise NotFoundError(f"No hay ningún documento generado con el trabajo {job_id}")
     if job.status != "completed" or not job.result:
         raise ValidationFailedError(

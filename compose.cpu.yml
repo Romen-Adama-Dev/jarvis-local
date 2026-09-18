@@ -6,3 +6,8 @@ services:
     gpus: !reset []
   ollama:
     gpus: !reset []
+  worker:
+    gpus: !reset []
+    environment:
+      # Transcripción de reuniones en CPU: turbo es lento sin GPU.
+      MEETINGS_WHISPER_MODEL: ${MEETINGS_WHISPER_MODEL:-small}

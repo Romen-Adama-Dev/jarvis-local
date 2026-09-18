@@ -34,3 +34,8 @@ async def mark_cancelled(session: AsyncSession, job: Job) -> None:
 async def refresh_is_cancelling(session: AsyncSession, job: Job) -> bool:
     await session.refresh(job)
     return job.status == "cancelling"
+
+
+# Trabajos cuyo resultado es un archivo descargable o adjuntable a un correo
+# (`storage_path` y `filename` en el resultado).
+FILE_JOB_TYPES = frozenset({"generate_document", "meeting_minutes"})

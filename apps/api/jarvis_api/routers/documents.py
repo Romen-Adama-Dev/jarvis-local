@@ -17,6 +17,7 @@ from apps.api.jarvis_api.schemas import (
 )
 from packages.core.db.models import Document, Job
 from packages.core.errors import ConflictError, NotFoundError, ValidationFailedError
+from packages.core.jobs import FILE_JOB_TYPES
 from packages.docgen.templates import SECTION_TEMPLATES
 from packages.security.validation import validate_filename, validate_mime, validate_size
 
@@ -186,7 +187,7 @@ async def generate_document(payload: GenerateDocumentRequest, session: DbSession
 @router.get("/generated/{job_id}")
 async def get_generated_document(job_id: uuid.UUID, session: DbSession) -> FileResponse:
     job = await session.get(Job, job_id)
-    if job is None or job.job_type != "generate_document":
+    if job is None or job.job_type not in FILE_JOB_TYPES:
         raise NotFoundError("Documento generado no encontrado")
     if job.status != "completed":
         raise ConflictError(f"El trabajo todavía no ha terminado: {job.status}")

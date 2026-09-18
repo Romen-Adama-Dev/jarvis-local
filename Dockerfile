@@ -31,8 +31,10 @@ RUN apt-get update \
 WORKDIR /app
 COPY --from=builder --chown=jarvis:jarvis /app /app
 
+# Bibliotecas CUDA de pip (cuBLAS, cuDNN) para faster-whisper en la GPU (actas de reunión).
 ENV PATH="/app/.venv/bin:$PATH" \
-    PYTHONUNBUFFERED=1
+    PYTHONUNBUFFERED=1 \
+    LD_LIBRARY_PATH="/app/.venv/lib/python3.12/site-packages/nvidia/cublas/lib:/app/.venv/lib/python3.12/site-packages/nvidia/cudnn/lib:/app/.venv/lib/python3.12/site-packages/nvidia/cuda_nvrtc/lib"
 
 USER jarvis
 
