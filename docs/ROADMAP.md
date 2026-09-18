@@ -7,7 +7,7 @@ description: Resumen del TFM (memoria), estado real del repo frente a esa memori
 
 > Documento de trabajo. Une tres cosas: qué dice la memoria (TFM), qué tiene ya el
 > repositorio `jarvis-local`, y qué queremos añadir (agente: correo, reuniones,
-> generación de documentos, Telegram/Teams). Fecha: septiembre 2026 (actualizado el 18).
+> generación de documentos, Telegram/Teams). Fecha: septiembre 2026 (actualizado el 18 por la noche).
 
 ---
 
@@ -223,10 +223,19 @@ TFM), y decisión OpenClaw vs. cliente MCP ligero (Hermes/ZeroClaw). Tareas conc
 * Limpieza: rama remota `fix/openclaw-2026.9-deploy`, imagen `alpine/git` sin versión
   fijada en `vault-sync`.
 
+### 4.0 Estado al cierre del 18-09-2026
+
+En `main`: OpenProject como centro de reuniones, calendario y correo (Fase 5.3) y una sola
+memoria en Obsidian compartida con Jarvis y OpenProject (Fase 5.4). En la VM corren
+`CALENDAR_PROVIDER=openproject`, los servicios `knowledge` y `openproject-wiki-sync`, y
+`scripts/check-integrations` da 35/35. Simulación de referencia: Panadería La Espiga ›
+Web corporativa (etiqueta `v0.6-simulacion` para el estado anterior).
+
 ### 4.1 Qué queda por implementar (a 18-09-2026)
 
 | Área | Pendiente | Prioridad |
 |---|---|---|
+| Privacidad (antes de publicar el repo) | Convertir el workspace de OpenClaw (`USER.md`, `IDENTITY.md`, `TOOLS.md`, `AGENTS.md`) en plantillas con el nombre del propietario desde `.env`; decidir si se reescribe el historial de git para quitar datos personales antiguos | Alta |
 | Operación (Fase 6) | Monitorización en compose (falta `infra/monitoring/prometheus.yml`, `dcgm-exporter`, alertas); copias de seguridad y restauración probadas (PostgreSQL con OpenProject, Qdrant, OpenClaw, CouchDB, adjuntos de OpenProject); CI con tests, ruff, pyright, build de imágenes y `scripts/check-integrations` | Alta |
 | Documentación | `docs/ACCEPTANCE.md` sigue en el estado de julio | Alta |
 | Validaciones | AirLLM `/deep` en compose; Obsidian iPhone → vault sin reiniciar el puente; funcionamiento sin Internet (criterio 27) | Alta |
