@@ -50,6 +50,9 @@ Perfiles opcionales en `COMPOSE_PROFILES` (`.env`):
   (`docs/DOCGEN.md`), **voz** local (whisper + Piper), **búsqueda web** con SearXNG y
   **directorio de servicios** con enlaces y estado.
 
+Para probarlo todo con un proyecto ficticio (incluido el guion del audio de una reunión):
+`docs/DEMO.md`.
+
 Toda acción con efectos fuera del servidor (enviar un correo, invitar a una reunión,
 crear tareas desde un acta) pide un "sí" explícito antes.
 
