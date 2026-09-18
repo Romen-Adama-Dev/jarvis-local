@@ -33,4 +33,27 @@ else
 fi
 export OPENPROJECT_ADDITIONAL__HOST__NAMES="$internal"
 
+# Correo: la cuenta IMAP/SMTP de Jarvis (MAIL_*). Sin ella, OpenProject no envía nada.
+mail_from="${MAIL_FROM:-${MAIL_USERNAME:-}}"
+if [[ "${MAIL_PROVIDER:-imap}" == "imap" && -n "${SMTP_HOST:-}" && -n "${MAIL_USERNAME:-}" ]]; then
+  export OPENPROJECT_EMAIL__DELIVERY__METHOD=smtp
+  export OPENPROJECT_SMTP__ADDRESS="$SMTP_HOST"
+  export OPENPROJECT_SMTP__PORT="${SMTP_PORT:-587}"
+  export OPENPROJECT_SMTP__DOMAIN="${mail_from##*@}"
+  export OPENPROJECT_SMTP__AUTHENTICATION=plain
+  export OPENPROJECT_SMTP__USER__NAME="$MAIL_USERNAME"
+  export OPENPROJECT_SMTP__PASSWORD="${MAIL_PASSWORD:-}"
+  if [[ "${SMTP_SECURITY:-starttls}" == "ssl" ]]; then
+    export OPENPROJECT_SMTP__SSL=true OPENPROJECT_SMTP__ENABLE__STARTTLS__AUTO=false
+  else
+    export OPENPROJECT_SMTP__SSL=false OPENPROJECT_SMTP__ENABLE__STARTTLS__AUTO=true
+  fi
+  export OPENPROJECT_MAIL__FROM="$mail_from"
+else
+  export OPENPROJECT_EMAIL__DELIVERY__METHOD=none
+fi
+# Correo del admin humano (lo aplica openproject-setup.rb también a una base ya creada).
+export JARVIS_ADMIN_MAIL="${OPENPROJECT_ADMIN_MAIL:-$mail_from}"
+export OPENPROJECT_SEED_ADMIN_USER_MAIL="${JARVIS_ADMIN_MAIL:-admin@jarvis.invalid}"
+
 exec ./docker/prod/entrypoint-slim.sh "$@"

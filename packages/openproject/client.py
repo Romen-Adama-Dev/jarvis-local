@@ -162,17 +162,8 @@ class OpenProjectClient:
         return project
 
     def _add_owner(self, project: dict) -> None:
-        if not self.config.owner_login:
-            return
-        users = self._elements(
-            "/users",
-            {
-                "filters": json.dumps(
-                    [{"login": {"operator": "=", "values": [self.config.owner_login]}}]
-                )
-            },
-        )
-        if not users:
+        owner = self.owner()
+        if not owner:
             return
         role = self._match(self._elements("/roles"), "Administrador de proyecto", "El rol")
         self._request(
@@ -182,7 +173,7 @@ class OpenProjectClient:
             json={
                 "_links": {
                     "project": {"href": f"/api/v3/projects/{project['id']}"},
-                    "principal": {"href": users[0]["_links"]["self"]["href"]},
+                    "principal": {"href": owner["_links"]["self"]["href"]},
                     "roles": [{"href": role["_links"]["self"]["href"]}],
                 }
             },
@@ -318,6 +309,144 @@ class OpenProjectClient:
 
     def work_package_url(self, wp: dict) -> str:
         return f"{self.config.web_url}/work_packages/{wp['id']}"
+
+    def dated_work_packages(self, start: datetime.date, end: datetime.date) -> list[dict]:
+        """Trabajo abierto de todos los proyectos que vence (o es un hito) entre dos días."""
+        filters = [
+            {"status": {"operator": "o", "values": []}},
+            {"dueDate": {"operator": "<>d", "values": [start.isoformat(), end.isoformat()]}},
+        ]
+        params = {"filters": json.dumps(filters), "sortBy": json.dumps([["dueDate", "asc"]])}
+        return self._elements("/work_packages", params)
+
+    # --- Reuniones ----------------------------------------------------------------------
+
+    def users_by_email(self) -> dict[str, dict]:
+        return {
+            str(u.get("email", "")).lower(): u
+            for u in self._elements("/users")
+            if u.get("email") and u.get("status") == "active"
+        }
+
+    def owner(self) -> dict | None:
+        """El usuario humano propietario (`owner_login`), o None si no hay."""
+        if not self.config.owner_login:
+            return None
+        login = [{"login": {"operator": "=", "values": [self.config.owner_login]}}]
+        users = self._elements("/users", {"filters": json.dumps(login)})
+        return users[0] if users else None
+
+    def meetings(self, start: datetime.datetime, end: datetime.datetime) -> list[dict]:
+        """Reuniones de todos los proyectos que empiezan entre `start` y `end`."""
+        # La API solo filtra por "hora de inicio" hacia delante o hacia atrás, así que se
+        # filtra el rango aquí; 200 reuniones por página sobran para una persona.
+        meetings = self._elements("/meetings", {"sortBy": json.dumps([["start_time", "asc"]])})
+        chosen = []
+        for meeting in meetings:
+            if meeting.get("template"):
+                continue
+            begins = datetime.datetime.fromisoformat(meeting["startTime"].replace("Z", "+00:00"))
+            if start <= begins < end:
+                chosen.append(meeting)
+        return sorted(chosen, key=lambda m: m["startTime"])
+
+    def create_meeting(
+        self,
+        project: dict,
+        title: str,
+        start: datetime.datetime,
+        end: datetime.datetime,
+        *,
+        participants: list[dict] | None = None,
+        location: str = "",
+        notes: str = "",
+        notify: bool = True,
+    ) -> dict:
+        """Crea una reunión con sus participantes (usuarios de OpenProject). Con `notify`,
+        OpenProject les manda la invitación por correo con el .ics (si tiene SMTP)."""
+        minutes = max(1, int((end - start).total_seconds() // 60))
+        body: dict[str, Any] = {
+            "title": title,
+            "startTime": start.astimezone(datetime.UTC).isoformat().replace("+00:00", "Z"),
+            "duration": f"PT{minutes // 60}H{minutes % 60}M",
+            "location": location,
+            "_links": {"project": {"href": f"/api/v3/projects/{project['id']}"}},
+        }
+        meeting = self._request("POST", "/meetings", json=body)
+        if notes:
+            self.add_agenda_item(meeting, "Detalles", notes)
+        # Los participantes y la invitación van al publicarla (de borrador a abierta). Jarvis,
+        # que la crea, no participa: su correo no existe.
+        links = [{"href": u["_links"]["self"]["href"]} for u in participants or []]
+        return self._update_meeting(
+            meeting, state="open", notify=notify and bool(links), _links={"participants": links}
+        )
+
+    def _update_meeting(self, meeting: dict, **changes: Any) -> dict:
+        current = self._request("GET", f"/meetings/{meeting['id']}")
+        body = {"lockVersion": current["lockVersion"], **changes}
+        return self._request("PATCH", f"/meetings/{meeting['id']}", json=body)
+
+    def add_agenda_item(self, meeting: dict, title: str, notes: str = "") -> dict:
+        return self._request(
+            "POST",
+            "/meeting_agenda_items",
+            json={
+                "title": title[:255],
+                "notes": {"raw": notes},
+                "_links": {"meeting": {"href": f"/api/v3/meetings/{meeting['id']}"}},
+            },
+        )
+
+    def record_minutes(
+        self,
+        project: dict,
+        title: str,
+        start: datetime.datetime,
+        minutes: int,
+        *,
+        summary: str,
+        decisions: list[str],
+        work_packages: list[dict],
+    ) -> dict:
+        """Registra una reunión ya celebrada con su acta: resumen como punto del orden del
+        día y, como resultados, las decisiones y las tareas creadas. Queda cerrada."""
+        meeting = self._request(
+            "POST",
+            "/meetings",
+            json={
+                "title": title,
+                "startTime": start.astimezone(datetime.UTC).isoformat().replace("+00:00", "Z"),
+                "duration": f"PT{max(1, minutes) // 60}H{max(1, minutes) % 60}M",
+                "_links": {"project": {"href": f"/api/v3/projects/{project['id']}"}},
+            },
+        )
+        item = self.add_agenda_item(meeting, "Acta", summary)
+        # Los resultados solo se pueden añadir con la reunión en curso.
+        self._update_meeting(meeting, state="in_progress", notify=False)
+        agenda = {"agendaItem": {"href": f"/api/v3/meeting_agenda_items/{item['id']}"}}
+        for decision in decisions:
+            self._request(
+                "POST",
+                "/meeting_outcomes",
+                json={"kind": "decision", "notes": {"raw": decision}, "_links": agenda},
+            )
+        for wp in work_packages:
+            work_package = {"href": f"/api/v3/work_packages/{wp['id']}"}
+            self._request(
+                "POST",
+                "/meeting_outcomes",
+                json={"kind": "work_package", "_links": {**agenda, "workPackage": work_package}},
+            )
+        # El propietario figura como participante para verla en "Mis reuniones" (y su iCal).
+        owner = self.owner()
+        people = [{"href": owner["_links"]["self"]["href"]}] if owner else []
+        return self._update_meeting(
+            meeting, state="closed", notify=False, _links={"participants": people}
+        )
+
+    def meeting_url(self, meeting: dict) -> str:
+        return f"{self.config.web_url}/meetings/{meeting['id']}"
 
     # --- Seguimiento y control ----------------------------------------------------------
 

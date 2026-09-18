@@ -16,7 +16,7 @@ audio (Telegram, Obsidian o ~/jarvis-inbox)
   ◄── acta adjunta en el chat
       + nota en Obsidian: sources/proyectos/<proyecto>/actas/<fecha>-<título>.md
       + indexada en el RAG del proyecto ("¿qué se decidió sobre X en la reunión?")
-  └─► "¿las creo en OpenProject?" → pm_import_minutes → Tareas y Riesgos
+  └─► "¿las creo en OpenProject?" → pm_import_minutes → Tareas, Riesgos y la reunión
 ```
 
 Medido en este servidor (NVIDIA L4, junto a `gemma4:26b`): 86 s de audio se transcriben en
@@ -69,3 +69,4 @@ libera la VRAM al terminar de transcribir, antes de que Gemma redacte el acta.
 | Acta en la memoria | vault: `sources/proyectos/<proyecto>/actas/` |
 | Acta en el RAG | documento `<fecha>-<título>.md` del proyecto |
 | Tareas y riesgos | OpenProject, con "Origen: acta «título» (fecha)" en la descripción |
+| La reunión | Módulo Reuniones del proyecto en OpenProject, cerrada: acta (resumen, asistentes, temas) como punto del orden del día y decisiones y tareas como resultados. Sale en el calendario (`CALENDAR_PROVIDER=openproject`) a las 9:00 del día del acta, con la duración de la grabación |

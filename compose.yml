@@ -37,13 +37,23 @@ x-openproject: &openproject
     OPENPROJECT_DEFAULT__LANGUAGE: ${OPENPROJECT_LANGUAGE:-es}
     OPENPROJECT_SEED_LOCALE: ${OPENPROJECT_LANGUAGE:-es}
     OPENPROJECT_SEED_ADMIN_USER_NAME: ${OPENPROJECT_ADMIN_NAME:-Administrador}
-    OPENPROJECT_SEED_ADMIN_USER_MAIL: ${OPENPROJECT_ADMIN_MAIL:-admin@jarvis.invalid}
     OPENPROJECT_SEED_ADMIN_USER_PASSWORD_RESET: "false"
     OPENPROJECT_RAILS__CACHE__STORE: memcache
     OPENPROJECT_CACHE__MEMCACHE__SERVER: openproject-cache:11211
     # Sin servidor de edición colaborativa (hocuspocus): los documentos se editan de uno en uno.
     OPENPROJECT_COLLABORATIVE__EDITING__HOCUSPOCUS__URL: ""
     OPENPROJECT_HSTS: "false"
+    # Correo saliente (avisos, invitaciones a reuniones con .ics): la misma cuenta que usa
+    # Jarvis (MAIL_*, docs/EMAIL.md). openproject-entrypoint.sh la traduce a OpenProject.
+    MAIL_PROVIDER: ${MAIL_PROVIDER:-imap}
+    SMTP_HOST: ${SMTP_HOST:-}
+    SMTP_PORT: ${SMTP_PORT:-587}
+    SMTP_SECURITY: ${SMTP_SECURITY:-starttls}
+    MAIL_USERNAME: ${MAIL_USERNAME:-}
+    MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+    MAIL_FROM: ${MAIL_FROM:-}
+    # Correo del admin humano: vacío = el de Jarvis (MAIL_FROM o MAIL_USERNAME).
+    OPENPROJECT_ADMIN_MAIL: ${OPENPROJECT_ADMIN_MAIL:-}
     RAILS_MIN_THREADS: 4
     RAILS_MAX_THREADS: 16
   volumes:
@@ -154,6 +164,8 @@ services:
     volumes:
       - jarvis_srv:/srv/jarvis
       - jarvis_runtime:/run/jarvis:ro
+      # Nombre en el tailnet, para los enlaces a OpenProject del calendario.
+      - tailscale_info:/var/run/tailscale-info:ro
     depends_on:
       postgres:
         condition: service_healthy
