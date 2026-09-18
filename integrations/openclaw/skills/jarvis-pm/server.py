@@ -150,7 +150,9 @@ def pm_create_task(
     priority: str = "",
 ) -> str:
     """Crea un paquete de trabajo en un proyecto. `kind`: Tarea, Hito o Riesgo (u otro
-    tipo activo en el proyecto). Fechas en AAAA-MM-DD. `assignee` es el nombre de una persona
+    tipo activo en el proyecto). Fechas en AAAA-MM-DD; si la tarea tiene un periodo
+    ("del 21 al 23"), pasa `start_date` y `due_date` para que salga como barra en el Gantt.
+    Un hito solo lleva `due_date`. `assignee` es el nombre de una persona
     del proyecto. Para un riesgo, pon en `description` probabilidad, impacto y mitigación."""
     op = _op()
     proj = op.find_project(project)
@@ -173,18 +175,20 @@ def pm_update_task(
     task_id: int,
     status: str = "",
     percent_done: int = -1,
+    start_date: str = "",
     due_date: str = "",
     assignee: str = "",
     comment: str = "",
 ) -> str:
     """Actualiza un paquete de trabajo por su número (#id): estado (Nuevo, En curso,
-    Cerrado...), porcentaje hecho (0-100), fecha de vencimiento, responsable y/o un
-    comentario. Solo cambia lo que se indique."""
+    Cerrado...), porcentaje hecho (0-100), fechas de inicio y fin (AAAA-MM-DD),
+    responsable y/o un comentario. Solo cambia lo que se indique."""
     op = _op()
     wp = op.update_work_package(
         task_id,
         status=status,
         percent_done=percent_done if percent_done >= 0 else None,
+        start_date=start_date,
         due_date=due_date,
         assignee=assignee,
         comment=comment,

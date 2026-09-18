@@ -271,6 +271,7 @@ class OpenProjectClient:
         *,
         status: str = "",
         percent_done: int | None = None,
+        start_date: str = "",
         due_date: str = "",
         assignee: str = "",
         comment: str = "",
@@ -284,9 +285,11 @@ class OpenProjectClient:
             if not 0 <= percent_done <= 100:
                 raise ValidationFailedError("El porcentaje debe estar entre 0 y 100.")
             body["percentageDone"] = percent_done
+        milestone = "date" in current and "dueDate" not in current
         if due_date:
-            key = "date" if "date" in current and "dueDate" not in current else "dueDate"
-            body[key] = _check_date(due_date)
+            body["date" if milestone else "dueDate"] = _check_date(due_date)
+        if start_date and not milestone:
+            body["startDate"] = _check_date(start_date)
         if assignee:
             project_id = _id_from_href(current["_links"]["project"]["href"])
             if project_id is None:
@@ -363,7 +366,9 @@ def describe_work_package(wp: dict) -> str:
     links = wp["_links"]
     parts = [f"#{wp['id']} [{links['type']['title']}] {wp['subject']}", links["status"]["title"]]
     due = wp.get("dueDate") or wp.get("date")
-    if due:
+    if wp.get("startDate") and wp.get("dueDate"):
+        parts.append(f"{wp['startDate']} → {wp['dueDate']}")
+    elif due:
         parts.append(f"vence {due}")
     if links.get("assignee", {}).get("title"):
         parts.append(links["assignee"]["title"])
