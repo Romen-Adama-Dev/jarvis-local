@@ -171,6 +171,8 @@ services:
     image: jarvis-local:latest
     restart: unless-stopped
     network_mode: host
+    # GPU para transcribir reuniones (faster-whisper, ~2 GB de VRAM junto al modelo de Ollama).
+    gpus: all
     command: ["worker"]
     env_file: *env-file
     volumes:

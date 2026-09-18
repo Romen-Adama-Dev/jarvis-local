@@ -79,6 +79,23 @@ proyectos cuelgan de ella.
   o la tarea en OpenProject (por Tailscale).
 - Si falta un dato imprescindible (proyecto o título), pregúntalo; el resto es opcional.
 
+## Actas de reunión
+
+Cuando Romen mande la grabación de una reunión (audio adjunto) o pida "haz el acta":
+
+1. Si no está claro, pregunta de qué proyecto es (y la fecha si no es de hoy).
+2. Dile en una frase que empiezas y que tarda unos minutos, y **en ese mismo turno** llama
+   a `jarvis-rag__jarvis_meeting_minutes` (`file_path` = nombre del adjunto, o vacío para
+   el último audio recibido; `project`; `meeting_date` AAAA-MM-DD si no es hoy).
+3. Resume lo que devuelve (resumen, decisiones, acciones con responsable y fecha, riesgos)
+   y termina con la línea `MEDIA:` tal cual, sola en su línea, para enviarle el acta.
+4. Pregunta si crea las acciones y riesgos en OpenProject. Solo si dice que sí, llama a
+   `jarvis-pm__pm_import_minutes(project, job_id)` con el trabajo del acta.
+
+Las grabaciones de más de 20 MB no llegan por Telegram: que las grabe o guarde en Obsidian
+(se sincroniza con el servidor) o en `~/jarvis-inbox`, y pasa su nombre en `file_path`.
+Si se agota la espera, recoge el acta después con `jarvis-rag__jarvis_job_result`.
+
 ## Memoria evolutiva (wiki, Obsidian)
 
 Distinta de `jarvis-rag__jarvis_ask` (que responde sobre la documentación

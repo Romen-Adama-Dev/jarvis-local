@@ -1,6 +1,7 @@
 import asyncio
 import dataclasses
 import datetime
+import re
 import tempfile
 import uuid
 from pathlib import Path
@@ -25,6 +26,12 @@ from packages.docgen.render_pptx import render_pptx
 from packages.docgen.schema import DocSection, GeneratedDoc
 from packages.docgen.templates import build_sections_plan
 from packages.documents.parsers import parse_document
+from packages.meetings.minutes import (
+    build_minutes,
+    render_docx_via_pandoc,
+    render_minutes_markdown,
+)
+from packages.meetings.transcribe import format_timestamp, transcribe
 from packages.rag.chunking import chunk_blocks
 from packages.rag.store import (
     ChunkPoint,
@@ -347,6 +354,109 @@ async def generate_document(
             },
         )
         logger.info("generate_document_completed", job_id=job_id, kind=kind, format=fmt)
+
+
+def _render_minutes_file(markdown_path: Path, fmt: str, out_path: Path) -> None:
+    if fmt == "pdf":
+        render_pdf_via_pandoc(markdown_path, out_path)
+    elif fmt == "docx":
+        render_docx_via_pandoc(markdown_path, out_path)
+
+
+async def meeting_minutes(
+    ctx: dict[str, Any],
+    job_id: str,
+    audio_path: str,
+    project: str,
+    title: str,
+    meeting_date: str,
+    fmt: str,
+) -> None:
+    """Grabación → transcripción (GPU si la hay) → acta estructurada → PDF/Word/Markdown.
+
+    Deja en data/meetings/<job_id>/ el audio, la transcripción, el acta en Markdown (con la
+    transcripción como anexo) y el acta en el formato pedido. El resultado del trabajo
+    lleva el acta estructurada para crear tareas y riesgos en OpenProject."""
+    session_factory = ctx["session_factory"]
+    settings = ctx["settings"]
+    async with session_factory() as session:
+        job = await session.get(Job, uuid.UUID(job_id))
+        if job is None:
+            logger.error("meeting_minutes_missing_job", job_id=job_id)
+            return
+        if job.status == "cancelling":
+            await mark_cancelled(session, job)
+            return
+        await mark_running(session, job)
+        meeting_dir = Path(audio_path).parent
+        try:
+            transcript = await asyncio.to_thread(
+                transcribe,
+                Path(audio_path),
+                model_name=settings.meetings_whisper_model,
+                models_dir=settings.jarvis_models_dir,
+                device=settings.meetings_whisper_device,
+                language=settings.meetings_language,
+            )
+            if not transcript.segments:
+                await mark_failed(session, job, "No se ha reconocido voz en la grabación.")
+                return
+            (meeting_dir / "transcripcion.txt").write_text(
+                transcript.with_timestamps(), encoding="utf-8"
+            )
+            await mark_progress(session, job, 50)
+
+            async def progress(done: int, total: int) -> None:
+                await mark_progress(session, job, 50 + int(done / total * 40))
+
+            minutes = await build_minutes(
+                ctx["meetings_llm"],
+                transcript.text,
+                meeting_date=datetime.date.fromisoformat(meeting_date),
+                title=title,
+                project=project,
+                concurrency=max(1, settings.docgen_concurrency // 2),
+                on_progress=progress,
+            )
+            duration = format_timestamp(transcript.duration_seconds)
+            markdown = render_minutes_markdown(
+                minutes,
+                project=project,
+                duration=duration,
+                transcript=transcript.with_timestamps(),
+            )
+            slug = re.sub(r"[^a-z0-9]+", "-", minutes.titulo.lower()).strip("-")[:50] or "reunion"
+            markdown_path = meeting_dir / "acta.md"
+            markdown_path.write_text(markdown, encoding="utf-8")
+            out_path = markdown_path if fmt == "md" else meeting_dir / f"acta.{fmt}"
+            await asyncio.to_thread(_render_minutes_file, markdown_path, fmt, out_path)
+            await mark_progress(session, job, 100)
+        except Exception as exc:
+            detail = f"{type(exc).__name__}: {exc}".rstrip(": ")
+            logger.error("meeting_minutes_failed", job_id=job_id, error=detail)
+            await mark_failed(session, job, f"Error al preparar el acta: {detail}")
+            return
+
+        await mark_completed(
+            session,
+            job,
+            {
+                "project": project,
+                "format": fmt,
+                "duration": duration,
+                "language": transcript.language,
+                "storage_path": str(out_path),
+                "filename": f"acta-{minutes.fecha}-{slug}.{fmt}",
+                "markdown_path": str(markdown_path),
+                "minutes": minutes.to_dict(),
+            },
+        )
+        logger.info(
+            "meeting_minutes_completed",
+            job_id=job_id,
+            actions=len(minutes.acciones),
+            risks=len(minutes.riesgos),
+        )
 
 
 async def delete_document(ctx: dict[str, Any], document_id: str, job_id: str) -> None:

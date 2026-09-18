@@ -107,6 +107,12 @@ Con el perfil `pm`, OpenProject lleva tareas, hitos, riesgos y el seguimiento de
 proyecto, organizado por empresas; Jarvis lo maneja desde Telegram y tú lo ves en el
 navegador por Tailscale: `docs/OPENPROJECT.md`.
 
+## Actas de reunión
+
+Manda la grabación de una reunión por Telegram (o déjala en el vault) y Jarvis devuelve el
+acta y puede crear sus acciones y riesgos en OpenProject. El worker transcribe en la GPU:
+`docs/ACTAS.md`.
+
 ## Actualizar
 
 ```bash

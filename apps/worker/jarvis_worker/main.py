@@ -8,6 +8,7 @@ from apps.worker.jarvis_worker.tasks import (
     delete_document,
     generate_document,
     ingest_document,
+    meeting_minutes,
     reindex_document,
 )
 from packages.core.db.session import make_engine, make_session_factory
@@ -37,6 +38,10 @@ async def on_startup(ctx: dict[str, Any]) -> None:
 
     docgen_ollama_provider = OllamaProvider(settings.ollama_host, settings.ollama_primary_model)
     ctx["docgen_ollama_provider"] = docgen_ollama_provider
+    # Cada bloque de un acta son ~8.000 tokens de transcripción: más margen que el chat.
+    ctx["meetings_llm"] = OllamaProvider(
+        settings.ollama_host, settings.ollama_primary_model, timeout_seconds=900
+    )
     docgen_reranker = (
         FastEmbedReranker(cache_dir=cache_dir) if settings.rag_reranker_enabled else None
     )
@@ -78,9 +83,10 @@ async def on_shutdown(ctx: dict[str, Any]) -> None:
     ollama_provider = ctx.get("ollama_provider")
     if ollama_provider is not None:
         await ollama_provider.aclose()
-    docgen_ollama_provider = ctx.get("docgen_ollama_provider")
-    if docgen_ollama_provider is not None:
-        await docgen_ollama_provider.aclose()
+    for key in ("docgen_ollama_provider", "meetings_llm"):
+        provider = ctx.get(key)
+        if provider is not None:
+            await provider.aclose()
     await ctx["engine"].dispose()
     await ctx["qdrant_client"].close()
     logger.info("worker_stopped")
@@ -93,6 +99,7 @@ class WorkerSettings:
         reindex_document,
         deep_rag_query,
         generate_document,
+        meeting_minutes,
     ]
     on_startup = on_startup
     on_shutdown = on_shutdown

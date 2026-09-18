@@ -10,11 +10,12 @@ import os
 import sys
 from pathlib import Path
 
+import httpx
 from mcp.server.fastmcp import FastMCP
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
 
-from packages.core.errors import JarvisError  # noqa: E402
+from packages.core.errors import JarvisError, ValidationFailedError  # noqa: E402
 from packages.openproject.client import (  # noqa: E402
     OpenProjectClient,
     OpenProjectConfig,
@@ -216,6 +217,72 @@ def pm_status_report(project: str) -> str:
         f"Gantt: {op.project_url(proj, 'gantt')}",
         f"Tableros: {op.project_url(proj, 'boards')}",
     ]
+    return "\n".join(lines)
+
+
+def _minutes(job_id: str) -> dict:
+    """Resultado de un trabajo de acta de la API de Jarvis (jarvis_meeting_minutes)."""
+    api = httpx.Client(
+        base_url=os.environ.get("JARVIS_API_URL", "http://127.0.0.1:8000"),
+        headers={"Authorization": f"Bearer {os.environ.get('JARVIS_API_INTERNAL_TOKEN', '')}"},
+        timeout=30,
+    )
+    with api:
+        response = api.get(f"/v1/jobs/{job_id}")
+    if response.status_code == 404:
+        raise ValidationFailedError(f"No existe el trabajo de acta {job_id}.")
+    response.raise_for_status()
+    job = response.json()
+    if job.get("job_type") != "meeting_minutes" or job.get("status") != "completed":
+        raise ValidationFailedError(f"El trabajo {job_id} no es un acta terminada.")
+    return job["result"]["minutes"]
+
+
+@mcp.tool()
+@_safe
+def pm_import_minutes(project: str, job_id: str) -> str:
+    """Crea en OpenProject las acciones (como Tareas) y los riesgos (como Riesgos) de un
+    acta de reunión hecha con jarvis_meeting_minutes. Llámala solo cuando el usuario haya
+    dicho que sí a crearlas. Si el responsable no es miembro del proyecto, se anota en la
+    descripción en vez de asignarlo."""
+    op = _op()
+    proj = op.find_project(project)
+    m = _minutes(job_id)
+    origin = f"Origen: acta «{m['titulo']}» ({m['fecha']})."
+    created, notes = [], []
+
+    def create(subject: str, kind: str, description: str, due: str, who: str) -> None:
+        try:
+            wp = op.create_work_package(
+                proj, subject, type_name=kind, description=description, due_date=due, assignee=who
+            )
+        except ValidationFailedError as exc:
+            if not who or "persona" not in exc.message:
+                raise
+            notes.append(f"«{who}» no es miembro de {proj['name']}: queda sin asignar.")
+            wp = op.create_work_package(
+                proj,
+                subject,
+                type_name=kind,
+                description=f"{description}\nResponsable: {who}",
+                due_date=due,
+            )
+        created.append(describe_work_package(wp))
+
+    for a in m.get("acciones", []):
+        detail = "\n".join(x for x in (a.get("detalle", ""), origin) if x)
+        create(a["tarea"], "Tarea", detail, a.get("fecha_limite", ""), a.get("responsable", ""))
+    for r in m.get("riesgos", []):
+        detail = (
+            f"Probabilidad: {r.get('probabilidad') or '?'}. Impacto: {r.get('impacto') or '?'}.\n"
+            f"Mitigación: {r.get('mitigacion') or '—'}\n{origin}"
+        )
+        create(r["riesgo"], "Riesgo", detail, "", r.get("responsable", ""))
+
+    if not created:
+        return "El acta no tiene acciones ni riesgos que crear."
+    lines = [f"Creados en «{proj['name']}» ({len(created)}):", *created, *notes]
+    lines.append(f"Tablero: {op.project_url(proj, 'work_packages')}")
     return "\n".join(lines)
 
 
