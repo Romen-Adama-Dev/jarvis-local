@@ -13,6 +13,7 @@
 
 - `jarvis-rag__jarvis_ask`: preguntas sobre la documentación indexada (RAG). Muestra respuesta y fuentes.
 - `jarvis-rag__jarvis_status`: salud de los servicios.
+- `jarvis-rag__jarvis_services`: directorio de servicios ("¿qué servicios hay?", "¿dónde entro a OpenProject?", "dame las IPs"): enlaces por Tailscale para el PC o el móvil, direcciones internas del servidor y estado en vivo. Copia los enlaces tal cual. Nunca des contraseñas por el chat: di el comando que las muestra en el servidor, como indica el directorio.
 - `jarvis-rag__jarvis_models`: modelos locales disponibles.
 - `jarvis-rag__jarvis_disk`: uso de disco.
 - `jarvis-rag__jarvis_jobs` / `jarvis-rag__jarvis_cancel_job`: trabajos de indexación e inferencia.

@@ -65,6 +65,9 @@ sed -e "s/__TELEGRAM_USER_ID__/${TELEGRAM_USER_ID}/g" \
   -e "s/__OLLAMA_CONTEXT_LENGTH__/${OLLAMA_CONTEXT_LENGTH:-32768}/g" \
   -e "s/__OPENPROJECT_PORT__/${OPENPROJECT_PORT:-8090}/g" \
   -e "s/__OPENPROJECT_HTTPS_PORT__/${OPENPROJECT_HTTPS_PORT:-8445}/g" \
+  -e "s/__COMPOSE_PROFILES__/${COMPOSE_PROFILES:-}/g" \
+  -e "s/__COUCHDB_PORT__/${COUCHDB_PORT:-5984}/g" \
+  -e "s/__LIVESYNC_HTTPS_PORT__/${LIVESYNC_HTTPS_PORT:-8443}/g" \
   -e "s|__WHISPER_CLI__|/usr/local/bin/whisper-cli|g" \
   -e "s/__WHISPER_THREADS__/$(nproc)/g" \
   "$TEMPLATE" >"$CONFIG"
@@ -91,6 +94,12 @@ if [[ ! -f "$STATE_DIR/.jarvis-exec-policy" ]]; then
     openclaw approvals allowlist add --agent main "$c" >/dev/null 2>&1 || true
   done
   touch "$STATE_DIR/.jarvis-exec-policy"
+fi
+
+# Directorio de servicios en el vault de Obsidian (SERVICIOS.md), sin secretos.
+if [[ -d "$STATE_DIR/wiki/main" ]]; then
+  (cd "$APP_DIR" && .venv/bin/python -m packages.core.services --vault "$STATE_DIR/wiki/main") \
+    || echo "AVISO: no se pudo escribir SERVICIOS.md en el vault" >&2
 fi
 
 echo "== Gateway OpenClaw en 127.0.0.1:${OPENCLAW_GATEWAY_PORT:-18789} (Tailscale: ${TAILSCALE_MODE}) =="

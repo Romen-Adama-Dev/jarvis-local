@@ -69,6 +69,7 @@ Leyenda: ✅ hecho · 🟡 parcial · ⬜ por hacer
 | **Seguimiento y control de proyectos** | 🟡 (gestión del conocimiento; el seguimiento lo hace el PM a mano) | ✅ OpenProject 17.8 (perfil `pm`, `docs/OPENPROJECT.md`): empresas → proyectos, tareas, hitos, **riesgos**, Gantt y tableros por Tailscale; skill MCP `jarvis-pm` (6 herramientas) validada con Gemma: alta de riesgos, cambios de estado e informe de seguimiento desde el chat | — |
 | **Actas de reunión automáticas** | 🟡 (STT local para notas de voz) | ✅ grabación → faster-whisper large-v3-turbo en GPU (1 h ≈ 2 min) → acta estructurada con Gemma (resumen, decisiones, acciones con responsable y fecha, riesgos) → PDF/Word, nota en Obsidian, RAG del proyecto y, con confirmación, tareas y riesgos en OpenProject (`docs/ACTAS.md`); validado de punta a punta desde el agente | ⬜ separación de hablantes (diarización local) |
 | **Acceso remoto al panel** | — | ✅ Tailscale en compose; panel de OpenClaw en `https://<host>.<tailnet>.ts.net` sin puertos abiertos, gateway solo en loopback (`docs/ACCESO-REMOTO.md`) | — |
+| **Directorio de servicios** | — | ✅ `jarvis_services` (Telegram/panel) y nota `SERVICIOS.md` en Obsidian: enlaces por Tailscale, IP del tailnet, direcciones internas con túnel SSH y estado en vivo, sin secretos (`packages/core/services.py`) | — |
 
 ---
 
