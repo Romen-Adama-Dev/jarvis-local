@@ -7,7 +7,7 @@ description: Resumen del TFM (memoria), estado real del repo frente a esa memori
 
 > Documento de trabajo. Une tres cosas: qué dice la memoria (TFM), qué tiene ya el
 > repositorio `jarvis-local`, y qué queremos añadir (agente: correo, reuniones,
-> generación de documentos, Telegram/Teams). Fecha: septiembre 2026 (actualizado el 17).
+> generación de documentos, Telegram/Teams). Fecha: septiembre 2026 (actualizado el 18).
 
 ---
 
@@ -59,15 +59,15 @@ Leyenda: ✅ hecho · 🟡 parcial · ⬜ por hacer
 | **Automatización** | — | ✅ n8n (perfil automation) | 🟡 flujos de correo/calendario |
 | **Observabilidad** | ✅ supervisión | 🟡 perfil `monitoring` (Prometheus + Grafana) sin configurar para el despliegue compose | ⬜ métricas de Ollama/GPU, API y OpenClaw; alertas (Fase 6) |
 | **Voz local (STT/TTS)** | ✅ | ✅ whisper.cpp (AVX2) + Piper es_ES dentro de la imagen de OpenClaw | — |
-| **Contestar correos** | ⬜ (roadmap) | ✅ MCP correo con backend IMAP/SMTP para cualquier proveedor (`packages/imapsmtp`) o Graph (`packages/msgraph/mail.py`); skill `jarvis-email`, borrador→confirmación, adjuntos de doc-gen; cuenta Gmail de Jarvis configurada | 🟡 validar end-to-end con correos reales |
-| **Agendar / planificar reuniones** | ⬜ (roadmap) | ✅ MCP calendario con backend CalDAV (`packages/caldavcal`) o Graph (`packages/msgraph/calendar.py`); skill `jarvis-calendar`, propuesta→confirmación | ⬜ configurar un calendario CalDAV (hoy sin calendario) y validar |
+| **Contestar correos** | ⬜ (roadmap) | ✅ MCP correo con backend IMAP/SMTP para cualquier proveedor (`packages/imapsmtp`) o Graph (`packages/msgraph/mail.py`); skill `jarvis-email`, borrador→confirmación, adjuntos de doc-gen; cuenta Gmail de Jarvis configurada ; OpenProject envía sus avisos e invitaciones por la misma cuenta; correo → tarea (`pm_task_from_email`); validado el 18-09 con correos reales (invitaciones con .ics recibidas en Gmail) | ⬜ recibir en OpenProject respuestas por correo (IMAP entrante) |
+| **Agendar / planificar reuniones** | ⬜ (roadmap) | ✅ MCP calendario con backend **OpenProject** (por defecto en la VM: la agenda son las reuniones de OpenProject y los vencimientos de tareas e hitos, `packages/openproject/calendar.py`), CalDAV o Graph; skill `jarvis-calendar`, propuesta→confirmación; invitaciones por OpenProject a sus usuarios y con .ics por el correo de Jarvis al resto; validado desde Telegram el 18-09 | ⬜ reuniones recurrentes, mover/cancelar reuniones, recordatorios proactivos por Telegram |
 | **Generar documentos desde cero** | ⬜ (roadmap) | ✅ `packages/docgen` (resúmenes/DAFO/planes desde el RAG, docx/pptx/pdf/md, secciones en paralelo, entregados por Telegram con `MEDIA:`, `docs/DOCGEN.md`) | — |
 | **Microsoft Teams** | ⬜ | 🟡 canal `msteams` soportado en OpenClaw (`scripts/configure-teams`, `docs/TEAMS.md`) | ⬜ **túnel público (Cloudflare Tunnel) + manifiesto de la app**, sin versionar todavía |
 | **Licencia + gobernanza** | ⬜ declarado pendiente | ✅ `LICENSE` (MIT) + `CONTRIBUTING.md` | — |
 | **Memoria evolutiva** | — | ✅ `memory-core` + `memory-wiki` de OpenClaw, vault Obsidian versionado en git privado (`vault-sync`), búsqueda semántica con `embeddinggemma` (`docs/MEMORY.md`) | 🟡 primera nota de proyecto real de punta a punta |
 | **Obsidian en móvil y portátil** | — | ✅ Self-hosted LiveSync: CouchDB por Tailscale + `livesync-bridge` con el vault, cifrado E2E (perfil `livesync`, `docs/OBSIDIAN.md`); iPhone configurado el 18-09 | 🟡 comprobar que iPhone→vault llega sin reiniciar el puente |
-| **Seguimiento y control de proyectos** | 🟡 (gestión del conocimiento; el seguimiento lo hace el PM a mano) | ✅ OpenProject 17.8 (perfil `pm`, `docs/OPENPROJECT.md`): empresas → proyectos, tareas, hitos, **riesgos**, Gantt y tableros por Tailscale; skill MCP `jarvis-pm` (6 herramientas) validada con Gemma: alta de riesgos, cambios de estado e informe de seguimiento desde el chat | — |
-| **Actas de reunión automáticas** | 🟡 (STT local para notas de voz) | ✅ grabación → faster-whisper large-v3-turbo en GPU (1 h ≈ 2 min) → acta estructurada con Gemma (resumen, decisiones, acciones con responsable y fecha, riesgos) → PDF/Word, nota en Obsidian, RAG del proyecto y, con confirmación, tareas y riesgos en OpenProject (`docs/ACTAS.md`); validado de punta a punta desde el agente | ⬜ separación de hablantes (diarización local) |
+| **Seguimiento y control de proyectos** | 🟡 (gestión del conocimiento; el seguimiento lo hace el PM a mano) | ✅ OpenProject 17.8 (perfil `pm`, `docs/OPENPROJECT.md`): empresas → proyectos, tareas, hitos, **riesgos**, Gantt y tableros por Tailscale; skill MCP `jarvis-pm` (9 herramientas) validada con Gemma: alta de riesgos, cambios de estado, informe de seguimiento, reuniones y correo → tarea desde el chat; simulación completa de un proyecto (Panadería La Espiga › Web corporativa) el 18-09 | ⬜ plantillas de proyecto (Water-Scrum-Fall), presupuesto y horas |
+| **Actas de reunión automáticas** | 🟡 (STT local para notas de voz) | ✅ grabación → faster-whisper large-v3-turbo en GPU (1 h ≈ 2 min) → acta estructurada con Gemma (resumen, decisiones, acciones con responsable y fecha, riesgos) → PDF/Word, nota en Obsidian, RAG del proyecto y, con confirmación, tareas, riesgos y la **reunión cerrada con su acta** (decisiones y tareas como resultados) en OpenProject (`docs/ACTAS.md`); validado de punta a punta desde el agente | ⬜ separación de hablantes (diarización local) |
 | **Acceso remoto al panel** | — | ✅ Tailscale en compose; panel de OpenClaw en `https://<host>.<tailnet>.ts.net` sin puertos abiertos, gateway solo en loopback (`docs/ACCESO-REMOTO.md`) | — |
 | **Directorio de servicios** | — | ✅ `jarvis_services` (Telegram/panel) y nota `SERVICIOS.md` en Obsidian: enlaces por Tailscale, IP del tailnet, direcciones internas con túnel SSH y estado en vivo, sin secretos (`packages/core/services.py`) | — |
 
@@ -187,6 +187,16 @@ Todo con `docker compose up` (`docs/DOCKER.md`); acceso remoto al panel por Tail
 (`docs/ACCESO-REMOTO.md`); memoria en Obsidian del móvil y el portátil con LiveSync
 (`docs/OBSIDIAN.md`); limpieza opcional de modelos de Ollama sin usar.
 
+**Fase 5.3 — OpenProject como centro: reuniones, calendario y correo (✅ 18 septiembre, rama `feat/sync-openproject-calendario-correo`).**
+`CALENDAR_PROVIDER=openproject`: consultar y crear reuniones desde Telegram las deja en el
+proyecto de OpenProject (o en "Agenda"), con invitación de OpenProject a sus usuarios y
+.ics por el correo de Jarvis a los externos; la agenda incluye los vencimientos de tareas
+e hitos. OpenProject envía por el SMTP de Jarvis y el admin tiene su correo, así las
+invitaciones llegan a Gmail/Google Calendar y la suscripción iCal "Mis reuniones" las
+lleva al iPhone. Las actas importadas quedan como reunión cerrada; `pm_meetings` y
+`pm_task_from_email` en `jarvis-pm`. `scripts/check-integrations` comprueba que cada
+integración responde de verdad.
+
 **Fase 6 — Endurecer y medir.**
 UAT con estos flujos, métricas de ahorro de tiempo (cierra el otro pendiente del
 TFM), y decisión OpenClaw vs. cliente MCP ligero (Hermes/ZeroClaw). Tareas concretas:
@@ -196,11 +206,29 @@ TFM), y decisión OpenClaw vs. cliente MCP ligero (Hermes/ZeroClaw). Tareas conc
 * **Copias de seguridad y restauración** probadas de PostgreSQL, Qdrant, estado de
   OpenClaw y CouchDB (criterios 21-22 de `docs/ACCEPTANCE.md`).
 * **CI**: tests, ruff y pyright en cada PR, y construcción de las imágenes de compose.
-* **Validaciones de punta a punta pendientes**: correo real, calendario CalDAV, AirLLM
-  `/deep`, edición desde Obsidian en el iPhone, prueba sin Internet (criterio 27).
+* **Validaciones de punta a punta pendientes**: AirLLM `/deep`, edición desde Obsidian
+  en el iPhone sin reiniciar el puente, prueba sin Internet (criterio 27). Correo y
+  calendario (OpenProject) validados el 18-09.
+* **CI de integraciones**: ejecutar `scripts/check-integrations` tras cada despliegue.
 * **Actualizar `docs/ACCEPTANCE.md`**, que refleja el estado de julio (Fase 9).
 * Limpieza: rama remota `fix/openclaw-2026.9-deploy`, imagen `alpine/git` sin versión
   fijada en `vault-sync`.
+
+### 4.1 Qué queda por implementar (a 18-09-2026)
+
+| Área | Pendiente | Prioridad |
+|---|---|---|
+| Operación (Fase 6) | Monitorización en compose (falta `infra/monitoring/prometheus.yml`, `dcgm-exporter`, alertas); copias de seguridad y restauración probadas (PostgreSQL con OpenProject, Qdrant, OpenClaw, CouchDB, adjuntos de OpenProject); CI con tests, ruff, pyright, build de imágenes y `scripts/check-integrations` | Alta |
+| Documentación | `docs/ACCEPTANCE.md` sigue en el estado de julio | Alta |
+| Validaciones | AirLLM `/deep` en compose; Obsidian iPhone → vault sin reiniciar el puente; funcionamiento sin Internet (criterio 27) | Alta |
+| Calendario | Mover y cancelar reuniones; reuniones recurrentes; recordatorio diario por Telegram ("qué tengo hoy", vencidos) con el cron de OpenClaw; huecos comunes | Media |
+| Correo | Correo entrante en OpenProject (respuestas a avisos como comentarios) con un buzón aparte para no chocar con Jarvis; clasificación automática de la bandeja | Media |
+| Proyectos | Plantillas Water-Scrum-Fall en OpenProject; horas y presupuesto; informe semanal automático | Media |
+| Actas | Diarización (quién habla) local | Media |
+| Multiusuario | Varias personas en Telegram con permisos por empresa/proyecto (RAG y OpenProject) | Media |
+| Teams | Bloqueado por el registro de Azure Bot | Baja |
+| TFM | UAT con usuarios, medición del ahorro de tiempo, web de demo para la defensa (Fase 5.1) | Según fecha de defensa |
+| Decisiones de Romen | Reranker multilingüe jina (mejor en español, licencia no comercial); publicar más servicios por Tailscale | — |
 
 ---
 

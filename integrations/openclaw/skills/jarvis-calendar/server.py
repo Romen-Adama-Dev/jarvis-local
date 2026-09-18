@@ -52,17 +52,33 @@ def jarvis_calendar_availability(start: str, end: str) -> str:
         organizer = (
             event.get("organizer", {}).get("emailAddress", {}).get("address") or "desconocido"
         )
-        lines.append(f"- {subject}: {event_start}–{event_end} (organizador: {organizer})")
+        if event.get("isAllDay"):
+            line = f"- {event_start}: {subject}"
+        else:
+            line = f"- {subject}: {event_start}–{event_end} (organizador: {organizer})"
+        if location := (event.get("location") or {}).get("displayName"):
+            line += f", en {location}"
+        if event.get("webLink"):
+            line += f" {event['webLink']}"
+        lines.append(line)
     return "\n".join(lines)
 
 
 @mcp.tool()
 def jarvis_calendar_propose_event(
-    subject: str, start: str, end: str, attendees: str = "", body: str = ""
+    subject: str,
+    start: str,
+    end: str,
+    attendees: str = "",
+    body: str = "",
+    project: str = "",
+    location: str = "",
 ) -> str:
-    """Propone (NO crea todavía) un evento de calendario. `start`/`end` en ISO 8601,
-    p. ej. 2026-09-15T09:00:00. `attendees` es una lista de emails separados por
-    comas o espacios (opcional).
+    """Propone (NO crea todavía) un evento de calendario (una reunión en OpenProject).
+    `start`/`end` en ISO 8601, p. ej. 2026-09-15T09:00:00. `attendees` es una lista de
+    emails separados por comas o espacios (opcional). `project`: proyecto de OpenProject
+    al que pertenece la reunión, si el usuario lo nombra (vacío = "Agenda"). `location`:
+    sala o enlace de videollamada.
 
     Si hay `attendees`, esto invitará a terceros al confirmarse — nunca llames a
     jarvis_calendar_confirm_event sin que el usuario lo haya pedido explícitamente.
@@ -75,6 +91,8 @@ def jarvis_calendar_propose_event(
             "end": end,
             "attendees": _split_attendees(attendees),
             "body": body,
+            "project": project,
+            "location": location,
             "telegram_user_id": JARVIS_OWNER_TELEGRAM_ID,
         },
     )
@@ -103,7 +121,15 @@ def jarvis_calendar_confirm_event(token: str) -> str:
     if error := _api_error(response, "confirmar el evento"):
         return error
     result = response.json()
-    return f"Evento creado: {result.get('webLink') or result.get('id')}"
+    lines = [f"Evento creado: {result.get('webLink') or result.get('id')}"]
+    if result.get("project"):
+        lines.append(f"Reunión en el proyecto «{result['project']}» de OpenProject.")
+    invited = result.get("invited_by_email")
+    if isinstance(invited, list):
+        lines.append(f"Invitación con .ics enviada por correo a {', '.join(invited)}.")
+    elif invited:
+        lines.append(f"Invitación por correo a los externos {invited}.")
+    return "\n".join(lines)
 
 
 if __name__ == "__main__":

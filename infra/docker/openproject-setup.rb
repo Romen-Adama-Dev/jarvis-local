@@ -8,6 +8,8 @@
 # 3. La primera vez, borra los proyectos de demostración que siembra OpenProject.
 # 4. El administrador humano entra como miembro en los proyectos para poder asignarle
 #    tareas por nombre.
+# 5. El admin humano usa el correo de Jarvis (o OPENPROJECT_ADMIN_MAIL) para recibir los
+#    avisos y las invitaciones a reuniones; Jarvis no recibe correos de OpenProject.
 
 api_key = File.read("/run/jarvis/openproject_api_key").strip
 raise "clave de API vacía" if api_key.empty?
@@ -84,5 +86,28 @@ if admin
     puts "#{admin.login} añadido a #{project.identifier}"
   end
 end
+
+# --- 5. Correo del admin y avisos -------------------------------------------------------
+admin_mail = ENV.fetch("JARVIS_ADMIN_MAIL", "").strip
+if admin && !admin_mail.empty? && admin.mail != admin_mail &&
+   (admin.mail.end_with?("@jarvis.invalid") || ENV["OPENPROJECT_ADMIN_MAIL"].to_s.strip == admin_mail)
+  admin.update_column(:mail, admin_mail)
+  puts "correo del admin: #{admin_mail}"
+end
+# Jarvis actúa por la API y su correo (@jarvis.invalid) no existe: sin avisos para él, o
+# el servidor SMTP devolvería rebotes al buzón de Jarvis.
+NotificationSetting.where(user: jarvis).update_all(
+  watched: false, mentioned: false, assignee: false, responsible: false, shared: false,
+  work_package_commented: false, work_package_created: false, work_package_processed: false,
+  work_package_prioritized: false, work_package_scheduled: false,
+  start_date: nil, due_date: nil, overdue: nil
+)
+pref = jarvis.pref
+pref.settings = pref.settings.merge(
+  "daily_reminders" => { "enabled" => false, "times" => ["08:00:00+00:00"] },
+  "immediate_reminders" => { "mentioned" => false },
+  "workdays" => pref.settings.fetch("workdays", [1, 2, 3, 4, 5])
+)
+pref.save!
 
 puts "OpenProject listo para Jarvis"
