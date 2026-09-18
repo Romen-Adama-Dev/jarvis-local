@@ -242,3 +242,14 @@ def test_describe_work_package():
     assert describe_work_package(wp) == (
         "#7 [Tarea] Kick-off · En curso · vence 2026-09-10 · Ana Pérez · 40%"
     )
+
+
+def test_update_sets_start_date(op, fake):
+    op.update_work_package(50, start_date="2026-09-21", due_date="2026-09-23")
+    body = fake.body("PATCH", "/work_packages/50")
+    assert body["startDate"] == "2026-09-21" and body["dueDate"] == "2026-09-23"
+
+
+def test_describe_shows_period():
+    wp = _wp(8, "Maquetación", "Tarea", startDate="2026-09-21", dueDate="2026-09-23")
+    assert "2026-09-21 → 2026-09-23" in describe_work_package(wp)
