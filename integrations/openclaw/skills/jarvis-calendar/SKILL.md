@@ -1,6 +1,6 @@
 ---
 name: jarvis-calendar
-description: Consulta disponibilidad y propone/crea eventos en el calendario del propietario (CalDAV o Microsoft Graph)
+description: Consulta disponibilidad y propone/crea reuniones y eventos en el calendario del propietario (reuniones de OpenProject, CalDAV o Microsoft Graph)
 ---
 
 Usa las herramientas `jarvis_calendar_availability`, `jarvis_calendar_propose_event`
@@ -10,7 +10,12 @@ genérica para esto: estas herramientas ya hablan con la API de Jarvis (y esta c
 servidor CalDAV o Microsoft Graph) de forma segura y auditada.
 
 * `jarvis_calendar_availability`: consulta huecos/eventos existentes en un rango
-  (fechas ISO 8601). Solo lectura, responde directamente sin confirmación.
+  (fechas ISO 8601). Solo lectura, responde directamente sin confirmación. Con
+  OpenProject salen las reuniones de todos los proyectos y, como "Vence #id", las tareas
+  e hitos abiertos que vencen ese día.
+* Si el usuario habla de una reunión "del proyecto X" o "con el cliente de X", pasa
+  `project` a `jarvis_calendar_propose_event` para que la reunión quede en ese proyecto
+  de OpenProject; si no, va al proyecto "Agenda". `location` para sala o enlace.
 * `jarvis_calendar_propose_event`: **propone** un evento (asunto, horario,
   invitados opcionales) pero NO lo crea todavía. Devuelve un token de
   confirmación con caducidad (`CONFIRMATION_TTL_SECONDS`, 10 minutos por defecto).

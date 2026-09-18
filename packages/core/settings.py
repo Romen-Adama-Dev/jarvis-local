@@ -73,6 +73,8 @@ class Settings(BaseSettings):
     caldav_password: str = ""
     caldav_calendar_name: str = ""
     calendar_timezone: str = "Europe/Madrid"
+    # CALENDAR_PROVIDER=openproject: proyecto de las reuniones sin proyecto concreto.
+    openproject_calendar_project: str = "Agenda"
 
     # Solo con MAIL_PROVIDER/CALENDAR_PROVIDER=msgraph (docs/MSGRAPH.md).
     # client_id/tenant_id vienen del registro de app Azure AD que hace el

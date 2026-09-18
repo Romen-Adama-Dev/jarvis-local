@@ -1,0 +1,116 @@
+#!/usr/bin/env bash
+# Comprueba que cada integración de Jarvis responde de verdad (no solo que el contenedor
+# está "healthy"): modelos, API, RAG, búsqueda web, Telegram, correo, calendario,
+# OpenProject, Obsidian (LiveSync y git) y Tailscale. Solo lee: no envía nada ni crea nada.
+#
+#   scripts/check-integrations
+#
+# Sale con código 1 si falla alguna comprobación de un servicio activo.
+set -uo pipefail
+cd "$(dirname "$0")/.."
+
+ok=0 fail=0 skip=0
+pass() { printf '  \e[32m✔\e[0m %-26s %s\n' "$1" "$2"; ok=$((ok + 1)); }
+bad() { printf '  \e[31m✘\e[0m %-26s %s\n' "$1" "$2"; fail=$((fail + 1)); }
+off() { printf '  \e[90m–\e[0m %-26s %s\n' "$1" "$2"; skip=$((skip + 1)); }
+
+dc() { docker compose "$@"; }
+running() { [[ -n "$(dc ps -q --status running "$1" 2>/dev/null)" ]]; }
+secret() { dc exec -T openclaw cat "/run/jarvis/$1" 2>/dev/null; }
+envval() { grep -E "^$1=" .env 2>/dev/null | tail -1 | cut -d= -f2-; }
+profile() { [[ ",$(envval COMPOSE_PROFILES)," == *",$1,"* ]]; }
+
+TOKEN="$(secret jarvis_api_internal_token)"
+API="http://127.0.0.1:$(envval JARVIS_API_PORT | grep . || echo 8000)"
+api() { curl -fsS -m 60 -H "Authorization: Bearer $TOKEN" "$API$1"; }
+
+echo "Contenedores"
+while read -r name state health; do
+  [[ "$state" == running && "$health" != unhealthy ]] && pass "$name" "${health:-running}" \
+    || bad "$name" "$state $health"
+done < <(docker ps -a --filter "label=com.docker.compose.project=$(basename "$PWD")" \
+  --format '{{.Label "com.docker.compose.service"}} {{.State}} {{.Status}}' |
+  grep -vE '^(init|ollama-pull|livesync-init|openproject-db-init|openproject-setup) ' |
+  sed -E 's/ Up .*\((healthy|unhealthy)\).*/ running \1/; s/ running Up .*/ running/')
+
+echo "Núcleo"
+models="$(dc exec -T ollama ollama list 2>/dev/null | awk 'NR>1{print $1}' | paste -sd, -)"
+[[ -n "$models" ]] && pass "Ollama" "$models" || bad "Ollama" "sin modelos o no responde"
+api /health >/dev/null && pass "API" "$API/health" || bad "API" "no responde"
+cols="$(curl -fsS -m 10 http://127.0.0.1:6333/collections 2>/dev/null |
+  python3 -c 'import json,sys;print(",".join(c["name"] for c in json.load(sys.stdin)["result"]["collections"]))' 2>/dev/null)"
+[[ -n "$cols" ]] && pass "Qdrant (RAG)" "colecciones: $cols" || bad "Qdrant (RAG)" "sin colecciones o no responde"
+dc exec -T redis redis-cli ping 2>/dev/null | grep -q PONG && pass "Redis" "PONG" || bad "Redis" "no responde"
+dc exec -T postgres pg_isready -q 2>/dev/null && pass "PostgreSQL" "acepta conexiones" || bad "PostgreSQL" "no responde"
+if running searxng; then
+  n="$(curl -fsS -m 20 'http://127.0.0.1:8888/search?q=openproject&format=json' 2>/dev/null |
+    python3 -c 'import json,sys;print(len(json.load(sys.stdin)["results"]))' 2>/dev/null)"
+  [[ "${n:-0}" -gt 0 ]] && pass "SearXNG" "$n resultados" || bad "SearXNG" "sin resultados"
+else off "SearXNG" "no arrancado"; fi
+curl -fsS -m 10 -o /dev/null http://127.0.0.1:18789/ && pass "OpenClaw (panel)" "127.0.0.1:18789" \
+  || bad "OpenClaw (panel)" "no responde"
+
+echo "Telegram"
+bot="$(envval TELEGRAM_BOT_TOKEN)"
+if [[ -n "$bot" ]]; then
+  u="$(curl -fsS -m 10 "https://api.telegram.org/bot$bot/getMe" 2>/dev/null |
+    python3 -c 'import json,sys;print(json.load(sys.stdin)["result"]["username"])' 2>/dev/null)"
+  [[ -n "$u" ]] && pass "Bot" "@$u" || bad "Bot" "token rechazado"
+  dc logs --since 24h openclaw 2>/dev/null | grep -qiE 'telegram.*(error|401|409)' \
+    && bad "Canal en OpenClaw" "errores de Telegram en el log (24 h)" || pass "Canal en OpenClaw" "sin errores en 24 h"
+else off "Bot" "TELEGRAM_BOT_TOKEN vacío"; fi
+
+echo "Correo y calendario"
+if n="$(api '/v1/email/messages?top=1' 2>/dev/null | python3 -c 'import json,sys;print(len(json.load(sys.stdin)))' 2>/dev/null)"; then
+  pass "Correo IMAP" "$(envval MAIL_USERNAME) (lectura)"
+else bad "Correo IMAP" "$(api '/v1/email/messages?top=1' 2>&1 | head -c 160)"; fi
+dc exec -T api python -c "
+import asyncio
+from packages.core.settings import get_settings
+from apps.api.jarvis_api.adapters.mail_backends import mail_backend_from_settings
+from packages.imapsmtp.mail import check_smtp_login
+asyncio.run(check_smtp_login(mail_backend_from_settings(get_settings(), None).config))
+" >/dev/null 2>&1 && pass "Correo SMTP" "login correcto (sin enviar)" || bad "Correo SMTP" "login fallido"
+now="$(date -u +%Y-%m-%dT00:00:00)" week="$(date -u -d '+7 days' +%Y-%m-%dT00:00:00)"
+if n="$(api "/v1/calendar/events?start=$now&end=$week" 2>/dev/null | python3 -c 'import json,sys;print(len(json.load(sys.stdin)))' 2>/dev/null)"; then
+  pass "Calendario ($(envval CALENDAR_PROVIDER))" "$n eventos en 7 días"
+else bad "Calendario ($(envval CALENDAR_PROVIDER))" "$(api "/v1/calendar/events?start=$now&end=$week" 2>&1 | head -c 160)"; fi
+
+echo "OpenProject"
+if profile pm; then
+  key="$(secret openproject_api_key)" port="$(envval OPENPROJECT_PORT | grep . || echo 8090)"
+  n="$(curl -fsS -m 20 -u "apikey:$key" -H 'X-Forwarded-Proto: https' "http://127.0.0.1:$port/api/v3/projects" 2>/dev/null |
+    python3 -c 'import json,sys;print(json.load(sys.stdin)["total"])' 2>/dev/null)"
+  [[ -n "$n" ]] && pass "API v3 (jarvis-pm)" "$n proyectos" || bad "API v3 (jarvis-pm)" "clave rechazada o no responde"
+  dc exec -T openproject-worker bash -c 'tr "\0" "\n" </proc/1/environ' 2>/dev/null |
+    grep -q 'OPENPROJECT_EMAIL__DELIVERY__METHOD=smtp' && pass "Correo de OpenProject" "SMTP de Jarvis" \
+    || bad "Correo de OpenProject" "sin SMTP: no manda avisos ni invitaciones"
+else off "OpenProject" "perfil pm no activo"; fi
+
+echo "Obsidian"
+if profile livesync; then
+  pw="$(secret couchdb_password)"
+  curl -fsS -m 10 -u "jarvis:$pw" http://127.0.0.1:5984/_up >/dev/null 2>&1 \
+    || dc exec -T couchdb curl -fsS -u "jarvis:$pw" http://127.0.0.1:5984/_up >/dev/null 2>&1 \
+    && pass "CouchDB (LiveSync)" "usuario jarvis" || bad "CouchDB (LiveSync)" "no responde"
+  dc logs --since 30m livesync-bridge 2>/dev/null | grep -qiE 'error|fatal' \
+    && bad "Puente LiveSync" "errores en 30 min" || pass "Puente LiveSync" "sin errores en 30 min"
+else off "LiveSync" "perfil livesync no activo"; fi
+if running vault-sync; then
+  last="$(dc logs --since 15m vault-sync 2>/dev/null | tail -1)"
+  dc logs --since 15m vault-sync 2>/dev/null | grep -qiE 'error|fatal|denied' \
+    && bad "Vault → git" "${last:0:120}" || pass "Vault → git" "sin errores en 15 min"
+else off "Vault → git" "perfil vault no activo"; fi
+
+echo "Tailscale"
+if running tailscale; then
+  # --json incluye las publicaciones "foreground" (la del panel de OpenClaw en :443).
+  serve="$(dc exec -T tailscale tailscale --socket /var/run/tailscale/tailscaled.sock serve status --json 2>/dev/null)"
+  for p in 443 "$(envval LIVESYNC_HTTPS_PORT | grep . || echo 8443)" "$(envval OPENPROJECT_HTTPS_PORT | grep . || echo 8445)"; do
+    grep -q "ts\.net:$p\"" <<<"$serve" && pass "serve :$p" "publicado" || bad "serve :$p" "no publicado"
+  done
+else off "Tailscale" "perfil tailscale no activo"; fi
+
+echo
+echo "Resultado: $ok bien, $fail mal, $skip sin activar"
+[[ $fail -eq 0 ]]

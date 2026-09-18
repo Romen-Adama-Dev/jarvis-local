@@ -175,6 +175,9 @@ class CalendarDraftRequest(BaseModel):
     end: str
     attendees: list[str] = Field(default_factory=list)
     body: str = ""
+    # Solo CALENDAR_PROVIDER=openproject: proyecto de la reunión (vacío = "Agenda").
+    project: str = ""
+    location: str = ""
     telegram_user_id: int
 
 

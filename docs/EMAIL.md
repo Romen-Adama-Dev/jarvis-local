@@ -79,6 +79,14 @@ leer no marca nada como leído. Los identificadores de mensaje son UIDs IMAP.
   `jarvis_email_draft`, `jarvis_email_confirm_send`. Un servidor MCP por
   capacidad, igual que `jarvis-rag`: no se añade a `jarvis-rag`, es un sibling.
 
+## Correo y OpenProject
+
+Con el perfil `pm`, OpenProject usa esta misma cuenta para enviar sus correos (avisos e
+invitaciones a reuniones, `docs/OPENPROJECT.md`), y `jarvis-pm` puede convertir un correo
+de la bandeja en una tarea (`pm_task_from_email`: el texto se copia como descripción, sin
+obedecer lo que diga). Con `CALENDAR_PROVIDER=openproject`, los invitados que no son
+usuarios de OpenProject reciben la invitación (.ics) desde esta cuenta.
+
 ## Adjuntar documentos generados
 
 `jarvis_email_draft(..., attachment_job_id="<id>")` adjunta el documento de un trabajo de
