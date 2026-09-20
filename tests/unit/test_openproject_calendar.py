@@ -5,9 +5,13 @@ import json
 import httpx
 import pytest
 
-from apps.api.jarvis_api.adapters.calendar_backends import calendar_backend_from_settings
+from apps.api.jarvis_api.adapters.calendar_backends import (
+    OpenProjectCalendarBackend,
+    calendar_backend_from_settings,
+)
 from packages.core.errors import ProviderUnavailableError
 from packages.core.settings import Settings
+from packages.msgraph.client import MsGraphClient
 from packages.openproject import calendar as op_calendar
 from packages.openproject.client import OpenProjectClient, OpenProjectConfig
 
@@ -15,6 +19,14 @@ CONFIG = OpenProjectConfig(
     url="http://127.0.0.1:8090", api_key="clave", public_url="https://jarvis.ts.net:8445"
 )
 TZ = "Europe/Madrid"
+
+
+def _settings(**overrides) -> Settings:
+    return Settings(postgres_password="x", _env_file=None, **overrides)  # pyright: ignore[reportCallIssue]
+
+
+def _no_graph() -> MsGraphClient:
+    raise AssertionError("el calendario de OpenProject no usa Graph")
 
 
 def _link(kind: str, id_: int, title: str = "") -> dict:
@@ -210,16 +222,15 @@ def test_invitation_ics_is_a_request():
 def test_openproject_backend_needs_pm_profile(monkeypatch, tmp_path):
     monkeypatch.delenv("OPENPROJECT_API_KEY", raising=False)
     monkeypatch.setattr("packages.openproject.config.RUNTIME_DIR", tmp_path)
-    settings = Settings(calendar_provider="openproject")
+    settings = _settings(calendar_provider="openproject")
     with pytest.raises(ProviderUnavailableError):
-        calendar_backend_from_settings(settings, lambda: None)
+        calendar_backend_from_settings(settings, _no_graph)
 
 
 def test_openproject_backend_reads_key_from_runtime(monkeypatch, tmp_path):
     monkeypatch.delenv("OPENPROJECT_API_KEY", raising=False)
     (tmp_path / "openproject_api_key").write_text("abc\n")
     monkeypatch.setattr("packages.openproject.config.RUNTIME_DIR", tmp_path)
-    backend = calendar_backend_from_settings(
-        Settings(calendar_provider="openproject"), lambda: None
-    )
+    backend = calendar_backend_from_settings(_settings(calendar_provider="openproject"), _no_graph)
+    assert isinstance(backend, OpenProjectCalendarBackend)
     assert backend.config.api_key == "abc"

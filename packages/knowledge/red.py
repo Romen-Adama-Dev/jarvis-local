@@ -678,7 +678,7 @@ def refresh(vault: Path) -> int:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser = argparse.ArgumentParser(description=next(iter((__doc__ or "").splitlines()), None))
     parser.add_argument("--vault", type=Path, required=True)
     parser.add_argument("--every", type=int, default=0, help="segundos entre pasadas (0 = una)")
     args = parser.parse_args()
