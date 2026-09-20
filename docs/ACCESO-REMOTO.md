@@ -145,6 +145,45 @@ https://jarvis.<tu-tailnet>.ts.net
 
 Sin puerto: es el 443 de HTTPS. Puedes añadirlo a la pantalla de inicio (es una PWA).
 
+## Invitar a alguien de fuera (probar Jarvis sin darle tu tailnet)
+
+Para que otra persona (un tutor, un compañero, un cliente) pruebe el panel sin meterla en
+tu red: **comparte solo el nodo `jarvis`**, no la invites al tailnet. Compartir está en
+todos los planes, incluido el gratuito; quien lo recibe ve **únicamente** ese servidor y
+no el resto de tus dispositivos, y tú puedes revocarlo en cualquier momento.
+
+1. En <https://login.tailscale.com/admin/machines>, fila del servidor → menú `···` →
+   **Share…** → escribe su correo o copia el enlace de invitación.
+2. Esa persona necesita una cuenta de Tailscale gratuita (Google, GitHub o Microsoft) y
+   la app de Tailscale en su portátil o móvil. Al aceptar el enlace, el servidor aparece
+   en su lista de dispositivos; ahí sale el nombre exacto `jarvis.<tu-tailnet>.ts.net`.
+3. Con Tailscale conectado, abre `https://jarvis.<tu-tailnet>.ts.net` en su navegador.
+   Entra identificada con su cuenta de Tailscale (`tailscale whois`), sin token.
+4. **Revocar**: misma fila del servidor → `···` → *Sharing* → quitar a esa persona. El
+   acceso se corta al instante.
+
+Limita a qué puertos llega con las ACL (<https://login.tailscale.com/admin/acls>), para
+que vea el panel (443) y, si quieres, OpenProject (8445), pero no CouchDB (8443):
+
+```jsonc
+"acls": [
+  // … tus reglas …
+  {
+    "action": "accept",
+    "src":    ["autogroup:shared"],
+    "dst":    ["tag:jarvis:443", "tag:jarvis:8445"],
+  },
+],
+```
+
+(Con el servidor sin etiquetar, usa su nombre —`jarvis`— en lugar de `tag:jarvis`.)
+
+> **Qué le estás dando**: quien entra al panel abre una sesión de chat con **tu** Jarvis,
+> con tu documentación indexada y tus proyectos. Las acciones con efecto externo (enviar
+> un correo, crear una reunión) siguen pidiéndote confirmación **a ti** por Telegram, y
+> los comandos fuera de la lista blanca también. Aun así, comparte solo con gente de
+> confianza y revoca cuando termine la prueba.
+
 ## Problemas frecuentes
 
 | Síntoma | Causa y solución |

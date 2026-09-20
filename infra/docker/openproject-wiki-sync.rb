@@ -39,10 +39,23 @@ def to_openproject(markdown, source)
     "Edítala en Obsidian: los cambios hechos aquí se sobrescriben.\n\n#{body.strip}\n"
 end
 
+# La nota de una empresa es entities/empresas/<Empresa>.md y la de un proyecto cuelga de
+# ella: entities/empresas/<Empresa>/<Proyecto>.md (el árbol de packages/knowledge/red.py).
 def vault_note(project)
-  folder = project.parent_id ? "proyectos" : "empresas"
-  path = VAULT.join("entities", folder, "#{note_name(project.name)}.md")
-  path.file? ? path : nil
+  base = VAULT.join("entities", "empresas")
+  company = project.parent&.name
+  path =
+    if project.parent_id
+      company ? base.join(note_name(company), "#{note_name(project.name)}.md") : nil
+    else
+      base.join("#{note_name(project.name)}.md")
+    end
+  return path if path&.file?
+
+  # Estructura plana anterior, mientras la red no haya hecho una pasada y movido la nota.
+  legacy = VAULT.join("entities", project.parent_id ? "proyectos" : "empresas",
+                      "#{note_name(project.name)}.md")
+  legacy.file? ? legacy : nil
 end
 
 def ensure_wiki(project)
