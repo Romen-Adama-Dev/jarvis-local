@@ -91,31 +91,64 @@ def test_owner_variants_are_merged(vault):
     assert snap.actas[0].people == ["Alex Gil", "Eva Ruiz"]
 
 
+PROJECT = "entities/empresas/Ficticia SL/Tienda online"
+
+
 def test_pages_link_the_network(vault):
     pages = {p.path: p for p in red.build_pages(_snapshot(vault))}
-    project = pages["entities/proyectos/Tienda online"]
+    project = pages[PROJECT]
     assert "Proyecto de [[Ficticia SL]]" in project.body
     assert "[[Lanzamiento (OP-7)|Lanzamiento]]" in project.body
     assert "[[2026-03-02-kick-off|Acta: Kick-off Tienda online]]" in project.body
     assert "[[Eva Ruiz]] — Diseñadora" in project.body
     assert "Tareas abiertas (1)" in project.body  # la cerrada no cuenta
     assert project.front["relationships"][0]["targetId"] == "entity.empresa.ficticia-sl"
-    # Los ":" no valen en un nombre de archivo.
-    risk = pages["entities/riesgos/Retraso del proveedor pagos (OP-8)"]
-    assert "[[Gestión de riesgos]]" in risk.body and "[[Eva Ruiz]]" in risk.body
     person = pages["entities/personas/Eva Ruiz"]
     assert person.front["privacyTier"] == "private"
     assert "[[Tienda online]]" in person.body
     assert "entities/empresas/Ficticia SL" in pages
-    assert "concepts/Gestión de riesgos" in pages
     assert "[[Ficticia SL]]" in pages[red.ROOT_NOTE].body
+
+
+def test_tree_hangs_from_the_project_and_only_the_child_declares_it(vault):
+    pages = {p.path: p for p in red.build_pages(_snapshot(vault))}
+    # Los ":" no valen en un nombre de archivo.
+    risk = pages[f"{PROJECT}/riesgos/Retraso del proveedor pagos (OP-8)"]
+    assert "Riesgo de [[Tienda online]]" in risk.body and "[[Eva Ruiz]]" in risk.body
+    assert risk.front["relationships"][0] == {
+        "targetId": "entity.proyecto.tienda-online",
+        "targetTitle": "Tienda online",
+        "kind": "pertenece-a",
+    }
+    assert f"{PROJECT}/hitos/Lanzamiento (OP-7)" in pages
+    # La empresa no repite la relación: la declara el proyecto con «pertenece-a».
+    assert pages["entities/empresas/Ficticia SL"].front["relationships"] == []
+    # Los documentos son de la red, no del árbol: los cruza el RAG entre proyectos.
+    assert "entities/documentos/brief-tienda" in pages
+
+
+def test_tasks_become_notes_only_when_they_weigh(vault):
+    pages = {p.path: p for p in red.build_pages(_snapshot(vault))}
+    # «Maquetas» la nombra el acta; «Vieja» no, así que se queda como línea del proyecto.
+    assert f"{PROJECT}/tareas/Maquetas (OP-9)" in pages
+    assert not any(path.endswith("/tareas/Vieja (OP-10)") for path in pages)
+    assert "[[Maquetas (OP-9)|Maquetas]]" in pages[PROJECT].body
+
+
+def test_concepts_index_projects_instead_of_every_item(vault):
+    pages = {p.path: p for p in red.build_pages(_snapshot(vault))}
+    risks = pages["concepts/Gestión de riesgos"]
+    assert "[[Tienda online]] — 1 riesgo" in risks.body
+    # Ningún ítem enlaza al concepto: era la arista que enmarañaba el grafo.
+    risk = pages[f"{PROJECT}/riesgos/Retraso del proveedor pagos (OP-8)"]
+    assert "[[Gestión de riesgos]]" not in risk.body
 
 
 def test_write_keeps_human_notes_and_links_actas(vault):
     snap = _snapshot(vault)
     pages = red.build_pages(snap)
     assert red.write_pages(vault, pages, snap) > 0
-    note = vault / "entities/proyectos/Tienda online.md"
+    note = vault / f"{PROJECT}.md"
     note.write_text(note.read_text() + "\nMi nota a mano.\n", encoding="utf-8")
     red.write_pages(vault, pages, snap)
     assert note.read_text().endswith("Mi nota a mano.\n")
@@ -123,6 +156,24 @@ def test_write_keeps_human_notes_and_links_actas(vault):
     acta = (vault / f"{snap.actas[0].id}.md").read_text()
     assert "Proyecto: [[Tienda online]]" in acta and "[[Alex Gil]]" in acta
     assert acta.count(red.START) == 1
+
+
+def test_flat_notes_are_moved_into_the_tree(vault):
+    """Migración de la estructura plana anterior, con lo que hubieras escrito tú."""
+    snap = _snapshot(vault)
+    old = vault / "entities/proyectos/Tienda online.md"
+    old.parent.mkdir(parents=True)
+    old.write_text(
+        f"---\ngeneratedBy: \"jarvis-red\"\n---\n\n{red.START}\nviejo\n{red.END}\n\n"
+        "## Notas\n- 2026-03-03: ojo con el proveedor.\n",
+        encoding="utf-8",
+    )
+    red.write_pages(vault, red.build_pages(snap), snap)
+
+    moved = (vault / f"{PROJECT}.md").read_text()
+    assert "- 2026-03-03: ojo con el proveedor." in moved
+    assert "Proyecto de [[Ficticia SL]]" in moved and "viejo" not in moved
+    assert not old.exists() and not old.parent.exists()  # la carpeta plana vacía se retira
 
 
 def test_human_note_with_same_name_is_not_touched(vault):

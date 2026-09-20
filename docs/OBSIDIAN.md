@@ -127,12 +127,11 @@ Actas del vault · documentos del RAG ──────────────
 ```
 
 * **`knowledge`** (perfiles `vault` o `livesync`, `packages/knowledge/red.py`) regenera
-  cada `KNOWLEDGE_REFRESH_SECONDS` (10 min) una nota por empresa, proyecto, persona, hito,
-  riesgo, reunión y documento, más los conceptos *Gestión de riesgos*, *Hitos y
-  cronograma*, *Reuniones y actas*, *Documentación* y *Equipo*, y la nota raíz
-  **Red de conocimiento**. Las actas reciben un bloque "Red" con enlaces a su proyecto y a
-  los asistentes. Las notas llevan el frontmatter del wiki de OpenClaw (`pageType`,
-  `entityType`, `relationships`), así que Jarvis las usa como memoria estructurada.
+  cada `KNOWLEDGE_REFRESH_SECONDS` (10 min) las notas, en **dos capas** (ver más abajo):
+  el árbol de empresas y proyectos, y la red de personas, documentos, actas y conceptos.
+  Las actas reciben un bloque "Red" con enlaces a su proyecto y a los asistentes. Todas
+  llevan el frontmatter del wiki de OpenClaw (`pageType`, `entityType`, `relationships`),
+  así que Jarvis las usa como memoria estructurada.
 * **`openproject-wiki-sync`** (perfil `pm`) publica la nota de cada empresa y proyecto en
   la wiki de OpenProject (página **Memoria de Jarvis**) y copia al vault las demás páginas
   de la wiki de OpenProject (`sources/openproject/<proyecto>/wiki/`).
@@ -152,13 +151,48 @@ Lo que hay entre `<!-- jarvis:red:start -->` y `<!-- jarvis:red:end -->` se rege
 *Memoria de Jarvis* en OpenProject se sobrescribe desde Obsidian. Nada se borra solo: si
 quitas algo de OpenProject, su nota se queda hasta que la borres.
 
+### Dos capas: árbol y red
+
+No todo lo que Jarvis sabe se relaciona igual, así que no se guarda igual:
+
+* **El árbol** — lo que *contiene* a otra cosa, donde cada nota tiene un padre y solo uno.
+  La carpeta **es** el árbol, así que el explorador de Obsidian ya te sirve de índice:
+
+  ```
+  entities/empresas/Acme Consulting.md
+  entities/empresas/Acme Consulting/Migración ERP.md
+  entities/empresas/Acme Consulting/Migración ERP/{hitos,riesgos,reuniones,tareas}/…
+  ```
+
+  La relación la declara **siempre el hijo** (`relationships: pertenece-a`); el padre
+  lista a sus hijos para poder navegarlos, pero no repite la relación. Las **tareas** solo
+  tienen nota propia cuando pesan —están bloqueadas o las nombra un acta—; el resto se
+  quedan como líneas de la nota del proyecto, que si no el árbol se vuelve ilegible.
+
+* **La red** — lo que *se asocia* con muchas cosas a la vez: personas
+  (`entities/personas/`), documentos del RAG (`entities/documentos/`), las actas
+  (`sources/proyectos/…`) y los conceptos (`concepts/`). Aquí sí se cruzan proyectos y
+  empresas a propósito: una persona enlaza con todo aquello en lo que participa.
+
+Los conceptos (*Gestión de riesgos*, *Hitos y cronograma*, *Reuniones y actas*,
+*Documentación*, *Equipo*) son **índices por proyecto**: enlazan al proyecto con su
+recuento, no a cada riesgo de cada empresa. Enlazarlos uno a uno era lo que convertía la
+vista de grafo en una maraña y lo que cruzaba el aislamiento entre empresas.
+
+Si vienes de la estructura plana anterior (`entities/proyectos/`, `entities/riesgos/`…),
+la primera pasada mueve cada nota a su sitio del árbol conservando lo que escribieras
+fuera del bloque generado, y borra las carpetas vacías. Los enlaces `[[Nombre]]` de
+Obsidian no llevan carpeta, así que ninguno se rompe.
+
 ### Verlo como red
 
 Abre la **vista de grafo** (icono del grafo o `Ctrl/Cmd+G`). Para distinguir los tipos,
 en *Grupos* añade uno por etiqueta con su color: `tag:#empresa`, `tag:#proyecto`,
 `tag:#persona`, `tag:#riesgo`, `tag:#hito`, `tag:#reunion`, `tag:#documento`,
-`tag:#concepto`. Con *Filtros → Archivos huérfanos* desactivado se ocultan los índices del
-plugin. Los ajustes de la vista son de cada dispositivo.
+`tag:#concepto`. Para ver solo el árbol de una empresa, filtra por ruta:
+`path:"entities/empresas/Acme Consulting"`. Con *Filtros → Archivos huérfanos*
+desactivado se ocultan los índices del plugin. Los ajustes de la vista son de cada
+dispositivo.
 
 ## Comprobar que funciona
 
