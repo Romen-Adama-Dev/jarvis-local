@@ -231,6 +231,25 @@ memoria en Obsidian compartida con Jarvis y OpenProject (Fase 5.4). En la VM cor
 `scripts/check-integrations` da 35/35. Simulación de referencia: Panadería La Espiga ›
 Web corporativa (etiqueta `v0.6-simulacion` para el estado anterior).
 
+### 4.0.1 Estado al 20-09-2026
+
+* **Privacidad cerrada**: el workspace de OpenClaw son plantillas que se rellenan desde
+  `.env` y del hardware detectado; el historial de git no necesita reescritura (no hay
+  datos personales en ningún commit).
+* **Memoria en dos capas**: árbol de empresa › proyecto › {hitos, riesgos, reuniones,
+  tareas que pesan} y red de personas, documentos, actas y conceptos (`docs/OBSIDIAN.md`).
+  Desplegado y migrado en la VM.
+* **`pyright` vuelve a pasar** (eran 32 errores): ya no bloquea meterlo en la CI.
+* **Datos de prueba retirados**: Acme Consulting › Migración ERP, Globex Corp › Portal
+  Clientes y Panadería La Espiga › Web corporativa, con sus documentos del RAG y sus notas
+  y actas del vault. Se conserva el PMBOK como documentación general y la etiqueta
+  `v0.6-simulacion` como historia.
+* **Proyecto de validación**: *Estudio Delta › App de reservas* (brief en el RAG, 4 tareas
+  —una "En espera"—, 1 hito, 1 riesgo y la reunión de kick-off). Validado de punta a
+  punta el 20-09: pregunta al RAG con cita del brief, resumen generado en PDF y en
+  Markdown, red de conocimiento con el árbol nuevo, *Memoria de Jarvis* publicada en la
+  wiki de los dos proyectos y `scripts/check-integrations` en **37/37**.
+
 ### 4.1 Qué queda por implementar (a 20-09-2026)
 
 | Área | Pendiente | Prioridad |
