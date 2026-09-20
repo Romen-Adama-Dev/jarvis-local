@@ -13,6 +13,31 @@ TEMPLATE="$APP_DIR/integrations/openclaw/config/openclaw.template.json"
 WORKSPACE="$STATE_DIR/workspace-jarvis"
 
 is_placeholder() { [[ -z "$1" || "$1" == change-me ]]; }
+sed_escape() { printf '%s' "$1" | sed -e 's/[\\&|]/\\&/g'; }
+
+# Descripción del servidor para las plantillas del workspace (IDENTITY.md, TOOLS.md).
+describe_hardware() {
+  local cpu ram gpu desc=""
+  cpu="$(sed -n 's/^model name[[:space:]]*:[[:space:]]*//p' /proc/cpuinfo 2>/dev/null | head -1)"
+  ram="$(awk '/^MemTotal:/ {printf "%.0f GB de RAM", $2 / 1048576}' /proc/meminfo 2>/dev/null)"
+  gpu="$(nvidia-smi --query-gpu=name,memory.total --format=csv,noheader 2>/dev/null | head -1 |
+    sed -e 's/,\s*/ /' -e 's/MiB/MB/')"
+  for part in "$cpu" "$ram" "$gpu"; do
+    [[ -n "$part" ]] || continue
+    [[ -z "$desc" ]] && desc="$part" || desc="$desc, $part"
+  done
+  printf '%s' "${desc:-servidor Linux}"
+}
+
+# Las plantillas del workspace no llevan datos personales: el nombre del propietario y las
+# características del servidor se sustituyen aquí desde .env y de lo que se detecta.
+render_workspace_file() {
+  sed -e "s|__OWNER_FULL__|$(sed_escape "$OWNER_FULL_NAME")|g" \
+    -e "s|__OWNER__|$(sed_escape "$OWNER_NAME")|g" \
+    -e "s|__OWNER_TZ__|$(sed_escape "$OWNER_TZ")|g" \
+    -e "s|__SERVER_HW__|$(sed_escape "$SERVER_HW")|g" \
+    "$1" >"$2"
+}
 runtime_value() { if [[ -s "$RUNTIME_DIR/$1" ]]; then cat "$RUNTIME_DIR/$1"; fi; }
 
 # Secretos y modelos generados por el servicio init; lo definido en .env tiene prioridad.
@@ -74,11 +99,19 @@ sed -e "s/__TELEGRAM_USER_ID__/${TELEGRAM_USER_ID}/g" \
 chmod 600 "$CONFIG"
 
 echo "== Workspace del agente =="
+OWNER_NAME="${JARVIS_OWNER_NAME:-}"
+[[ -n "$OWNER_NAME" ]] || OWNER_NAME="mi usuario"
+OWNER_FULL_NAME="${JARVIS_OWNER_FULL_NAME:-}"
+[[ -n "$OWNER_FULL_NAME" ]] || OWNER_FULL_NAME="$OWNER_NAME"
+OWNER_TZ="${JARVIS_OWNER_TIMEZONE:-${TZ:-${CALENDAR_TIMEZONE:-UTC}}}"
+SERVER_HW="$(describe_hardware)"
+echo "Propietario: $OWNER_FULL_NAME ($OWNER_TZ) · Servidor: $SERVER_HW"
 # Las reglas de trabajo son las del repo en cada arranque; la identidad y el perfil del
 # usuario solo se copian la primera vez (el propio agente los va completando).
-cp "$APP_DIR/integrations/openclaw/workspace/AGENTS.md" "$WORKSPACE/AGENTS.md"
-for f in SOUL.md IDENTITY.md USER.md HEARTBEAT.md; do
-  [[ -f "$WORKSPACE/$f" ]] || cp "$APP_DIR/integrations/openclaw/workspace/$f" "$WORKSPACE/$f"
+render_workspace_file "$APP_DIR/integrations/openclaw/workspace/AGENTS.md" "$WORKSPACE/AGENTS.md"
+for f in SOUL.md IDENTITY.md USER.md TOOLS.md HEARTBEAT.md; do
+  [[ -f "$WORKSPACE/$f" ]] ||
+    render_workspace_file "$APP_DIR/integrations/openclaw/workspace/$f" "$WORKSPACE/$f"
 done
 mkdir -p "$STATE_DIR/hooks/nueva-sesion-ayuda"
 cp "$APP_DIR"/integrations/openclaw/hooks/nueva-sesion-ayuda/* "$STATE_DIR/hooks/nueva-sesion-ayuda/"

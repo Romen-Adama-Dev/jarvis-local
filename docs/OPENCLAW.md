@@ -28,6 +28,28 @@ Decisiones clave:
 * **`tools.sandbox.tools.alsoAllow: ["jarvis-rag__*"]`**: necesario para que las herramientas del servidor MCP sigan siendo visibles si en el futuro se reactiva el sandbox.
 * **`gateway.auth`**: token generado automáticamente por `openclaw doctor --fix` (websocket del gateway protegido incluso en loopback).
 
+## Workspace del agente (plantillas)
+
+El repositorio es público, así que los archivos de `integrations/openclaw/workspace/` no
+llevan datos personales: son **plantillas** con marcadores que el arranque sustituye.
+
+| Marcador | De dónde sale | Si falta |
+|---|---|---|
+| `__OWNER__` | `JARVIS_OWNER_NAME` | `mi usuario` |
+| `__OWNER_FULL__` | `JARVIS_OWNER_FULL_NAME` | `JARVIS_OWNER_NAME` |
+| `__OWNER_TZ__` | `JARVIS_OWNER_TIMEZONE` | `TZ`, `CALENDAR_TIMEZONE`, `UTC` |
+| `__SERVER_HW__` | CPU de `/proc/cpuinfo`, RAM de `/proc/meminfo` y GPU de `nvidia-smi`, detectados en el arranque | `servidor Linux` |
+
+`integrations/openclaw/docker-entrypoint.sh` los renderiza en `~/.openclaw/workspace-jarvis`:
+`AGENTS.md` (las reglas de trabajo) en **cada arranque**, de modo que editarlo a mano en el
+volumen no sirve de nada —se edita la plantilla del repo—; y `SOUL.md`, `IDENTITY.md`,
+`USER.md`, `TOOLS.md` y `HEARTBEAT.md` **solo la primera vez**, porque a partir de ahí son
+del propietario y el propio agente los va completando (lo que aprende de ti no vuelve al
+repo).
+
+Al añadir texto a una plantilla, escribe `__OWNER__` en lugar de un nombre y no metas
+correos, hostnames del tailnet ni rutas con el usuario real.
+
 ## Skill `jarvis-rag`
 
 En vez de enseñar al agente a invocar `curl`/shell (lo cual violaría "no shell arbitrario"), `jarvis-rag` es un **servidor MCP** propio (`integrations/openclaw/skills/jarvis-rag/server.py`, con `mcp` como dependencia añadida al proyecto) que expone herramientas tipadas, cada una limitada a una llamada HTTP concreta contra Jarvis API:
