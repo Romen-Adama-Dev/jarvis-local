@@ -67,9 +67,12 @@ Orden de arranque: `init` → `postgres`/`searxng`/`ollama` → `ollama-pull` y 
   (`docs/MODELS.md`); `JARVIS_MODEL_TIER` fuerza un nivel concreto. Con
   `OLLAMA_PRUNE_UNUSED=true`, `ollama-pull` borra los modelos que no estén en uso.
 * **OpenClaw**: `openclaw.json` se genera en cada arranque desde
-  `integrations/openclaw/config/openclaw.template.json` y `.env`, y `AGENTS.md` se copia
-  desde `integrations/openclaw/workspace/`. La configuración vive en el repo: los cambios
-  hechos a mano en el volumen se pierden al reiniciar.
+  `integrations/openclaw/config/openclaw.template.json` y `.env`, y `AGENTS.md` se
+  renderiza desde la plantilla de `integrations/openclaw/workspace/` (con tu nombre de
+  `JARVIS_OWNER_NAME`). La configuración vive en el repo: los cambios hechos a mano en el
+  volumen se pierden al reiniciar. El resto del workspace (`USER.md`, `IDENTITY.md`,
+  `TOOLS.md`, `SOUL.md`) se renderiza solo la primera vez y luego es tuyo: ver
+  "Workspace del agente" en `docs/OPENCLAW.md`.
 * **Correo y calendario**: variables `MAIL_*`, `IMAP_*`, `SMTP_*` y `CALDAV_*` de `.env`
   (`docs/EMAIL.md`, `docs/CALENDAR.md`) y `docker compose up -d api worker`.
   `scripts/configure-mail` las rellena y prueba la conexión, pero necesita `uv` en el

@@ -231,11 +231,11 @@ memoria en Obsidian compartida con Jarvis y OpenProject (Fase 5.4). En la VM cor
 `scripts/check-integrations` da 35/35. Simulación de referencia: Panadería La Espiga ›
 Web corporativa (etiqueta `v0.6-simulacion` para el estado anterior).
 
-### 4.1 Qué queda por implementar (a 18-09-2026)
+### 4.1 Qué queda por implementar (a 20-09-2026)
 
 | Área | Pendiente | Prioridad |
 |---|---|---|
-| Privacidad (antes de publicar el repo) | Convertir el workspace de OpenClaw (`USER.md`, `IDENTITY.md`, `TOOLS.md`, `AGENTS.md`) en plantillas con el nombre del propietario desde `.env`; decidir si se reescribe el historial de git para quitar datos personales antiguos | Alta |
+| ~~Privacidad (antes de publicar el repo)~~ ✅ 20-09 | Workspace de OpenClaw convertido en plantillas (`__OWNER__`, `__OWNER_FULL__`, `__OWNER_TZ__`, `__SERVER_HW__`) que el arranque rellena desde `.env` y del hardware detectado (`docs/OPENCLAW.md`). Reescribir el historial **no hace falta**: no hay correos, tailnet, IPs ni rutas personales en ningún commit; el único nombre propio del repo es el titular del copyright en `LICENSE`, que debe estar | — |
 | Operación (Fase 6) | Monitorización en compose (falta `infra/monitoring/prometheus.yml`, `dcgm-exporter`, alertas); copias de seguridad y restauración probadas (PostgreSQL con OpenProject, Qdrant, OpenClaw, CouchDB, adjuntos de OpenProject); CI con tests, ruff, pyright, build de imágenes y `scripts/check-integrations` | Alta |
 | Documentación | `docs/ACCEPTANCE.md` sigue en el estado de julio | Alta |
 | Validaciones | AirLLM `/deep` en compose; Obsidian iPhone → vault sin reiniciar el puente; funcionamiento sin Internet (criterio 27) | Alta |
