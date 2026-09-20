@@ -318,7 +318,7 @@ def write_vault_note(vault_dir: Path) -> Path | None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser = argparse.ArgumentParser(description=next(iter((__doc__ or "").splitlines()), None))
     parser.add_argument("--vault", type=Path, help="escribe SERVICIOS.md en este vault")
     args = parser.parse_args()
     if args.vault:
