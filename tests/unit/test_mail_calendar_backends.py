@@ -1,3 +1,5 @@
+from typing import cast
+
 import pytest
 
 from apps.api.jarvis_api.adapters.calendar_backends import (
@@ -12,6 +14,7 @@ from apps.api.jarvis_api.adapters.mail_backends import (
 )
 from packages.core.errors import ProviderUnavailableError
 from packages.core.settings import Settings
+from packages.msgraph.client import MsGraphClient
 
 MAIL = {
     "imap_host": "imap.example.com",
@@ -25,8 +28,13 @@ def _settings(**overrides) -> Settings:
     return Settings(postgres_password="x", _env_file=None, **overrides)  # pyright: ignore[reportCallIssue]
 
 
-def _no_graph():
+def _no_graph() -> MsGraphClient:
     raise AssertionError("no debe crear el cliente de Graph")
+
+
+def _graph() -> MsGraphClient:
+    """Los backends de Graph solo guardan el cliente al construirse, no lo llaman."""
+    return cast(MsGraphClient, object())
 
 
 def test_imap_backend_uses_username_as_sender_by_default():
@@ -43,7 +51,7 @@ def test_imap_backend_unconfigured_names_missing_variables():
 
 
 def test_msgraph_mail_backend_builds_graph_client_lazily():
-    backend = mail_backend_from_settings(_settings(mail_provider="msgraph"), lambda: object())
+    backend = mail_backend_from_settings(_settings(mail_provider="msgraph"), _graph)
     assert isinstance(backend, GraphMailBackend)
 
 
@@ -69,7 +77,5 @@ def test_caldav_backend_unconfigured_is_provider_unavailable():
 
 
 def test_msgraph_calendar_backend():
-    backend = calendar_backend_from_settings(
-        _settings(calendar_provider="msgraph"), lambda: object()
-    )
+    backend = calendar_backend_from_settings(_settings(calendar_provider="msgraph"), _graph)
     assert isinstance(backend, GraphCalendarBackend)

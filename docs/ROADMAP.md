@@ -65,7 +65,7 @@ Leyenda: ✅ hecho · 🟡 parcial · ⬜ por hacer
 | **Microsoft Teams** | ⬜ | 🟡 canal `msteams` soportado en OpenClaw (`scripts/configure-teams`, `docs/TEAMS.md`) | ⬜ **túnel público (Cloudflare Tunnel) + manifiesto de la app**, sin versionar todavía |
 | **Licencia + gobernanza** | ⬜ declarado pendiente | ✅ `LICENSE` (MIT) + `CONTRIBUTING.md` | — |
 | **Memoria evolutiva** | — | ✅ `memory-core` + `memory-wiki` de OpenClaw, vault Obsidian versionado en git privado (`vault-sync`), búsqueda semántica con `embeddinggemma` (`docs/MEMORY.md`) | 🟡 primera nota de proyecto real de punta a punta |
-| **Red de conocimiento / memoria única** | — | ✅ notas enlazadas generadas desde OpenProject, actas y RAG; wiki de OpenProject sincronizada en ambos sentidos; `jarvis_remember` (`docs/OBSIDIAN.md`) | ⬜ personas deduplicadas con alias, relaciones entre riesgos y tareas, síntesis semanales automáticas |
+| **Red de conocimiento / memoria única** | — | ✅ notas enlazadas generadas desde OpenProject, actas y RAG, en dos capas: **árbol** de empresa › proyecto › {hitos, riesgos, reuniones, tareas que pesan} y **red** de personas, documentos, actas y conceptos (índices por proyecto); wiki de OpenProject sincronizada en ambos sentidos; `jarvis_remember` (`docs/OBSIDIAN.md`) | ⬜ personas deduplicadas con alias, relaciones entre riesgos y tareas, síntesis semanales automáticas |
 | **Obsidian en móvil y portátil** | — | ✅ Self-hosted LiveSync: CouchDB por Tailscale + `livesync-bridge` con el vault, cifrado E2E (perfil `livesync`, `docs/OBSIDIAN.md`); iPhone configurado el 18-09 | 🟡 comprobar que iPhone→vault llega sin reiniciar el puente |
 | **Seguimiento y control de proyectos** | 🟡 (gestión del conocimiento; el seguimiento lo hace el PM a mano) | ✅ OpenProject 17.8 (perfil `pm`, `docs/OPENPROJECT.md`): empresas → proyectos, tareas, hitos, **riesgos**, Gantt y tableros por Tailscale; skill MCP `jarvis-pm` (9 herramientas) validada con Gemma: alta de riesgos, cambios de estado, informe de seguimiento, reuniones y correo → tarea desde el chat; simulación completa de un proyecto (Panadería La Espiga › Web corporativa) el 18-09 | ⬜ plantillas de proyecto (Water-Scrum-Fall), presupuesto y horas |
 | **Actas de reunión automáticas** | 🟡 (STT local para notas de voz) | ✅ grabación → faster-whisper large-v3-turbo en GPU (1 h ≈ 2 min) → acta estructurada con Gemma (resumen, decisiones, acciones con responsable y fecha, riesgos) → PDF/Word, nota en Obsidian, RAG del proyecto y, con confirmación, tareas, riesgos y la **reunión cerrada con su acta** (decisiones y tareas como resultados) en OpenProject (`docs/ACTAS.md`); validado de punta a punta desde el agente | ⬜ separación de hablantes (diarización local) |
@@ -231,11 +231,30 @@ memoria en Obsidian compartida con Jarvis y OpenProject (Fase 5.4). En la VM cor
 `scripts/check-integrations` da 35/35. Simulación de referencia: Panadería La Espiga ›
 Web corporativa (etiqueta `v0.6-simulacion` para el estado anterior).
 
-### 4.1 Qué queda por implementar (a 18-09-2026)
+### 4.0.1 Estado al 20-09-2026
+
+* **Privacidad cerrada**: el workspace de OpenClaw son plantillas que se rellenan desde
+  `.env` y del hardware detectado; el historial de git no necesita reescritura (no hay
+  datos personales en ningún commit).
+* **Memoria en dos capas**: árbol de empresa › proyecto › {hitos, riesgos, reuniones,
+  tareas que pesan} y red de personas, documentos, actas y conceptos (`docs/OBSIDIAN.md`).
+  Desplegado y migrado en la VM.
+* **`pyright` vuelve a pasar** (eran 32 errores): ya no bloquea meterlo en la CI.
+* **Datos de prueba retirados**: Acme Consulting › Migración ERP, Globex Corp › Portal
+  Clientes y Panadería La Espiga › Web corporativa, con sus documentos del RAG y sus notas
+  y actas del vault. Se conserva el PMBOK como documentación general y la etiqueta
+  `v0.6-simulacion` como historia.
+* **Proyecto de validación**: *Estudio Delta › App de reservas* (brief en el RAG, 4 tareas
+  —una "En espera"—, 1 hito, 1 riesgo y la reunión de kick-off). Validado de punta a
+  punta el 20-09: pregunta al RAG con cita del brief, resumen generado en PDF y en
+  Markdown, red de conocimiento con el árbol nuevo, *Memoria de Jarvis* publicada en la
+  wiki de los dos proyectos y `scripts/check-integrations` en **37/37**.
+
+### 4.1 Qué queda por implementar (a 20-09-2026)
 
 | Área | Pendiente | Prioridad |
 |---|---|---|
-| Privacidad (antes de publicar el repo) | Convertir el workspace de OpenClaw (`USER.md`, `IDENTITY.md`, `TOOLS.md`, `AGENTS.md`) en plantillas con el nombre del propietario desde `.env`; decidir si se reescribe el historial de git para quitar datos personales antiguos | Alta |
+| ~~Privacidad (antes de publicar el repo)~~ ✅ 20-09 | Workspace de OpenClaw convertido en plantillas (`__OWNER__`, `__OWNER_FULL__`, `__OWNER_TZ__`, `__SERVER_HW__`) que el arranque rellena desde `.env` y del hardware detectado (`docs/OPENCLAW.md`). Reescribir el historial **no hace falta**: no hay correos, tailnet, IPs ni rutas personales en ningún commit; el único nombre propio del repo es el titular del copyright en `LICENSE`, que debe estar | — |
 | Operación (Fase 6) | Monitorización en compose (falta `infra/monitoring/prometheus.yml`, `dcgm-exporter`, alertas); copias de seguridad y restauración probadas (PostgreSQL con OpenProject, Qdrant, OpenClaw, CouchDB, adjuntos de OpenProject); CI con tests, ruff, pyright, build de imágenes y `scripts/check-integrations` | Alta |
 | Documentación | `docs/ACCEPTANCE.md` sigue en el estado de julio | Alta |
 | Validaciones | AirLLM `/deep` en compose; Obsidian iPhone → vault sin reiniciar el puente; funcionamiento sin Internet (criterio 27) | Alta |
@@ -243,7 +262,7 @@ Web corporativa (etiqueta `v0.6-simulacion` para el estado anterior).
 | Correo | Correo entrante en OpenProject (respuestas a avisos como comentarios) con un buzón aparte para no chocar con Jarvis; clasificación automática de la bandeja | Media |
 | Proyectos | Plantillas Water-Scrum-Fall en OpenProject; horas y presupuesto; informe semanal automático | Media |
 | Actas | Diarización (quién habla) local | Media |
-| Memoria | Alias de personas (hoy solo se unen las variantes del propietario); síntesis semanal por proyecto en el vault; que las notas de persona también vayan a OpenProject | Media |
+| Memoria | Alias de personas (hoy solo se unen las variantes del propietario); síntesis semanal por proyecto en el vault; que las notas de persona también vayan a OpenProject; relaciones riesgo–tarea y decisión dentro de la capa de red | Media |
 | Multiusuario | Varias personas en Telegram con permisos por empresa/proyecto (RAG y OpenProject) | Media |
 | Teams | Bloqueado por el registro de Azure Bot | Baja |
 | TFM | UAT con usuarios, medición del ahorro de tiempo, web de demo para la defensa (Fase 5.1) | Según fecha de defensa |

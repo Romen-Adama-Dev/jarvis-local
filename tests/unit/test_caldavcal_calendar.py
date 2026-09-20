@@ -103,7 +103,7 @@ async def test_create_event_saves_valid_ical_with_attendees_in_local_timezone():
     assert result["id"].endswith("@jarvis-local")
     assert str(vevent["summary"]) == "Kick-off"
     assert str(vevent["description"]) == "Orden del día"
-    assert vevent["dtstart"].dt == datetime.datetime(2026, 9, 20, 9, 0, tzinfo=MADRID)
+    assert vevent.decoded("dtstart") == datetime.datetime(2026, 9, 20, 9, 0, tzinfo=MADRID)
     assert str(vevent["organizer"]) == "mailto:jarvis@example.com"
     assert str(vevent["attendee"]) == "mailto:romen@example.com"
     assert vevent["attendee"].params["RSVP"] == "TRUE"

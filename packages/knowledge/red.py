@@ -1,15 +1,26 @@
 """Red de conocimiento en el vault de Obsidian (docs/OBSIDIAN.md).
 
-Convierte lo que Jarvis ya sabe de cada proyecto en notas enlazadas, para que la vista de
-grafo de Obsidian muestre la red y el wiki de OpenClaw (memory-wiki) la use como memoria
-estructurada (`pageType: entity`, `relationships`):
+Convierte lo que Jarvis ya sabe de cada proyecto en notas enlazadas, para que Obsidian las
+muestre y el wiki de OpenClaw (memory-wiki) las use como memoria estructurada
+(`pageType: entity`, `relationships`). Son dos capas con reglas distintas:
 
-* Empresas, proyectos, hitos, riesgos y reuniones de OpenProject.
-* Personas: responsables de tareas y riesgos, asistentes de las actas.
-* Documentos indexados en el RAG, con su empresa y proyecto.
-* Las actas del vault reciben un bloque con enlaces a su proyecto y asistentes.
-* Conceptos "hub" (Gestión de riesgos, Hitos y cronograma...) y la nota raíz
-  `Red de conocimiento`.
+* **Árbol** (contención: cada nota tiene un padre y solo uno), y la carpeta es el árbol:
+
+      entities/empresas/<Empresa>.md
+      entities/empresas/<Empresa>/<Proyecto>.md
+      entities/empresas/<Empresa>/<Proyecto>/{hitos,riesgos,reuniones,tareas}/<Nota>.md
+
+  El enlace estructural lo declara siempre el hijo (`relationships: pertenece-a`); el
+  padre lista a sus hijos para poder navegarlos, pero no repite la relación.
+  Las tareas solo son nota propia cuando pesan (bloqueadas o nombradas en un acta); el
+  resto se quedan como líneas de la nota del proyecto para no ahogar el árbol.
+
+* **Red** (asociación, muchos a muchos): personas, documentos del RAG, actas y conceptos.
+  Aquí sí se cruzan proyectos y empresas: una persona enlaza con todo en lo que participa.
+
+Los conceptos (Gestión de riesgos, Hitos y cronograma...) son índices por proyecto: no
+enlazan cada riesgo de cada empresa, que es lo que convertía el grafo en una maraña.
+La nota raíz es `Red de conocimiento`.
 
 Todo es local: lee OpenProject y la API de Jarvis y escribe Markdown en el vault. Cada nota
 generada tiene un bloque gestionado entre marcas; lo que escribas fuera de él se conserva.
@@ -27,7 +38,7 @@ import re
 import sys
 import time
 import unicodedata
-from collections import defaultdict
+from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -73,6 +84,8 @@ class Item:
     people: list[str] = field(default_factory=list)
     detail: str = ""
     url: str = ""
+    # Solo en las actas: títulos de las tareas que nombra (deciden qué tarea es nota).
+    mentions: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -104,7 +117,8 @@ def note_name(text: str, limit: int = 80) -> str:
 
 
 def link(name: str, alias: str = "") -> str:
-    return f"[[{note_name(name)}|{alias}]]" if alias else f"[[{note_name(name)}]]"
+    note = note_name(name)
+    return f"[[{note}|{alias}]]" if alias and alias != note else f"[[{note}]]"
 
 
 def _slug(text: str) -> str:
@@ -186,6 +200,7 @@ def read_actas(vault: Path) -> list[Item]:
                     {p: r for p, r in reversed(people) if r or p not in dict(people)},
                     ensure_ascii=False,
                 ),
+                mentions=_table_column(text, "tarea"),
             )
         )
     return actas
@@ -374,6 +389,40 @@ def _item_note(item: Item) -> str:
     return note_name(item.title)
 
 
+def _company_dir(company: str) -> str:
+    return f"entities/empresas/{note_name(company)}"
+
+
+def _project_path(company: str, project: str) -> str:
+    """La nota del proyecto vive dentro de la carpeta de su empresa: la carpeta es el árbol."""
+    return f"{_company_dir(company)}/{note_name(project)}"
+
+
+# Estados en los que una tarea deja de ser una línea y merece su propia nota.
+BLOCKED = ("bloquead", "blocked", "en espera", "on hold", "detenid", "parad")
+
+
+def _task_is_node(task: Item, acta_tasks: set[str]) -> bool:
+    """Una tarea pesa —y entra en el árbol— si está bloqueada o si la nombra un acta."""
+    if any(mark in _key(task.status) for mark in BLOCKED):
+        return True
+    return _key(task.title) in acta_tasks
+
+
+def _task_line(task: Item, with_project: bool = False, as_node: bool = False) -> str:
+    title = link(_item_note(task), task.title) if as_node else task.title
+    parts = [f"[#{task.id}]({task.url}) {title}" if task.url else title]
+    if task.date:
+        parts.append(f"vence {task.date}")
+    if task.status:
+        parts.append(task.status)
+    if with_project and task.project:
+        parts.append(link(task.project))
+    elif task.people:
+        parts.append(link(task.people[0]))
+    return "- " + " · ".join(parts)
+
+
 def build_pages(snap: Snapshot) -> list[Page]:
     """Todas las notas de la red a partir de una instantánea (función pura)."""
     pages: list[Page] = []
@@ -393,10 +442,16 @@ def build_pages(snap: Snapshot) -> list[Page]:
                 project_people[item.project].add(person)
                 person_items[person].append((kind, item))
 
+    acta_tasks = {_key(t) for acta in snap.actas for t in acta.mentions}
+    task_nodes = {id(t) for t in snap.tasks if _task_is_node(t, acta_tasks)}
+
     def by_project(items: list[Item], project: str) -> list[Item]:
         return sorted((i for i in items if i.project == project), key=lambda i: i.date or "9")
 
-    # Empresas
+    def company_of(project: str) -> str:
+        return snap.projects.get(project, {}).get("company", "")
+
+    # Empresas (raíz del árbol). No declara «tiene-proyecto»: la relación la pone el hijo.
     for company, url in sorted(snap.companies.items()):
         projects = sorted(p for p, info in snap.projects.items() if info["company"] == company)
         docs = [d for d in snap.documents if d.company == company and not d.project]
@@ -415,19 +470,16 @@ def build_pages(snap: Snapshot) -> list[Page]:
             body += ["", "## Documentación de la empresa", *(_item_line(d) for d in docs)]
         pages.append(
             Page(
-                f"entities/empresas/{note_name(company)}",
-                _entity(
-                    "empresa", company, ["empresa"],
-                    [_rel("tiene-proyecto", "proyecto", p) for p in projects],
-                ),
+                _company_dir(company),
+                _entity("empresa", company, ["empresa"], []),
                 "\n".join(body),
             )
-        )  # fmt: skip
+        )
 
-    # Proyectos
+    # Proyectos (hijos de su empresa)
     for project, info in sorted(snap.projects.items()):
         company = info["company"]
-        tasks = [t for t in by_project(snap.tasks, project) if _key(t.status) not in CLOSED]
+        open_tasks = [t for t in by_project(snap.tasks, project) if _key(t.status) not in CLOSED]
         header = f"Proyecto de {link(company)}"
         if info["url"]:
             header += f" · [OpenProject]({info['url']}) · [Gantt]({info['gantt']})"
@@ -446,34 +498,34 @@ def build_pages(snap: Snapshot) -> list[Page]:
         ):
             if items:
                 sections += ["", f"## {title}", *(_item_line(i) for i in items)]
-        if tasks:
-            sections += ["", f"## Tareas abiertas ({len(tasks)})"]
-            for t in tasks[:30]:
-                owner = f" · {link(t.people[0])}" if t.people else ""
-                due = f" · vence {t.date}" if t.date else ""
-                sections.append(f"- [#{t.id}]({t.url}) {t.title}{due} · {t.status}{owner}")
+        if open_tasks:
+            sections += ["", f"## Tareas abiertas ({len(open_tasks)})"]
+            sections += [_task_line(t, as_node=id(t) in task_nodes) for t in open_tasks[:30]]
         rels = [_rel("pertenece-a", "empresa", company)]
         rels += [_rel("equipo", "persona", p) for p in people]
         pages.append(
             Page(
-                f"entities/proyectos/{note_name(project)}",
+                _project_path(company, project),
                 _entity("proyecto", project, ["proyecto"], rels, company=company),
                 "\n".join(sections),
             )
         )
 
-    # Hitos, riesgos, reuniones y documentos (un nodo cada uno)
-    for kind, folder, hub, items in (
-        ("hito", "hitos", "hitos", snap.milestones),
-        ("riesgo", "riesgos", "riesgos", snap.risks),
-        ("reunion", "reuniones", "reuniones", snap.meetings),
-        ("documento", "documentos", "documentos", snap.documents),
-    ):
+    # Hitos, riesgos, reuniones y tareas que pesan: hojas del árbol, dentro de su proyecto.
+    # Los documentos son de la red (los cruza el RAG), así que se quedan en su carpeta.
+    leaves: list[tuple[str, str, list[Item]]] = [
+        ("hito", "hitos", snap.milestones),
+        ("riesgo", "riesgos", snap.risks),
+        ("reunion", "reuniones", snap.meetings),
+        ("tarea", "tareas", [t for t in snap.tasks if id(t) in task_nodes]),
+        ("documento", "documentos", snap.documents),
+    ]
+    for kind, folder, items in leaves:
         for item in items:
             name = _item_note(item)
-            where = link(item.project or item.company) if item.project or item.company else ""
-            header = f"{kind.capitalize()} de {where or 'documentación general'}"
-            lines = [f"# {item.title}", "", f"{header} · {link(HUBS[hub][0])}"]
+            parent = item.project or item.company
+            header = f"{kind.capitalize()} de {link(parent)}" if parent else "Documentación general"
+            lines = [f"# {item.title}", "", header]
             facts = [
                 ("Fecha", item.date),
                 ("Estado", item.status),
@@ -487,17 +539,23 @@ def build_pages(snap: Snapshot) -> list[Page]:
                 for acta in snap.actas:
                     if acta.project == item.project and acta.date == item.date:
                         lines += ["", f"Acta: {link(_item_note(acta), acta.title)}"]
-            rels = [_rel("de-proyecto", "proyecto", item.project)] if item.project else []
+            rels = [_rel("pertenece-a", "proyecto", item.project)] if item.project else []
             rels += [_rel("responsable", "persona", p) for p in item.people]
+            company = company_of(item.project) or item.company
+            path = (
+                f"{_project_path(company, item.project)}/{folder}/{note_name(name)}"
+                if item.project and company and kind != "documento"
+                else f"entities/{folder}/{note_name(name)}"
+            )
             pages.append(
                 Page(
-                    f"entities/{folder}/{note_name(name)}",
+                    path,
                     _entity(kind, name, [kind], rels, date=item.date, status=item.status),
                     "\n".join(lines),
                 )
             )
 
-    # Personas
+    # Personas: la red. Cruzan proyectos y empresas a propósito.
     for person in sorted(person_items):
         roles = sorted(snap.roles.get(person, []))
         projects = sorted({i.project for _, i in person_items[person] if i.project})
@@ -517,8 +575,9 @@ def build_pages(snap: Snapshot) -> list[Page]:
                 continue
             lines += ["", f"## {title}"]
             if kind == "tarea":
-                lines += [f"- [#{i.id}]({i.url}) {i.title} · {i.status} · {link(i.project)}"
-                          for i in items]  # fmt: skip
+                lines += [
+                    _task_line(i, with_project=True, as_node=id(i) in task_nodes) for i in items
+                ]
             else:
                 lines += [_item_line(i, with_project=True) for i in items]
         pages.append(
@@ -533,11 +592,31 @@ def build_pages(snap: Snapshot) -> list[Page]:
             )
         )  # fmt: skip
 
-    # Conceptos hub y nota raíz
-    for title, description in HUBS.values():
+    # Conceptos: índices por proyecto. Enlazan al proyecto, nunca a cada ítem: así el
+    # concepto sigue siendo navegable sin arrastrar una arista por riesgo de cada empresa.
+    hub_items = {
+        "riesgos": snap.risks,
+        "hitos": snap.milestones,
+        "reuniones": snap.meetings,
+        "documentos": snap.documents,
+    }
+    for hub, (title, description) in HUBS.items():
+        if hub == "equipo":
+            counts = {p: len(people) for p, people in project_people.items() if p and people}
+            unit = ("persona", "personas")
+        else:
+            counts = Counter(i.project for i in hub_items[hub] if i.project)
+            unit = (hub.rstrip("s"), hub)
+        body = [f"# {title}", "", description, "", f"Parte de [[{ROOT_NOTE}]]."]
+        if counts:
+            body += ["", "## Por proyecto"]
+            body += [
+                f"- {link(project)} — {n} {unit[0] if n == 1 else unit[1]}"
+                for project, n in sorted(counts.items())
+            ]
         front = {"pageType": "concept", "id": f"concept.{_slug(title)}", "title": title}
-        body = f"# {title}\n\n{description}\n\nParte de [[{ROOT_NOTE}]]."
-        pages.append(Page(f"concepts/{title}", {**front, "tags": ["concepto"]}, body))
+        pages.append(Page(f"concepts/{title}", {**front, "tags": ["concepto"]}, "\n".join(body)))
+
     lines = [
         f"# {ROOT_NOTE}",
         "",
@@ -577,14 +656,43 @@ def _acta_block(acta: Item, snap: Snapshot) -> str:
     ]
     people = ", ".join(link(p) for p in dict.fromkeys(acta.people))
     lines = [p for p in parts if p] + ([f"Personas: {people}"] if people else [])
-    lines.append(f"Ver también: {link(HUBS['reuniones'][0])}")
     return "\n".join(["## Red", *lines])
+
+
+# Carpetas planas de la versión anterior, ahora repartidas por el árbol de cada proyecto.
+LEGACY_FOLDERS = ("proyectos", "hitos", "riesgos", "reuniones", "tareas")
+
+
+def _legacy_path(path: str) -> str | None:
+    """Dónde vivía esta nota cuando todo era plano (`entities/<tipo>/<nota>`), o None."""
+    parts = path.split("/")
+    if len(parts) < 4 or parts[:2] != ["entities", "empresas"]:
+        return None
+    if len(parts) == 4:  # entities/empresas/<Empresa>/<Proyecto>
+        return f"entities/proyectos/{parts[3]}"
+    if len(parts) == 6 and parts[4] in LEGACY_FOLDERS:  # .../<Proyecto>/<tipo>/<nota>
+        return f"entities/{parts[4]}/{parts[5]}"
+    return None
+
+
+def _migrate(vault: Path, page: Page) -> None:
+    """Mueve la nota plana anterior a su sitio del árbol, con lo que hayas escrito en ella.
+    Los enlaces `[[Nombre]]` de Obsidian no llevan carpeta, así que mover no los rompe."""
+    legacy = _legacy_path(page.path)
+    target = vault / f"{page.path}.md"
+    if not legacy or target.exists():
+        return
+    old = vault / f"{legacy}.md"
+    if old.is_file():
+        target.parent.mkdir(parents=True, exist_ok=True)
+        old.replace(target)
 
 
 def write_pages(vault: Path, pages: list[Page], snap: Snapshot) -> int:
     """Escribe las notas que cambian. Devuelve cuántas se escribieron."""
     written = 0
     for page in pages:
+        _migrate(vault, page)
         target = vault / f"{page.path}.md"
         existing = target.read_text(encoding="utf-8") if target.exists() else None
         if existing is not None and "generatedBy" not in existing and START not in existing:
@@ -607,18 +715,23 @@ def write_pages(vault: Path, pages: list[Page], snap: Snapshot) -> int:
         if new != text:
             target.write_text(new, encoding="utf-8")
             written += 1
+    for folder in LEGACY_FOLDERS:
+        legacy = vault / "entities" / folder
+        if legacy.is_dir() and not any(legacy.iterdir()):
+            legacy.rmdir()
     return written
 
 
 # --- Memoria escrita por Jarvis --------------------------------------------------------
 
 NOTES_HEADING = "## Notas"
-REMEMBER_FOLDERS = ("proyectos", "empresas", "personas")
+# Empresas, proyectos (dentro de su empresa) y personas: sobre eso se pueden anotar cosas.
+REMEMBER_GLOBS = ("entities/empresas/*.md", "entities/empresas/*/*.md", "entities/personas/*.md")
 
 
 def find_note(vault: Path, about: str) -> Path:
     """Nota de un proyecto, empresa o persona por su nombre (sin tildes ni mayúsculas)."""
-    notes = [p for f in REMEMBER_FOLDERS for p in sorted(vault.glob(f"entities/{f}/*.md"))]
+    notes = [p for pattern in REMEMBER_GLOBS for p in sorted(vault.glob(pattern))]
     wanted = _key(about)
     for matches in (
         [p for p in notes if _key(p.stem) == wanted],
@@ -678,7 +791,7 @@ def refresh(vault: Path) -> int:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser = argparse.ArgumentParser(description=next(iter((__doc__ or "").splitlines()), None))
     parser.add_argument("--vault", type=Path, required=True)
     parser.add_argument("--every", type=int, default=0, help="segundos entre pasadas (0 = una)")
     args = parser.parse_args()
