@@ -48,6 +48,8 @@ qdrant_collections() {
 backup_once() {
   local name dest tmp
   name="$(date +%F_%H%M)"
+  # Dos copias en el mismo minuto: mv metería la segunda dentro de la primera.
+  [[ -e "$BACKUP_DIR/$name" ]] && name="$(date +%F_%H%M%S)"
   dest="$BACKUP_DIR/$name"
   tmp="$BACKUP_DIR/.$name.partial"
   rm -rf "$tmp"
@@ -171,7 +173,9 @@ loop() {
     next="$(date -d "today $at" +%s)"
     ((next > now)) || next="$(date -d "tomorrow $at" +%s)"
     sleep $((next - now))
-    backup_once || log "la copia ha fallado; se reintenta mañana"
+    # En otro proceso: dentro de "cmd || ..." bash ignora set -e y un pg_dump fallido
+    # daría la copia por buena.
+    "$0" once || log "la copia ha fallado; se reintenta mañana"
   done
 }
 

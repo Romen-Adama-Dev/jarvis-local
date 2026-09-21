@@ -30,7 +30,12 @@ path="${path:-./backups}"
 copy="$(basename "$copy")"
 [[ -f "$path/$copy/SHA256SUMS" ]] || { echo "no existe la copia $path/$copy" >&2; exit 1; }
 
-dc() { docker compose --profile backup "$@"; }
+# Los perfiles del .env más backup: con "--profile backup" compose ignoraría
+# COMPOSE_PROFILES y dejaría en marcha OpenProject, CouchDB o el puente de Obsidian
+# mientras se sustituyen sus datos.
+profiles="${COMPOSE_PROFILES-$(envval COMPOSE_PROFILES)}"
+export COMPOSE_PROFILES="${profiles:+$profiles,}backup"
+dc() { docker compose "$@"; }
 
 if ! $yes; then
   echo "Se van a SUSTITUIR los datos de Jarvis (proyecto ${COMPOSE_PROJECT_NAME:-jarvis-local}) por la copia $copy."

@@ -7,7 +7,7 @@ implementado.
 | # | Criterio | Estado | Cómo se ha verificado |
 |---|---|---|---|
 | 1 | El servidor arranca correctamente | ✅ | Ubuntu en la VM de GCP (L4, 8 vCPU, 31 GB de RAM); `docker compose up -d` levanta la pila completa (`docs/DOCKER.md`). |
-| 2 | Todos los servicios necesarios sobreviven a un reinicio | ✅ | Reinicio de la VM el 21-09 a las 08:19: los 23 contenedores volvieron solos (`restart: unless-stopped`) y `scripts/check-integrations` pasó 43/43. Se vio que OpenClaw arrancaba antes que Tailscale y dejaba el panel sin publicar: arreglado: el arranque de OpenClaw espera a tailscaled (probado reproduciendo la carrera). |
+| 2 | Todos los servicios necesarios sobreviven a un reinicio | ⏳ | Reinicio de la VM el 21-09 a las 08:19: los 23 contenedores volvieron solos (`restart: unless-stopped`), pero `scripts/check-integrations` dio 42/43: OpenClaw arrancó antes que Tailscale y dejó el panel sin publicar. Arreglado: el arranque de OpenClaw espera a tailscaled (probado reproduciendo la carrera; tras reiniciar el gateway, 43/43). Falta repetirlo con un reinicio real de la VM. |
 | 3 | Ningún servicio interno expuesto públicamente | ✅ | `ss -tlnp`: fuera de loopback solo escuchan `sshd` (22) y `tailscaled`. Todos los servicios de Jarvis, incluidos los de monitorización, escuchan en `127.0.0.1`; OpenClaw, OpenProject y CouchDB se publican solo en el tailnet (`tailscale serve`). UFW está inactivo en la VM: el filtrado lo hace el firewall de GCP. |
 | 4 | Ollama responde localmente | ✅ | `gemma4:26b-a4b-it-qat` al 100 % en GPU (`ollama ps`), `/api/version` en las sondas de Prometheus. |
 | 5 | AirLLM responde mediante su servicio independiente | ✅ | Servicio `airllm` en compose (perfil `deep`): `NousResearch/Meta-Llama-3.1-8B-Instruct` cargado en `cuda:0`, `/health` en `ready`, generaciones completas (`docs/AIRLLM.md`). |
@@ -16,7 +16,7 @@ implementado.
 | 8 | Redis operativo | ✅ | `/ready` → `redis: healthy`. |
 | 9 | OpenClaw operativo | ✅ | OpenClaw 2026.9.4 en compose, `healthy`; responde por Telegram y por el panel del tailnet (`scripts/check-integrations`). |
 | 10 | Telegram solo acepta al usuario autorizado | ✅ | `dmPolicy: "allowlist"` y `allowFrom` con `TELEGRAM_AUTHORIZED_USER_IDS` en `integrations/openclaw/config/openclaw.template.json`. |
-| 11 | Un PDF puede enviarse por Telegram | ✅ | Adjuntos de Telegram localizados por nombre e indexados (`b3b6b3b`); validado con el brief de Estudio Delta el 20-09. |
+| 11 | Un PDF puede enviarse por Telegram | ✅ | El PMBOK 7.ª ed. (PDF de 370 páginas) llegó por Telegram el 15-09 y está indexado (nombre `…---<uuid>.pdf` que OpenClaw da a los adjuntos; localización por nombre en `b3b6b3b`). |
 | 12 | El PDF se indexa correctamente | ✅ | 8 documentos y 770 fragmentos en PostgreSQL y Qdrant, separados por empresa y proyecto (`docs/EMPRESAS.md`). |
 | 13 | Una pregunta sobre el PDF devuelve respuesta con página y fuente | ✅ | `/v1/rag/query` sobre App de reservas devuelve respuesta con 4 fuentes (21-09); en Telegram, con cita (20-09). |
 | 14 | Una pregunta sin evidencia se rechaza correctamente | ⏳ | El modelo se abstiene ("No cuento con información suficiente en los documentos…", pregunta sobre gofio escaldado, 21-09), pero `insufficient_evidence` sale `false`: solo se marca cuando la recuperación no encuentra ningún candidato. Falta marcarlo también cuando el modelo se abstiene. |

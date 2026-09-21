@@ -15,7 +15,7 @@ docker compose --profile monitoring up -d
 | `grafana` | 3000 (`GRAFANA_PORT`) | Panel "Jarvis" (`infra/monitoring/grafana/dashboards/jarvis.json`) |
 | `blackbox-exporter` | 9115 | Sondas HTTP y TCP contra cada servicio |
 | `node-exporter` | 9100 | CPU, memoria y disco del servidor |
-| `dcgm-exporter` | 9400 | GPU NVIDIA: uso, VRAM, temperatura, consumo, errores Xid (sin GPU, `compose.cpu.yml` lo desactiva) |
+| `dcgm-exporter` | 9400 | GPU NVIDIA: uso, VRAM, temperatura, consumo, errores Xid (sin GPU, `compose.cpu.yml` lo desactiva y pone `MONITOR_GPU=false` a Prometheus para que no lo dé por caído) |
 
 Todos usan `network_mode: host` y escuchan solo en `127.0.0.1`, como `ollama`, `api` y
 `openclaw`: así Prometheus llega a esos servicios sin abrirlos a la red. Nada se publica
