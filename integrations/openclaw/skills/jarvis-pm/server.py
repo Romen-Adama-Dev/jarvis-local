@@ -18,10 +18,20 @@ from mcp.server.fastmcp import FastMCP
 sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
 
 from packages.core.errors import JarvisError, ValidationFailedError  # noqa: E402
-from packages.openproject.client import OpenProjectClient, describe_work_package  # noqa: E402
+from packages.office import build_document, media_reply, parse_blocks  # noqa: E402
+from packages.openproject.client import (  # noqa: E402
+    OpenProjectClient,
+    describe_work_package,
+    description_of,  # noqa: E402
+)
 from packages.openproject.config import config_from_env  # noqa: E402
 
 mcp = FastMCP("jarvis-pm")
+
+JARVIS_OUTBOX_DIR = Path(
+    os.environ.get("JARVIS_OUTBOX_DIR", Path.home() / ".openclaw" / "workspace-jarvis" / "outbox")
+)
+_EXPORT_LIMIT = 500
 
 _client: OpenProjectClient | None = None
 
@@ -169,6 +179,68 @@ def pm_update_task(
         comment=comment,
     )
     return f"Actualizado {describe_work_package(wp)}\n{op.work_package_url(wp)}"
+
+
+def _task_row(op: OpenProjectClient, wp: dict) -> list:
+    links = wp["_links"]
+    return [
+        wp["id"],
+        links["type"]["title"],
+        wp["subject"],
+        links["status"]["title"],
+        (links.get("assignee") or {}).get("title") or "",
+        wp.get("startDate") or "",
+        wp.get("dueDate") or wp.get("date") or "",
+        wp.get("percentageDone") or 0,
+        description_of(wp)[:500],
+        op.work_package_url(wp),
+    ]
+
+
+@mcp.tool()
+@_safe
+def pm_export_tasks(
+    project: str, format: str = "xlsx", kind: str = "", include_closed: bool = True
+) -> str:
+    """Exporta los paquetes de trabajo de un proyecto a una hoja de cálculo (`format` =
+    xlsx o ods; también docx/odt como tabla). `kind` filtra por tipo (Tarea, Hito,
+    Riesgo...). Devuelve una línea `MEDIA:<ruta>` para enviar el archivo por el chat."""
+    op = _op()
+    proj = op.find_project(project)
+    wps = op.work_packages(proj, only_open=not include_closed, type_name=kind, limit=_EXPORT_LIMIT)
+    columns = [
+        "ID",
+        "Tipo",
+        "Asunto",
+        "Estado",
+        "Responsable",
+        "Inicio",
+        "Vencimiento",
+        "% completado",
+        "Descripción",
+        "Enlace",
+    ]
+    today = datetime.date.today().isoformat()
+    blocks = [
+        {"type": "heading", "text": f"Tareas de {proj['name']}", "level": 1},
+        {"type": "paragraph", "text": f"Exportado de OpenProject el {today}: {len(wps)} filas."},
+        {
+            "type": "table",
+            "name": (kind or "Tareas")[:31],
+            "columns": columns,
+            "rows": [_task_row(op, wp) for wp in wps],
+        },
+    ]
+    # Los textos vienen de OpenProject: nunca se interpretan como fórmulas.
+    path = build_document(
+        format,
+        f"Tareas de {proj['name']}",
+        parse_blocks(blocks, allow_formulas=False),
+        JARVIS_OUTBOX_DIR,
+        filename=f"tareas-{proj['name']}",
+    )
+    note = " (límite alcanzado: puede haber más)" if len(wps) >= _EXPORT_LIMIT else ""
+    return media_reply(path, f"Exportación de {len(wps)} paquetes de trabajo{note}")
 
 
 @mcp.tool()

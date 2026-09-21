@@ -87,3 +87,35 @@ hace la entrega después.
 El mismo documento se puede adjuntar a un correo con
 `jarvis_email_draft(..., attachment_job_id="<id>")` (ver `docs/EMAIL.md`). El outbox no
 se limpia solo.
+
+## Documentos ofimáticos a medida (`jarvis-office`)
+
+Lo anterior genera documentos **fundamentados en el RAG** (con fuentes). Para un
+fichero de Office o LibreOffice con contenido que redacta el propio agente o que sale
+de otra herramienta («hazme un Excel con el presupuesto…», «genera un acta en Word…»)
+está la skill MCP `jarvis-office` (`integrations/openclaw/skills/jarvis-office`), que
+usa `packages/office` sin llamar al modelo ni a la API:
+
+| Formato | Librería | Qué sale |
+| --- | --- | --- |
+| `xlsx` | openpyxl | Una hoja por tabla: cabecera en negrita con fondo, filtros, panel fijado, anchos ajustados, números como números y fila «Total» con fórmulas `SUM`; el resto del texto en la hoja «Notas» |
+| `docx` | python-docx | Título, encabezados, párrafos con **negrita**, viñetas y tablas con estilo (números alineados a la derecha, total calculado) |
+| `pptx` | python-pptx | Portada, una diapositiva por encabezado de nivel 1 y tablas nativas (12 filas por diapositiva) |
+| `ods` / `odt` / `odp` | odfpy | Lo mismo en OpenDocument; en `ods` los totales son fórmulas OpenFormula y en `odp` las tablas van como texto |
+
+`jarvis_make_document(format, title, blocks, filename="")` recibe una lista de bloques
+(`heading`, `paragraph`, `bullets`, `table`; formato en `packages/office/spec.py`) y
+deja el fichero en el outbox con la línea `MEDIA:` para el chat, igual que arriba.
+`pm_export_tasks(project, format="xlsx")` (skill `jarvis-pm`) exporta los paquetes de
+trabajo de un proyecto de OpenProject (id, tipo, asunto, estado, responsable, fechas,
+% completado, descripción y enlace).
+
+Seguridad: en las tablas que escribe el modelo solo se aceptan fórmulas sencillas
+(aritmética, rangos y funciones); cualquier texto con `|`, `!`, `[` o comillas que empiece
+por `=` se guarda como texto, y en la exportación de OpenProject ningún valor se
+interpreta como fórmula (evita la inyección de fórmulas desde el asunto de una tarea).
+Estos ficheros no se pueden adjuntar a un correo con `attachment_job_id` (no son
+trabajos de la API); para eso usa `jarvis_generate_doc`.
+
+Probado con LibreOffice headless: los seis formatos se abren y las fórmulas de total se
+calculan.

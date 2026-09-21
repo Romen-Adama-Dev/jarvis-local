@@ -48,8 +48,10 @@ Perfiles opcionales en `COMPOSE_PROFILES` (`.env`):
 * **Una sola memoria** en Obsidian: red de conocimiento con empresas, proyectos,
   personas, hitos, riesgos, reuniones y documentos enlazados (vista de grafo), compartida
   con la wiki de OpenProject; "recuerda que…" por Telegram la amplía (`docs/OBSIDIAN.md`).
-* **Documentos generados** desde el RAG (resumen, DAFO, planes) en DOCX/PPTX/PDF
-  (`docs/DOCGEN.md`), **voz** local (whisper + Piper), **búsqueda web** con SearXNG y
+* **Documentos generados** desde el RAG (resumen, DAFO, planes) en DOCX/PPTX/PDF, y
+  **documentos ofimáticos a medida** en Excel, Word, PowerPoint y OpenDocument
+  (`.xlsx/.docx/.pptx/.ods/.odt/.odp`) con tablas, negritas y totales, incluida la
+  exportación de tareas de OpenProject a Excel (`docs/DOCGEN.md`), **voz** local (whisper + Piper), **búsqueda web** con SearXNG y
   **directorio de servicios** con enlaces y estado.
 
 Para probarlo todo con un proyecto ficticio (incluido el guion del audio de una reunión):
@@ -69,10 +71,10 @@ Estado detallado y lo que queda en `docs/ROADMAP.md`; criterios de aceptación e
 ```text
 apps/            API (FastAPI) y worker (arq)
 packages/        Dominio: core, security, documents, rag, inference, meetings, docgen,
-                 openproject, imapsmtp, caldavcal, msgraph
+                 office, openproject, imapsmtp, caldavcal, msgraph
 services/airllm/ Microservicio AirLLM (modo /deep)
 integrations/    OpenClaw: imagen, configuración, workspace y skills MCP
-                 (jarvis-rag, jarvis-email, jarvis-calendar, jarvis-pm)
+                 (jarvis-rag, jarvis-email, jarvis-calendar, jarvis-pm, jarvis-office)
 infra/           Arranque de los contenedores (init, OpenProject, LiveSync, Tailscale...)
 scripts/         configure-mail, configure-telegram, check-integrations, select-models...
 docs/            Documentación
