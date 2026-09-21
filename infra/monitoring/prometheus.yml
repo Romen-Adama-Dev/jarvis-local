@@ -19,8 +19,8 @@ scrape_configs:
       - targets: ["127.0.0.1:9090"]
 
   - job_name: jarvis-api
-    static_configs:
-      - targets: ["127.0.0.1:8000"]
+    file_sd_configs:
+      - files: ["/etc/prometheus/targets/api.json"]
 
   - job_name: qdrant
     static_configs:
@@ -30,9 +30,11 @@ scrape_configs:
     static_configs:
       - targets: ["127.0.0.1:9100"]
 
+  # Vacío sin GPU (MONITOR_GPU=false en compose.cpu.yml): si no, MetricasSinDatos
+  # saltaría siempre por un dcgm-exporter que no está desplegado.
   - job_name: gpu
-    static_configs:
-      - targets: ["127.0.0.1:9400"]
+    file_sd_configs:
+      - files: ["/etc/prometheus/targets/gpu.json"]
 
   # Sondas de disponibilidad: el arranque (prometheus-entrypoint.sh) escribe en
   # /etc/prometheus/targets solo los servicios de los perfiles activos, para no dar

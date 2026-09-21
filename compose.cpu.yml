@@ -19,3 +19,6 @@ services:
   dcgm-exporter:
     profiles: !override ["gpu-monitoring"]
     gpus: !reset []
+  prometheus:
+    environment:
+      MONITOR_GPU: "false"
