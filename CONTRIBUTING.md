@@ -21,12 +21,20 @@ independientemente de su calidad técnica.
 uv sync
 uv run pytest
 uv run ruff check .
+uv run ruff format --check .
 uv run pyright
 ```
 
-Las tres comprobaciones (`pytest`, `ruff`, `pyright`) deben pasar antes de abrir
-un PR. `ruff` aplica `E, F, I, UP, B, SIM`; `pyright` corre en modo `basic` sobre
-`apps`, `packages` y `tests`.
+Estas comprobaciones deben pasar antes de abrir un PR. `ruff` aplica
+`E, F, I, UP, B, SIM`; `pyright` corre en modo `basic` sobre `apps`, `packages` y
+`tests`.
+
+La CI (`.github/workflows/ci.yml`) las repite en cada PR y en cada push a `main`,
+junto con los tests del servicio AirLLM, `shellcheck --severity=warning` sobre los
+scripts, `docker compose config` con todos los perfiles (con y sin `.env`) y la
+construcción de las imágenes `jarvis-local` y `jarvis-openclaw` con una prueba de humo.
+`scripts/check-integrations` no corre en la CI (necesita GPU, modelos y cuentas
+reales): lánzalo en el servidor después de desplegar.
 
 ## Convenciones
 

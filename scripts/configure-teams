@@ -6,7 +6,6 @@
 # apuntado en Azure antes de ejecutar esto.
 set -euo pipefail
 
-REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CONFIG="$HOME/.openclaw/openclaw.json"
 SECRETS_DIR="$HOME/.openclaw/secrets"
 SYSTEMD_DROPIN_DIR="$HOME/.config/systemd/user/openclaw-gateway.service.d"

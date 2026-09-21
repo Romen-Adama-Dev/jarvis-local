@@ -192,9 +192,7 @@ async def generate_document(payload: GenerateDocumentRequest, session: DbSession
             f"Formato de documento desconocido: '{payload.format}'. Formatos válidos: {valid}."
         )
 
-    job = Job(
-        job_type="generate_document", status="queued", requested_by=payload.telegram_user_id
-    )
+    job = Job(job_type="generate_document", status="queued", requested_by=payload.telegram_user_id)
     session.add(job)
     await session.commit()
     await session.refresh(job)
