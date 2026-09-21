@@ -1,0 +1,94 @@
+#!/usr/bin/env bash
+# Criterio 27 de docs/ACCEPTANCE.md: Jarvis funciona sin Internet general, salvo Telegram.
+#
+#   sudo -v && scripts/test-offline            corta, prueba y restaura
+#   scripts/test-offline --restore             quita las reglas (si algo quedó a medias)
+#
+# No desconecta el servidor (eso cortaría también SSH y la sesión de quien lo lanza): cada
+# contenedor del proyecto, salvo tailscale, pierde la salida a Internet con iptables. Los de
+# network_mode: host (ollama, api, worker, openclaw...) por su cgroup en OUTPUT; los de la
+# red de Docker por su IP en DOCKER-USER. Solo quedan permitidas las redes privadas, el
+# tailnet (100.64.0.0/10) y las de Telegram. Un temporizador de systemd quita las reglas a
+# los 15 minutos aunque el script no llegue al final.
+set -uo pipefail
+cd "$(dirname "$0")/.." || exit 1
+
+CHAIN=JARVIS_OFFLINE
+PROJECT="$(basename "$PWD")"
+ALLOWED=(127.0.0.0/8 10.0.0.0/8 172.16.0.0/12 192.168.0.0/16 100.64.0.0/10
+  # Telegram (core.telegram.org/resources/cidr.txt)
+  91.108.4.0/22 91.108.8.0/22 91.108.12.0/22 91.108.16.0/22 91.108.56.0/22
+  149.154.160.0/20 95.161.64.0/20)
+
+restore() {
+  # Cada regla se borra con su especificación completa (-m cgroup, -s): "-D OUTPUT -j
+  # CHAIN" solo borraría una regla sin condiciones.
+  sudo iptables -S | grep -E "^-A (OUTPUT|DOCKER-USER) .*-j $CHAIN\$" | sed 's/^-A/-D/; s/"//g' |
+    while read -r -a rule; do sudo iptables "${rule[@]}"; done
+  sudo iptables -F "$CHAIN" 2>/dev/null
+  sudo iptables -X "$CHAIN" 2>/dev/null
+  sudo systemctl stop jarvis-offline-restore.timer 2>/dev/null || true
+  echo "reglas quitadas: Internet restaurado"
+}
+if [[ "${1:-}" == --restore ]]; then restore; exit 0; fi
+
+sudo -n true 2>/dev/null || { echo "hace falta sudo sin contraseña (sudo -v)" >&2; exit 1; }
+trap restore EXIT
+sudo systemd-run --quiet --unit jarvis-offline-restore --on-active=900 \
+  "$PWD/scripts/test-offline" --restore
+
+sudo iptables -N "$CHAIN"
+for net in "${ALLOWED[@]}"; do sudo iptables -A "$CHAIN" -d "$net" -j RETURN; done
+sudo iptables -A "$CHAIN" -j REJECT
+
+n=0
+while read -r id name mode; do
+  [[ "$name" == *tailscale* ]] && continue
+  if [[ "$mode" == host ]]; then
+    sudo iptables -I OUTPUT -m cgroup --path "system.slice/docker-$id.scope" -j "$CHAIN"
+  else
+    for ip in $(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}} {{end}}' "$id"); do
+      sudo iptables -I DOCKER-USER -s "$ip" -j "$CHAIN"
+    done
+  fi
+  n=$((n + 1))
+done < <(docker ps --no-trunc --filter "label=com.docker.compose.project=$PROJECT" \
+  --format '{{.ID}} {{.Names}}' |
+  while read -r id cname; do
+    printf '%s %s %s\n' "$id" "$cname" "$(docker inspect -f '{{.HostConfig.NetworkMode}}' "$id")"
+  done)
+echo "sin Internet: $n contenedores (tailscale conserva la conexión)"
+
+ok=0 fail=0
+check() {
+  local what="$1"; shift
+  if "$@" >/dev/null 2>&1; then printf '  \e[32m✔\e[0m %s\n' "$what"; ok=$((ok + 1))
+  else printf '  \e[31m✘\e[0m %s\n' "$what"; fail=$((fail + 1)); fi
+}
+not() { ! "$@"; }
+in_api() { docker compose exec -T api python -c "import urllib.request as u; u.urlopen('$1', timeout=10)"; }
+
+echo "Corte"
+check "api no llega a Internet (example.com)" not in_api https://example.com
+check "api sí llega a Telegram" in_api https://api.telegram.org
+check "openclaw no llega a Internet" not docker compose exec -T openclaw node -e \
+  "fetch('https://example.com').then(()=>process.exit(0)).catch(()=>process.exit(1))"
+
+TOKEN="$(docker compose exec -T openclaw cat /run/jarvis/jarvis_api_internal_token)"
+api() { curl -fsS -m 300 -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' "$@"; }
+echo "Jarvis sin Internet"
+check "API /ready (PostgreSQL, Redis, Qdrant, Ollama)" \
+  sh -c "curl -fsS http://127.0.0.1:8000/ready | grep -q '\"ready\":true'"
+check "RAG con cita (/v1/rag/query)" sh -c "$(declare -f api); TOKEN='$TOKEN'; api -X POST \
+  http://127.0.0.1:8000/v1/rag/query -d '{\"query\":\"¿Qué es la gestión de riesgos según el PMBOK?\",\"top_k\":4}' \
+  | grep -q '\"sources\":\[{'"
+check "OpenProject responde" sh -c "curl -fsS -o /dev/null -H 'X-Forwarded-Proto: https' \
+  http://127.0.0.1:8090/health_checks/default"
+owner="$(grep -E '^TELEGRAM_AUTHORIZED_USER_IDS=' .env | cut -d= -f2 | cut -d, -f1 | tr -d ' ')"
+check "Agente de OpenClaw por Telegram (tareas de OpenProject)" docker compose exec -T openclaw \
+  openclaw agent --session-id prueba-sin-internet --channel telegram --deliver \
+  --reply-to "$owner" --timeout 300 \
+  -m "Prueba sin Internet (criterio 27): dime en una frase las tareas abiertas del proyecto App de reservas de Estudio Delta."
+
+echo "Resultado: $ok bien, $fail mal"
+((fail == 0))

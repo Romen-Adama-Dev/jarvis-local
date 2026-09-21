@@ -57,7 +57,7 @@ Leyenda: ✅ hecho · 🟡 parcial · ⬜ por hacer
 | **Agente / orquestación** | 🟡 OpenClaw mencionado | ✅ OpenClaw + skills MCP (`jarvis-rag`, `jarvis-email`, `jarvis-calendar`, vía `FastMCP`) | — |
 | **Búsqueda web** | — | ✅ SearXNG, arranca por defecto (`web_search` de OpenClaw) | — |
 | **Automatización** | — | ✅ n8n (perfil automation) | 🟡 flujos de correo/calendario |
-| **Observabilidad** | ✅ supervisión | 🟡 perfil `monitoring` (Prometheus + Grafana) sin configurar para el despliegue compose | ⬜ métricas de Ollama/GPU, API y OpenClaw; alertas (Fase 6) |
+| **Observabilidad** | ✅ supervisión | ✅ perfil `monitoring`: Prometheus, Grafana, sondas de cada servicio, GPU (DCGM), servidor y métricas HTTP de la API; alertas por Telegram (`docs/MONITORING.md`, 21-09) | 🟡 alerta de copia de seguridad atrasada |
 | **Voz local (STT/TTS)** | ✅ | ✅ whisper.cpp (AVX2) + Piper es_ES dentro de la imagen de OpenClaw | — |
 | **Contestar correos** | ⬜ (roadmap) | ✅ MCP correo con backend IMAP/SMTP para cualquier proveedor (`packages/imapsmtp`) o Graph (`packages/msgraph/mail.py`); skill `jarvis-email`, borrador→confirmación, adjuntos de doc-gen; cuenta Gmail de Jarvis configurada ; OpenProject envía sus avisos e invitaciones por la misma cuenta; correo → tarea (`pm_task_from_email`); validado el 18-09 con correos reales (invitaciones con .ics recibidas en Gmail) | ⬜ recibir en OpenProject respuestas por correo (IMAP entrante) |
 | **Agendar / planificar reuniones** | ⬜ (roadmap) | ✅ MCP calendario con backend **OpenProject** (por defecto en la VM: la agenda son las reuniones de OpenProject y los vencimientos de tareas e hitos, `packages/openproject/calendar.py`), CalDAV o Graph; skill `jarvis-calendar`, propuesta→confirmación; invitaciones por OpenProject a sus usuarios y con .ics por el correo de Jarvis al resto; validado desde Telegram el 18-09 | ⬜ reuniones recurrentes, mover/cancelar reuniones, recordatorios proactivos por Telegram |
@@ -215,11 +215,11 @@ TFM), y decisión OpenClaw vs. cliente MCP ligero (Hermes/ZeroClaw). Tareas conc
 * **Copias de seguridad y restauración** probadas de PostgreSQL, Qdrant, estado de
   OpenClaw y CouchDB (criterios 21-22 de `docs/ACCEPTANCE.md`).
 * **CI**: tests, ruff y pyright en cada PR, y construcción de las imágenes de compose.
-* **Validaciones de punta a punta pendientes**: AirLLM `/deep`, edición desde Obsidian
-  en el iPhone sin reiniciar el puente, prueba sin Internet (criterio 27). Correo y
+* **Validaciones de punta a punta** (21-09): AirLLM `/deep`, Obsidian móvil → vault sin
+  reiniciar el puente, prueba sin Internet (criterio 27, `scripts/test-offline`). Correo y
   calendario (OpenProject) validados el 18-09.
 * **CI de integraciones**: ejecutar `scripts/check-integrations` tras cada despliegue.
-* **Actualizar `docs/ACCEPTANCE.md`**, que refleja el estado de julio (Fase 9).
+* **`docs/ACCEPTANCE.md`** actualizado el 21-09.
 * Limpieza: rama remota `fix/openclaw-2026.9-deploy`, imagen `alpine/git` sin versión
   fijada en `vault-sync`.
 
@@ -250,14 +250,14 @@ Web corporativa (etiqueta `v0.6-simulacion` para el estado anterior).
   Markdown, red de conocimiento con el árbol nuevo, *Memoria de Jarvis* publicada en la
   wiki de los dos proyectos y `scripts/check-integrations` en **37/37**.
 
-### 4.1 Qué queda por implementar (a 20-09-2026)
+### 4.1 Qué queda por implementar (a 21-09-2026)
 
 | Área | Pendiente | Prioridad |
 |---|---|---|
 | ~~Privacidad (antes de publicar el repo)~~ ✅ 20-09 | Workspace de OpenClaw convertido en plantillas (`__OWNER__`, `__OWNER_FULL__`, `__OWNER_TZ__`, `__SERVER_HW__`) que el arranque rellena desde `.env` y del hardware detectado (`docs/OPENCLAW.md`). Reescribir el historial **no hace falta**: no hay correos, tailnet, IPs ni rutas personales en ningún commit; el único nombre propio del repo es el titular del copyright en `LICENSE`, que debe estar | — |
-| Operación (Fase 6) | Monitorización en compose (falta `infra/monitoring/prometheus.yml`, `dcgm-exporter`, alertas); copias de seguridad y restauración probadas (PostgreSQL con OpenProject, Qdrant, OpenClaw, CouchDB, adjuntos de OpenProject); CI con tests, ruff, pyright, build de imágenes y `scripts/check-integrations` | Alta |
-| Documentación | `docs/ACCEPTANCE.md` sigue en el estado de julio | Alta |
-| Validaciones | AirLLM `/deep` en compose; Obsidian iPhone → vault sin reiniciar el puente; funcionamiento sin Internet (criterio 27) | Alta |
+| ~~Operación (Fase 6)~~ ✅ 21-09, en PR | Monitorización con alertas por Telegram (`feat/monitorizacion`), copias diarias con restauración probada (`feat/copias-seguridad`), CI (`ci/github-actions`; `check-integrations` sigue en el servidor porque necesita GPU y cuentas reales). Queda: alerta si la última copia tiene más de 26 h (`backups/.ultima-copia` → textfile de node-exporter) cuando ambas estén fusionadas | Media |
+| ~~Documentación~~ ✅ 21-09 | `docs/ACCEPTANCE.md` al día: 26 de 27 criterios verificados; el 14 (abstención) marca bien la respuesta pero no el campo `insufficient_evidence` | Media |
+| ~~Validaciones~~ ✅ 21-09 | AirLLM `/deep` en compose (`feat/airllm-compose`; en la L4 solo compensa con modelos que no caben en la GPU); Obsidian móvil → vault sin reiniciar el puente, y los borrados hechos con el puente parado ya llegan al móvil (`fix/obsidian-borrados-offline`); sin Internet, `scripts/test-offline` 7/7 | — |
 | Calendario | Mover y cancelar reuniones; reuniones recurrentes; recordatorio diario por Telegram ("qué tengo hoy", vencidos) con el cron de OpenClaw; huecos comunes | Media |
 | Correo | Correo entrante en OpenProject (respuestas a avisos como comentarios) con un buzón aparte para no chocar con Jarvis; clasificación automática de la bandeja | Media |
 | Proyectos | Plantillas Water-Scrum-Fall en OpenProject; horas y presupuesto; informe semanal automático | Media |
