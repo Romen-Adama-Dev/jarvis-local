@@ -25,6 +25,9 @@ en minúsculas o con el identificador): la herramienta los resuelve.
   Cerrado, Rechazado.
 * `pm_status_report(project)`: informe de seguimiento y control (abiertos, vencidos,
   próximos 7 días, hitos, riesgos) con enlaces al Gantt y a los tableros.
+* `pm_export_tasks(project, format="xlsx", kind="", include_closed=True)`: exporta el
+  trabajo del proyecto a Excel (`xlsx`), LibreOffice (`ods`) o una tabla en Word
+  (`docx`/`odt`) y devuelve la línea `MEDIA:<ruta>` para enviarlo por el chat.
 * `pm_meetings(project="", days=14, past=False)`: reuniones de OpenProject (próximas o
   pasadas). Para **crear** una reunión usa `jarvis_calendar_propose_event` con
   `project`: el calendario de Jarvis son las reuniones de OpenProject.
