@@ -26,6 +26,7 @@ Perfiles opcionales en `COMPOSE_PROFILES` (`.env`):
 |---|---|---|
 | `tailscale` | Panel de OpenClaw, OpenProject y Obsidian desde el móvil o el portátil, sin abrir puertos | `docs/ACCESO-REMOTO.md` |
 | `pm` | OpenProject: empresas, proyectos, tareas, hitos, riesgos, Gantt, reuniones | `docs/OPENPROJECT.md` |
+| `backup` | Copia de seguridad diaria y restauración probada | `docs/BACKUP.md` |
 | `livesync` | Memoria de Jarvis en Obsidian del iPhone y el portátil | `docs/OBSIDIAN.md` |
 | `vault` | Historial del vault de Obsidian en un repositorio git privado | `docs/MEMORY.md` |
 

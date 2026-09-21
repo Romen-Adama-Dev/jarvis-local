@@ -1,0 +1,185 @@
+#!/usr/bin/env bash
+# Copias de seguridad de Jarvis (docs/BACKUP.md). Corre en el contenedor "backup" con los
+# volúmenes de datos montados en /data/<nombre> y el destino en /backups.
+#
+#   jarvis-backup once                 una copia ahora
+#   jarvis-backup loop                 una copia al día a BACKUP_TIME (hora local, TZ)
+#   jarvis-backup verify <copia>       comprueba las sumas sha256 de una copia
+#   jarvis-backup restore-files <copia>  vuelca los volúmenes (servicios parados)
+#   jarvis-backup restore-db <copia>     PostgreSQL y Qdrant (con postgres y qdrant arriba)
+#
+# Qué se guarda: bases de datos jarvis y openproject (pg_dump) y los roles, las colecciones
+# de Qdrant (instantáneas), los secretos de init (jarvis_runtime), el estado de OpenClaw
+# (workspace, vault, sesiones; sin caché), documentos y datos de la API (sin modelos),
+# CouchDB (LiveSync), adjuntos de OpenProject y .env. Lo que se puede volver a descargar
+# (modelos de Ollama, fastembed, whisper) o regenerar (Redis, Prometheus) no se guarda.
+set -euo pipefail
+
+BACKUP_DIR=/backups
+KEEP="${BACKUP_KEEP:-7}"
+QDRANT="${QDRANT_URL:-http://qdrant:6333}"
+export PGHOST="${PGHOST:-postgres}" PGUSER="${POSTGRES_USER:-jarvis}"
+[[ -s /data/runtime/postgres_password ]] && PGPASSWORD="$(cat /data/runtime/postgres_password)"
+export PGPASSWORD
+
+# nombre del archivo, directorio montado y exclusiones (relativas a ese directorio)
+ARCHIVES=(
+  "runtime|/data/runtime|"
+  "openclaw|/data/openclaw|./cache ./tmp ./npm"
+  "srv|/data/srv|./models ./backups ./logs"
+  "couchdb-data|/data/couchdb-data|"
+  "couchdb-config|/data/couchdb-config|"
+  "openproject-assets|/data/openproject-assets|"
+)
+
+log() { printf '%s %s\n' "$(date '+%F %T')" "$*"; }
+die() { log "ERROR: $*" >&2; exit 1; }
+
+owner() { chown -R "${BACKUP_UID:-0}:${BACKUP_GID:-0}" "$@" 2>/dev/null || true; }
+
+databases() {
+  psql -Atc "SELECT datname FROM pg_database WHERE NOT datistemplate AND datname <> 'postgres'"
+}
+
+qdrant_collections() {
+  curl -fsS "$QDRANT/collections" | grep -o '"name":"[^"]*"' | cut -d'"' -f4
+}
+
+backup_once() {
+  local name dest tmp
+  name="$(date +%F_%H%M)"
+  dest="$BACKUP_DIR/$name"
+  tmp="$BACKUP_DIR/.$name.partial"
+  rm -rf "$tmp"
+  mkdir -p "$tmp/postgres" "$tmp/qdrant"
+  chmod 700 "$tmp"
+  log "copia $name"
+
+  pg_isready -q || die "PostgreSQL no responde en $PGHOST"
+  pg_dumpall --globals-only >"$tmp/postgres/globals.sql"
+  local db
+  for db in $(databases); do
+    pg_dump -Fc -d "$db" -f "$tmp/postgres/$db.dump"
+    log "  postgres/$db $(du -h "$tmp/postgres/$db.dump" | cut -f1)"
+  done
+
+  local c snap
+  for c in $(qdrant_collections); do
+    snap="$(curl -fsS -X POST "$QDRANT/collections/$c/snapshots?wait=true" \
+      | grep -o '"name":"[^"]*"' | head -1 | cut -d'"' -f4)"
+    [[ -n "$snap" ]] || die "Qdrant no creó la instantánea de $c"
+    curl -fsS -o "$tmp/qdrant/$c.snapshot" "$QDRANT/collections/$c/snapshots/$snap"
+    curl -fsS -X DELETE "$QDRANT/collections/$c/snapshots/$snap?wait=true" >/dev/null
+    log "  qdrant/$c $(du -h "$tmp/qdrant/$c.snapshot" | cut -f1)"
+  done
+
+  local entry file src excludes args
+  for entry in "${ARCHIVES[@]}"; do
+    IFS='|' read -r file src excludes <<<"$entry"
+    if [[ ! -d "$src" ]] || [[ -z "$(ls -A "$src")" ]]; then
+      log "  $file: vacío o sin montar, se omite"
+      continue
+    fi
+    args=()
+    for e in $excludes; do args+=("--exclude=$e"); done
+    # --warning=no-file-changed: OpenClaw y CouchDB escriben mientras se copia.
+    tar -C "$src" "${args[@]}" --warning=no-file-changed --numeric-owner -cf - . \
+      | zstd -q -T0 -3 -o "$tmp/$file.tar.zst" || [[ ${PIPESTATUS[0]} -eq 1 ]]
+    log "  $file $(du -h "$tmp/$file.tar.zst" | cut -f1)"
+  done
+
+  [[ -f /data/env/.env ]] && install -m 600 /data/env/.env "$tmp/env"
+
+  (cd "$tmp" && find . -type f ! -name SHA256SUMS -printf '%P\n' | sort | xargs sha256sum >SHA256SUMS)
+  mv "$tmp" "$dest"
+  owner "$dest"
+  log "copia $name terminada: $(du -sh "$dest" | cut -f1) en $dest"
+  date +%s >"$BACKUP_DIR/.ultima-copia"
+  owner "$BACKUP_DIR/.ultima-copia"
+  prune
+}
+
+prune() {
+  local old
+  mapfile -t old < <(find "$BACKUP_DIR" -mindepth 1 -maxdepth 1 -type d -name '20*' | sort -r | tail -n +"$((KEEP + 1))")
+  for d in "${old[@]}"; do
+    rm -rf "$d"
+    log "borrada la copia antigua $(basename "$d") (BACKUP_KEEP=$KEEP)"
+  done
+}
+
+resolve() {
+  local dir="$1"
+  [[ "$dir" == /* ]] || dir="$BACKUP_DIR/$dir"
+  [[ -f "$dir/SHA256SUMS" ]] || die "$dir no es una copia de Jarvis (falta SHA256SUMS)"
+  printf '%s' "$dir"
+}
+
+verify() {
+  local dir
+  dir="$(resolve "$1")"
+  (cd "$dir" && sha256sum --quiet -c SHA256SUMS) || die "sumas sha256 incorrectas en $dir"
+  log "copia $(basename "$dir") íntegra"
+}
+
+restore_files() {
+  local dir entry file src excludes
+  dir="$(resolve "$1")"
+  verify "$dir"
+  for entry in "${ARCHIVES[@]}"; do
+    IFS='|' read -r file src excludes <<<"$entry"
+    [[ -f "$dir/$file.tar.zst" ]] || { log "  $file: no está en la copia"; continue; }
+    [[ -d "$src" ]] || die "$src no está montado"
+    # Se vacía salvo lo excluido al copiar (modelos, caché): así no se descargan otra vez.
+    local keep=()
+    for e in $excludes; do keep+=(! -path "$e" ! -path "$e/*"); done
+    (cd "$src" && find . -mindepth 1 -maxdepth 1 "${keep[@]}" -exec rm -rf {} +)
+    zstd -q -dc "$dir/$file.tar.zst" | tar -C "$src" --numeric-owner -xpf -
+    log "  $file restaurado"
+  done
+}
+
+restore_db() {
+  local dir db dump c
+  dir="$(resolve "$1")"
+  verify "$dir"
+  for _ in $(seq 30); do pg_isready -q && break; sleep 2; done
+  pg_isready -q || die "PostgreSQL no responde en $PGHOST"
+  # Los roles que ya existen (el superusuario) dan error y se siguen.
+  psql -q -d postgres -f "$dir/postgres/globals.sql" 2>&1 | grep -v 'already exists' || true
+  for dump in "$dir"/postgres/*.dump; do
+    db="$(basename "$dump" .dump)"
+    psql -q -d postgres -c "DROP DATABASE IF EXISTS \"$db\" WITH (FORCE)"
+    pg_restore -d postgres --create --exit-on-error "$dump"
+    log "  postgres/$db restaurada"
+  done
+  for _ in $(seq 30); do curl -fsS "$QDRANT/readyz" >/dev/null 2>&1 && break; sleep 2; done
+  for snap in "$dir"/qdrant/*.snapshot; do
+    [[ -f "$snap" ]] || continue
+    c="$(basename "$snap" .snapshot)"
+    curl -fsS -X POST "$QDRANT/collections/$c/snapshots/upload?priority=snapshot&wait=true" \
+      -F "snapshot=@$snap" >/dev/null
+    log "  qdrant/$c restaurada"
+  done
+}
+
+loop() {
+  local at="${BACKUP_TIME:-03:30}" now next
+  log "copias diarias a las $at ($(date +%Z)), se guardan las $KEEP últimas en $BACKUP_DIR"
+  while true; do
+    now="$(date +%s)"
+    next="$(date -d "today $at" +%s)"
+    ((next > now)) || next="$(date -d "tomorrow $at" +%s)"
+    sleep $((next - now))
+    backup_once || log "la copia ha fallado; se reintenta mañana"
+  done
+}
+
+case "${1:-loop}" in
+  once) backup_once ;;
+  loop) loop ;;
+  verify) verify "${2:?falta la copia}" ;;
+  restore-files) restore_files "${2:?falta la copia}" ;;
+  restore-db) restore_db "${2:?falta la copia}" ;;
+  *) exec "$@" ;;
+esac
