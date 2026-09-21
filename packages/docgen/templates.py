@@ -31,8 +31,7 @@ SECTION_TEMPLATES: dict[str, list[tuple[str, str]]] = {
         ),
         (
             "Riesgos identificados",
-            "¿Qué riesgos se han identificado para '{topic}' según la documentación "
-            "indexada?",
+            "¿Qué riesgos se han identificado para '{topic}' según la documentación " "indexada?",
         ),
         (
             "Responsables y stakeholders",

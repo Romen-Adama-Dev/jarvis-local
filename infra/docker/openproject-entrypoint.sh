@@ -17,9 +17,12 @@ secret() {
   cat "$RUNTIME_DIR/$1"
 }
 
-export SECRET_KEY_BASE="$(secret openproject_secret_key_base)"
-export DATABASE_URL="postgres://openproject:$(secret openproject_db_password)@postgres:5432/openproject?pool=20&encoding=unicode&reconnect=true"
-export OPENPROJECT_SEED_ADMIN_USER_PASSWORD="$(secret openproject_admin_password)"
+# Asignar antes de exportar: con `export X="$(...)"` un secreto que falta no pararía el arranque.
+SECRET_KEY_BASE="$(secret openproject_secret_key_base)"
+db_password="$(secret openproject_db_password)"
+DATABASE_URL="postgres://openproject:${db_password}@postgres:5432/openproject?pool=20&encoding=unicode&reconnect=true"
+OPENPROJECT_SEED_ADMIN_USER_PASSWORD="$(secret openproject_admin_password)"
+export SECRET_KEY_BASE DATABASE_URL OPENPROJECT_SEED_ADMIN_USER_PASSWORD
 
 # Lista en formato JSON: separada por comas se toma como un único nombre.
 internal="[\"127.0.0.1:${OPENPROJECT_PORT:-8090}\", \"localhost:${OPENPROJECT_PORT:-8090}\"]"
