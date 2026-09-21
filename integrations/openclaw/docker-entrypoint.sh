@@ -72,8 +72,19 @@ else
   chmod 600 "$STATE_DIR/secrets/telegram_bot_token"
 fi
 
-# Con el perfil tailscale activo, el gateway publica la interfaz web en el tailnet.
+# Con el perfil tailscale activo, el gateway publica la interfaz web en el tailnet. Al
+# reiniciar el servidor Docker levanta los contenedores sin respetar depends_on: si
+# tailscaled aún no está conectado, se espera (TAILSCALE_WAIT_SECONDS) en vez de arrancar
+# sin panel hasta el siguiente reinicio del gateway.
 TAILSCALE_MODE=off
+case ",${COMPOSE_PROFILES:-}," in
+  *,tailscale,*)
+    for _ in $(seq "${TAILSCALE_WAIT_SECONDS:-180}"); do
+      tailscale status >/dev/null 2>&1 && break
+      sleep 1
+    done
+    ;;
+esac
 if tailscale status >/dev/null 2>&1; then
   TAILSCALE_MODE=serve
 fi
