@@ -33,7 +33,7 @@ No se guarda lo que se recupera solo: modelos de Ollama, fastembed y whisper (se
 descargan de nuevo), Redis (cola de trabajos), Prometheus y Grafana, y el estado de
 Tailscale (restaurarlo en otra máquina duplicaría el nodo; se vuelve a iniciar sesión).
 
-Con los datos de la VM de desarrollo (7 documentos, 770 fragmentos, 3 proyectos de
+Con los datos de la VM de desarrollo (8 documentos, 770 fragmentos, 3 proyectos de
 OpenProject) una copia ocupa ~95 MB y tarda ~15 s. Se guardan las `BACKUP_KEEP` (7) más
 recientes.
 

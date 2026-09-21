@@ -29,6 +29,11 @@ to_json() {
 } | to_json >"$dir/http.json"
 
 echo "http://127.0.0.1:${JARVIS_API_PORT:-8000}/ready api" | to_json >"$dir/ready.json"
+echo "127.0.0.1:${JARVIS_API_PORT:-8000} api" | to_json >"$dir/api.json"
+{
+  [ "${MONITOR_GPU:-true}" = true ] && echo "127.0.0.1:9400 gpu"
+  true
+} | to_json >"$dir/gpu.json"
 
 {
   has_profile pm && echo "http://127.0.0.1:${OPENPROJECT_PORT:-8090}/health_checks/default openproject"

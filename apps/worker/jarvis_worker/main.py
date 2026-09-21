@@ -36,7 +36,11 @@ async def on_startup(ctx: dict[str, Any]) -> None:
     cache_dir = str(settings.jarvis_models_dir / "fastembed")
     ctx["embedding_provider"] = FastEmbedProvider(cache_dir=cache_dir)
 
-    docgen_ollama_provider = OllamaProvider(settings.ollama_host, settings.ollama_primary_model)
+    docgen_ollama_provider = OllamaProvider(
+        settings.ollama_host,
+        settings.ollama_primary_model,
+        timeout_seconds=settings.ollama_timeout_seconds,
+    )
     ctx["docgen_ollama_provider"] = docgen_ollama_provider
     # Cada bloque de un acta son ~8.000 tokens de transcripción: más margen que el chat.
     ctx["meetings_llm"] = OllamaProvider(

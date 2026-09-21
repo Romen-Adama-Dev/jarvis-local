@@ -7,7 +7,7 @@ implementado.
 | # | Criterio | Estado | Cómo se ha verificado |
 |---|---|---|---|
 | 1 | El servidor arranca correctamente | ✅ | Ubuntu en la VM de GCP (L4, 8 vCPU, 31 GB de RAM); `docker compose up -d` levanta la pila completa (`docs/DOCKER.md`). |
-| 2 | Todos los servicios necesarios sobreviven a un reinicio | ✅ | Reinicio de la VM el 21-09 a las 08:19: los 23 contenedores volvieron solos (`restart: unless-stopped`) y `scripts/check-integrations` pasó 43/43. Se vio que OpenClaw arrancaba antes que Tailscale y dejaba el panel sin publicar: arreglado: el arranque de OpenClaw espera a tailscaled (probado reproduciendo la carrera). |
+| 2 | Todos los servicios necesarios sobreviven a un reinicio | ✅ | Reinicio de la VM el 21-09 a las 08:19: los 23 contenedores volvieron solos (`restart: unless-stopped`), pero `scripts/check-integrations` dio 42/43: OpenClaw arrancó antes que Tailscale y dejó el panel sin publicar. Arreglado: el arranque de OpenClaw espera a tailscaled. Verificado reiniciando el servicio Docker (arranca los contenedores sin orden, como tras reiniciar la VM): pila sana en 48 s, panel publicado y `check-integrations` 44/44. La primera pregunta tras el reinicio agotaba los 120 s de espera a Ollama (subir 15 GB a la GPU): ahora la API precarga el modelo al arrancar y la espera es `OLLAMA_TIMEOUT_SECONDS` (300). |
 | 3 | Ningún servicio interno expuesto públicamente | ✅ | `ss -tlnp`: fuera de loopback solo escuchan `sshd` (22) y `tailscaled`. Todos los servicios de Jarvis, incluidos los de monitorización, escuchan en `127.0.0.1`; OpenClaw, OpenProject y CouchDB se publican solo en el tailnet (`tailscale serve`). UFW está inactivo en la VM: el filtrado lo hace el firewall de GCP. |
 | 4 | Ollama responde localmente | ✅ | `gemma4:26b-a4b-it-qat` al 100 % en GPU (`ollama ps`), `/api/version` en las sondas de Prometheus. |
 | 5 | AirLLM responde mediante su servicio independiente | ✅ | Servicio `airllm` en compose (perfil `deep`): `NousResearch/Meta-Llama-3.1-8B-Instruct` cargado en `cuda:0`, `/health` en `ready`, generaciones completas (`docs/AIRLLM.md`). |
@@ -16,7 +16,7 @@ implementado.
 | 8 | Redis operativo | ✅ | `/ready` → `redis: healthy`. |
 | 9 | OpenClaw operativo | ✅ | OpenClaw 2026.9.4 en compose, `healthy`; responde por Telegram y por el panel del tailnet (`scripts/check-integrations`). |
 | 10 | Telegram solo acepta al usuario autorizado | ✅ | `dmPolicy: "allowlist"` y `allowFrom` con `TELEGRAM_AUTHORIZED_USER_IDS` en `integrations/openclaw/config/openclaw.template.json`. |
-| 11 | Un PDF puede enviarse por Telegram | ✅ | Adjuntos de Telegram localizados por nombre e indexados (`b3b6b3b`); validado con el brief de Estudio Delta el 20-09. |
+| 11 | Un PDF puede enviarse por Telegram | ✅ | El PMBOK 7.ª ed. (PDF de 370 páginas) llegó por Telegram el 15-09 y está indexado (nombre `…---<uuid>.pdf` que OpenClaw da a los adjuntos; localización por nombre en `b3b6b3b`). |
 | 12 | El PDF se indexa correctamente | ✅ | 8 documentos y 770 fragmentos en PostgreSQL y Qdrant, separados por empresa y proyecto (`docs/EMPRESAS.md`). |
 | 13 | Una pregunta sobre el PDF devuelve respuesta con página y fuente | ✅ | `/v1/rag/query` sobre App de reservas devuelve respuesta con 4 fuentes (21-09); en Telegram, con cita (20-09). |
 | 14 | Una pregunta sin evidencia se rechaza correctamente | ⏳ | El modelo se abstiene ("No cuento con información suficiente en los documentos…", pregunta sobre gofio escaldado, 21-09), pero `insufficient_evidence` sale `false`: solo se marca cuando la recuperación no encuentra ningún candidato. Falta marcarlo también cuando el modelo se abstiene. |
@@ -32,7 +32,7 @@ implementado.
 | 24 | Ruff y el comprobador de tipos pasan | ✅ | `ruff check`, `ruff format --check` y `pyright` sin errores; también en la CI. |
 | 25 | El benchmark queda documentado | ✅ | `docs/BENCHMARKS.md` y, para la L4, `docs/MODELS.md` y `docs/AIRLLM.md`. |
 | 26 | No existen llamadas a APIs externas de modelos | ✅ | Sin SDKs de OpenAI, Anthropic, Gemini ni OpenRouter en `packages/`, `apps/`, `services/` ni `integrations/`. Las coincidencias de `openclaw.template.json` son el protocolo OpenAI-compatible con el que OpenClaw habla con **Ollama local** y los plugins `openai-whisper*`, desactivados. |
-| 27 | El sistema funciona tras desconectar Internet general (excepto Telegram) | ✅ | `scripts/test-offline` (21-09): 24 contenedores sin salida a Internet salvo Telegram (iptables por contenedor); 7/7: `/ready`, RAG con cita, OpenProject y el agente de OpenClaw respondiendo por Telegram con las tareas del proyecto. Sin Internet no funcionan, por diseño, la búsqueda web (SearXNG), el correo (Gmail) ni el historial del vault en GitHub, que se pone al día al volver la conexión. |
+| 27 | El sistema funciona tras desconectar Internet general (excepto Telegram) | ✅ | `scripts/test-offline` (21-09, también nada más reiniciar Docker): 24 contenedores sin salida a Internet salvo Telegram (iptables por contenedor); 7/7: `/ready`, RAG con cita, OpenProject y el agente de OpenClaw respondiendo por Telegram con las tareas del proyecto. Sin Internet no funcionan, por diseño, la búsqueda web (SearXNG), el correo (Gmail) ni el historial del vault en GitHub, que se pone al día al volver la conexión. |
 
 ## Pendiente
 
