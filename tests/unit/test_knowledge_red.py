@@ -164,7 +164,7 @@ def test_flat_notes_are_moved_into_the_tree(vault):
     old = vault / "entities/proyectos/Tienda online.md"
     old.parent.mkdir(parents=True)
     old.write_text(
-        f"---\ngeneratedBy: \"jarvis-red\"\n---\n\n{red.START}\nviejo\n{red.END}\n\n"
+        f'---\ngeneratedBy: "jarvis-red"\n---\n\n{red.START}\nviejo\n{red.END}\n\n'
         "## Notas\n- 2026-03-03: ojo con el proveedor.\n",
         encoding="utf-8",
     )

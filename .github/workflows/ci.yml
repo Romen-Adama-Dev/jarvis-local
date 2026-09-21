@@ -1,0 +1,105 @@
+# Integración continua de Jarvis Local: en cada PR y en cada push a main comprueba el
+# código Python (ruff, pyright, pytest), los scripts de shell (shellcheck) y que
+# compose.yml es válido con todos los perfiles y sin .env (~1 min).
+#
+# La construcción de las imágenes (jarvis-local con TeXLive, jarvis-openclaw compilando
+# whisper.cpp) tarda 10-20 min: no corre en el desarrollo diario, solo al publicar una
+# versión (tag v*, p. ej. v1.0.0) o lanzándola a mano (Actions → CI → Run workflow).
+#
+# scripts/check-integrations no se ejecuta aquí: necesita la pila levantada con GPU,
+# modelos descargados y las cuentas reales (Telegram, correo). Se lanza en el servidor
+# después de desplegar (docs/DOCKER.md).
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  python:
+    name: Python (ruff, pyright, pytest)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+          enable-cache: true
+      - name: Dependencias
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libmagic1
+      - run: uv sync --frozen
+      - name: ruff check
+        run: uv run --frozen ruff check --output-format=github .
+      - name: ruff format
+        run: uv run --frozen ruff format --check .
+      - name: pyright
+        run: uv run --frozen pyright
+      - name: pytest
+        run: uv run --frozen pytest -q
+      - name: pytest (servicio AirLLM)
+        working-directory: services/airllm
+        run: uv run --frozen pytest -q
+
+  shell:
+    name: Scripts de shell (shellcheck)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: shellcheck
+        run: |
+          mapfile -t files < <(git ls-files | xargs file | grep -i 'shell script' \
+            | cut -d: -f1 | grep -v '^infra/systemd/vendor/')
+          printf '%s\n' "${files[@]}"
+          shellcheck --severity=warning --format=gcc "${files[@]}"
+
+  compose:
+    name: docker compose config
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Sin .env y con todos los perfiles
+        run: docker compose --profile '*' config --quiet
+      - name: Con .env.example
+        run: |
+          cp .env.example .env
+          docker compose --profile '*' config --quiet
+          docker compose -f compose.yml -f compose.cpu.yml config --quiet
+
+  images:
+    name: Imagen ${{ matrix.name }}
+    runs-on: ubuntu-24.04
+    needs: [python]
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v')
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: jarvis-local
+            dockerfile: Dockerfile
+            smoke: python -c "import apps.api.jarvis_api.main, apps.worker.jarvis_worker.main"
+          - name: jarvis-openclaw
+            dockerfile: integrations/openclaw/Dockerfile
+            smoke: openclaw --version
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          tags: ${{ matrix.name }}:ci
+          load: true
+          cache-from: type=gha,scope=${{ matrix.name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.name }}
+      - name: Prueba de humo
+        run: docker run --rm -e POSTGRES_PASSWORD=ci --entrypoint sh ${{ matrix.name }}:ci -c '${{ matrix.smoke }}'

@@ -1,0 +1,71 @@
+#!/usr/bin/env bash
+# Restaura una copia de seguridad de Jarvis (docs/BACKUP.md). Sustituye los datos actuales:
+# bases de datos, colecciones de Qdrant, secretos, estado de OpenClaw (vault incluido),
+# CouchDB, adjuntos de OpenProject y documentos.
+#
+#   scripts/restore 2026-09-21_0330          pide confirmación, para la pila y la vuelve a levantar
+#   scripts/restore 2026-09-21_0330 --yes    sin preguntar
+#   scripts/restore <copia> --yes --no-start sin levantar la pila al final (scripts/test-restore)
+#
+# En un servidor nuevo: clona el repo, copia la carpeta de la copia en ./backups y ejecuta
+# esto antes del primer "docker compose up". El .env de la copia se usa si no hay otro; si
+# lo hay, se deja al lado como .env.restaurado para compararlo.
+set -euo pipefail
+cd "$(dirname "$0")/.." || exit 1
+
+copy="${1:?uso: scripts/restore <copia> [--yes] [--no-start]}"
+shift
+yes=false start=true
+for arg in "$@"; do
+  case "$arg" in
+    --yes) yes=true ;;
+    --no-start) start=false ;;
+    *) echo "opción desconocida: $arg" >&2; exit 2 ;;
+  esac
+done
+
+envval() { { grep -E "^$1=" .env 2>/dev/null || true; } | tail -1 | cut -d= -f2-; }
+path="$(envval BACKUP_PATH)"
+path="${path:-./backups}"
+copy="$(basename "$copy")"
+[[ -f "$path/$copy/SHA256SUMS" ]] || { echo "no existe la copia $path/$copy" >&2; exit 1; }
+
+dc() { docker compose --profile backup "$@"; }
+
+if ! $yes; then
+  echo "Se van a SUSTITUIR los datos de Jarvis (proyecto ${COMPOSE_PROJECT_NAME:-jarvis-local}) por la copia $copy."
+  read -r -p "¿Seguro? Escribe 'restaurar': " answer
+  [[ "$answer" == restaurar ]] || { echo "cancelado"; exit 1; }
+fi
+
+if [[ -f "$path/$copy/env" ]]; then
+  if [[ -f .env ]]; then
+    install -m 600 "$path/$copy/env" .env.restaurado
+    echo "el .env de la copia queda en .env.restaurado (se mantiene el actual)"
+  else
+    install -m 600 "$path/$copy/env" .env
+    echo ".env restaurado desde la copia"
+  fi
+fi
+
+dc build -q backup
+dc run --rm --no-deps --entrypoint jarvis-backup backup verify "$copy"
+
+echo "== parando la pila"
+dc stop
+
+echo "== volúmenes"
+dc run --rm --no-deps backup restore-files "$copy"
+
+echo "== bases de datos"
+# init vuelve a leer los secretos restaurados; postgres y qdrant arrancan con ellos.
+dc up -d --wait postgres qdrant
+dc run --rm --no-deps backup restore-db "$copy"
+
+if $start; then
+  echo "== levantando la pila"
+  docker compose up -d
+  echo "hecho: comprueba con scripts/check-integrations"
+else
+  echo "hecho (sin levantar la pila)"
+fi

@@ -60,11 +60,39 @@ Limitación conocida: una generación ya lanzada no puede abortarse (el bucle de
 
 ## Instalación
 
+Con docker compose (perfil `deep`, servicio `airllm`, imagen `jarvis-airllm` de ~9,4 GB
+con torch cu124):
+
 ```bash
-scripts/deploy            # sincroniza el código a /srv/jarvis/app
-scripts/install-airllm    # venv aislado + unidad systemd airllm.service
+# .env: COMPOSE_PROFILES=...,deep  AIRLLM_ENABLED=true  AIRLLM_MODEL=<repo HF>
+docker compose up -d airllm api worker
 curl -s http://127.0.0.1:11500/health | jq   # esperar status=ready
 ```
+
+Los shards van a `models/airllm` del volumen `jarvis_srv` (fuera de las copias de
+seguridad). Sin GPU, `compose.cpu.yml` pone `AIRLLM_DEVICE=cpu`.
+
+En el despliegue antiguo en el host: `scripts/deploy` y `scripts/install-airllm` (venv
+aislado + unidad systemd `airllm.service`).
+
+### Medido en la VM con NVIDIA L4 (21-09-2026)
+
+`NousResearch/Meta-Llama-3.1-8B-Instruct` en fp16: descarga y partición por capas en
+336 s (45 GB de disco entre original y shards); después, 10,8 s de arranque. Cada token
+relee las 35 capas del disco persistente de la VM: **~37 s/token** (0,027 tok/s; 101 tokens
+en 3.804 s, más que el timeout de 3.300 s). **Ninguna consulta `/deep` llegó a terminar**:
+la primera agotó el tiempo y el worker la reintentó (otra hora); con
+`AIRLLM_MAX_NEW_TOKENS_DEFAULT=24` la generación siguió pasando de 30 pasadas por las
+capas (~20 min) y se paró a mano. Lo que sí funciona: el servicio carga y genera en
+`cuda:0`, la API encola `/deep` y el worker lo entrega a AirLLM, y un `/ask` simultáneo
+responde en 14 s con `AIRLLM_RELEASE_OLLAMA_VRAM=false`.
+
+Conclusión para este hardware: **`/deep` no es usable en esta VM** y el perfil `deep`
+queda desactivado. Con 23 GB de VRAM, un 8B se sirve mejor con Ollama; AirLLM solo
+compensaría con modelos que no caben en la GPU (≥ 32B en fp16, 65 GB o más de shards) y
+un disco local rápido (NVMe), porque la velocidad la marca la lectura de capas. Si una
+generación agota el tiempo (504), el worker ya no la reintenta: repetirla solo duplicaba
+la espera.
 
 ## Selección de modelo
 
@@ -88,5 +116,10 @@ La GTX 1070 (8 GiB) la comparte con Ollama, que es el backend principal y vive r
 * Servicio AirLLM: ejecuta `torch.cuda.empty_cache()` tras cada generación, dejando ~106 MiB residentes, de modo que Ollama recupera la GPU completa.
 
 Por qué no basta con "reservar" VRAM: se probó reservar el pico (4 GiB) al inicio de cada generación vía el caching allocator de torch, pero AirLLM llama a `torch.cuda.empty_cache()` internamente en su bucle de capas (`airllm/utils.py`), lo que devuelve al driver cualquier bloque cacheado no asignado — la reserva se evapora en el primer barrido. Como AirLLM asigna VRAM de forma incremental durante toda la generación (~30 min, con picos de ~900 MiB para los logits), una carga concurrente de Ollama puede robarle el hueco en cualquier momento: de ahí el guardián + reintento.
+
+**Con VRAM de sobra** (la L4 de 23 GB: Gemma 4 26B ocupa ~17,9 GB y AirLLM con un 8B
+por capas menos de 1 GB), pon `AIRLLM_RELEASE_OLLAMA_VRAM=false`: si no, el guardián
+desaloja a Ollama durante toda la consulta profunda y Telegram (que también usa Ollama) se
+queda sin modelo; un `/ask` durante una generación fallaba por timeout a los 129 s.
 
 Ventana conocida: un `/ask` durante una generación deep carga su modelo (degradado con offload parcial si hay poca VRAM), responde, y el guardián lo desaloja en ≤20 s; los `/ask` siguientes dentro de la ventana pagan recarga en frío. Si la intrusión llegó a tumbar la generación, el reintento la recupera a costa de repetirla. Con `AIRLLM_DEVICE=cpu` el mecanismo puede desactivarse poniendo `AIRLLM_RELEASE_OLLAMA_VRAM=false`.
