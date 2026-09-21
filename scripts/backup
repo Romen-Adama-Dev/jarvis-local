@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# Hace una copia de seguridad ahora, con la pila en marcha (docs/BACKUP.md).
+#
+#   scripts/backup            copia nueva en BACKUP_PATH (./backups por defecto)
+#   scripts/backup --list     copias disponibles
+set -euo pipefail
+cd "$(dirname "$0")/.." || exit 1
+
+envval() { { grep -E "^$1=" .env 2>/dev/null || true; } | tail -1 | cut -d= -f2-; }
+path="$(envval BACKUP_PATH)"
+path="${path:-./backups}"
+
+if [[ "${1:-}" == --list ]]; then
+  find "$path" -mindepth 1 -maxdepth 1 -type d -name '20*' -printf '%f\n' 2>/dev/null | sort \
+    | grep . || echo "sin copias en $path"
+  exit 0
+fi
+
+mkdir -p "$path"
+docker compose --profile backup build -q backup
+docker compose --profile backup run --rm backup once

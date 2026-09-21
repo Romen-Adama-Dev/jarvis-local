@@ -10,3 +10,4 @@ infra/compose/n8n_data
 infra/compose/changedetection
 infra/compose/webui_data
 infra/monitoring/grafana
+backups
