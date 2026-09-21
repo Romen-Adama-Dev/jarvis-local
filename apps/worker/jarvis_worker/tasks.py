@@ -7,6 +7,7 @@ import uuid
 from pathlib import Path
 from typing import Any
 
+import httpx
 from sqlalchemy import delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -162,6 +163,14 @@ async def reindex_document(ctx: dict[str, Any], document_id: str, job_id: str) -
 VRAM_GUARD_INTERVAL_SECONDS = 20.0
 
 
+def _is_generation_timeout(exc: BaseException) -> bool:
+    """AirLLM agotó su tiempo (504) o el cliente dejó de esperar: reintentar solo duplicaría
+    la espera (cada intento relee el modelo entero por cada token)."""
+    if isinstance(exc, httpx.TimeoutException):
+        return True
+    return isinstance(exc, httpx.HTTPStatusError) and exc.response.status_code == 504
+
+
 async def _evict_ollama_models(ollama: Any, released: list[str], job_id: str) -> None:
     try:
         for name in await ollama.release_vram():
@@ -215,6 +224,8 @@ async def deep_rag_query(
             try:
                 answer = await orchestrator.query(query, deep=True, filters=filters, top_k=top_k)
             except Exception as first_exc:
+                if _is_generation_timeout(first_exc):
+                    raise
                 logger.warning(
                     "deep_rag_query_retrying",
                     job_id=job_id,

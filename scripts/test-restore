@@ -1,0 +1,81 @@
+#!/usr/bin/env bash
+# Prueba que una copia se restaura de verdad sin tocar la instalación en marcha: la
+# restaura con scripts/restore en un proyecto de compose aparte (volúmenes propios,
+# puertos 15432/16333), compara con los datos actuales y lo borra todo al terminar.
+#
+#   scripts/test-restore                 la copia más reciente
+#   scripts/test-restore 2026-09-21_0330
+set -euo pipefail
+cd "$(dirname "$0")/.." || exit 1
+
+envval() { { grep -E "^$1=" .env 2>/dev/null || true; } | tail -1 | cut -d= -f2-; }
+path="$(envval BACKUP_PATH)"
+path="${path:-./backups}"
+copy="${1:-$(find "$path" -mindepth 1 -maxdepth 1 -type d -name '20*' -printf '%f\n' | sort | tail -1)}"
+[[ -n "$copy" ]] || { echo "no hay copias en $path" >&2; exit 1; }
+
+test_env=(
+  COMPOSE_PROJECT_NAME=jarvis-restore-test
+  COMPOSE_PROFILES=
+  POSTGRES_PORT=15432
+  QDRANT_PORT=16333
+  # Nunca el directorio real de OpenClaw: el de la prueba es un volumen del proyecto.
+  OPENCLAW_STATE_PATH=
+  BACKUP_PATH="$(cd "$path" && pwd)"
+)
+tdc() { env "${test_env[@]}" docker compose --profile backup "$@"; }
+
+had_restored_env=false
+[[ -f .env.restaurado ]] && had_restored_env=true
+cleanup() {
+  tdc down -v --remove-orphans >/dev/null 2>&1 || true
+  $had_restored_env || rm -f .env.restaurado
+}
+trap cleanup EXIT
+
+echo "== restaurando $copy en el proyecto jarvis-restore-test"
+env "${test_env[@]}" scripts/restore "$copy" --yes --no-start
+
+fail=0
+compare() {
+  local what="$1" live="$2" restored="$3"
+  if [[ "$live" == "$restored" ]]; then
+    printf '  \e[32m✔\e[0m %-34s %s\n' "$what" "$restored"
+  else
+    printf '  \e[31m✘\e[0m %-34s actual=%s restaurado=%s\n' "$what" "$live" "$restored"
+    fail=1
+  fi
+}
+
+echo "== comparación (la copia es de $copy; lo creado después aparece como diferencia)"
+sql() { docker compose exec -T postgres psql -U "${POSTGRES_USER:-jarvis}" -d "$1" -Atc "$2" 2>/dev/null; }
+tsql() { tdc exec -T postgres psql -U "${POSTGRES_USER:-jarvis}" -d "$1" -Atc "$2" 2>/dev/null; }
+for t in documents chunks conversations messages audit_log; do
+  q="SELECT count(*) FROM $t"
+  compare "postgres jarvis.$t" "$(sql jarvis "$q")" "$(tsql jarvis "$q")"
+done
+if [[ -n "$(tsql postgres "SELECT 1 FROM pg_database WHERE datname='openproject'")" ]]; then
+  for t in projects work_packages meetings wiki_pages attachments users; do
+    q="SELECT count(*) FROM $t"
+    compare "postgres openproject.$t" "$(sql openproject "$q")" "$(tsql openproject "$q")"
+  done
+fi
+
+points() { curl -fsS "http://127.0.0.1:$1/collections/$2" | grep -o '"points_count":[0-9]*' | cut -d: -f2; }
+for c in $(curl -fsS "http://127.0.0.1:${QDRANT_PORT:-6333}/collections" | grep -o '"name":"[^"]*"' | cut -d'"' -f4); do
+  compare "qdrant $c (puntos)" "$(points "${QDRANT_PORT:-6333}" "$c")" "$(points 16333 "$c")"
+done
+
+files() { tdc run --rm --no-deps --entrypoint sh backup -c "$1" 2>/dev/null | tr -d '\r'; }
+count_state='find /data/openclaw -path /data/openclaw/cache -prune -o -path /data/openclaw/tmp -prune -o -path /data/openclaw/npm -prune -o -type f -print | wc -l'
+live_files="$(docker compose --profile backup run --rm --no-deps --entrypoint sh backup -c "$count_state" 2>/dev/null | tr -d '\r')"
+compare "openclaw (ficheros)" "$live_files" "$(files "$count_state")"
+compare "secretos de init" \
+  "$(docker compose exec -T openclaw sh -c 'ls /run/jarvis | wc -l' 2>/dev/null)" \
+  "$(files 'ls /data/runtime | wc -l')"
+
+if ((fail)); then
+  echo "Hay diferencias: normal si se ha trabajado con Jarvis después de la copia."
+  exit 1
+fi
+echo "La copia $copy se restaura completa."
