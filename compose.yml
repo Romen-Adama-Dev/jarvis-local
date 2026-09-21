@@ -9,7 +9,7 @@
 #
 # ollama, openclaw, api y worker usan network_mode: host y se hablan por 127.0.0.1; el
 # resto publica sus puertos solo en 127.0.0.1. Perfiles opcionales (COMPOSE_PROFILES):
-# tailscale, livesync, pm, vault, assistant, automation, webui, monitoring.
+# tailscale, livesync, pm, vault, backup, assistant, automation, webui, monitoring.
 name: jarvis-local
 
 x-logging: &logging
@@ -206,6 +206,41 @@ services:
       timeout: 10s
       retries: 5
       start_period: 30s
+    logging: *logging
+
+  # Copias de seguridad diarias (docs/BACKUP.md): COMPOSE_PROFILES=...,backup. Una copia
+  # a mano: scripts/backup; restaurar: scripts/restore.
+  backup:
+    build:
+      context: infra/backup
+    image: jarvis-backup:latest
+    restart: unless-stopped
+    profiles: ["backup"]
+    networks:
+      - jarvis_internal
+    command: ["loop"]
+    environment:
+      TZ: ${JARVIS_OWNER_TIMEZONE:-${CALENDAR_TIMEZONE:-UTC}}
+      BACKUP_TIME: ${BACKUP_TIME:-03:30}
+      BACKUP_KEEP: ${BACKUP_KEEP:-7}
+      BACKUP_UID: ${JARVIS_UID:-1000}
+      BACKUP_GID: ${JARVIS_GID:-1000}
+      POSTGRES_USER: ${POSTGRES_USER:-jarvis}
+    volumes:
+      - ${BACKUP_PATH:-./backups}:/backups
+      # El repo solo para leer .env (montar el fichero suelto crearía un directorio si no existe).
+      - .:/data/env:ro
+      - jarvis_runtime:/data/runtime
+      - ${OPENCLAW_STATE_PATH:-openclaw_state}:/data/openclaw
+      - jarvis_srv:/data/srv
+      - couchdb_data:/data/couchdb-data
+      - couchdb_config:/data/couchdb-config
+      - openproject_assets:/data/openproject-assets
+    depends_on:
+      postgres:
+        condition: service_healthy
+      qdrant:
+        condition: service_healthy
     logging: *logging
 
   openclaw:
