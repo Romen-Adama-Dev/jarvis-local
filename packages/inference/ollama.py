@@ -177,3 +177,12 @@ class OllamaProvider:
             max_context_tokens=8192,
             typical_latency_class="fast",
         )
+
+
+async def warm_quietly(provider: OllamaProvider) -> None:
+    """Precarga el modelo principal sin propagar errores (arranque de la API: si Ollama aún
+    no responde, la primera pregunta lo cargará como antes)."""
+    try:
+        await provider.warm()
+    except Exception as exc:
+        logger.warning("ollama_warm_failed", error=f"{type(exc).__name__}: {exc}")

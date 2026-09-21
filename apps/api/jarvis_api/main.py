@@ -30,7 +30,7 @@ from packages.core.logging import configure_logging, get_logger
 from packages.core.settings import get_settings
 from packages.inference.airllm import AirLLMProvider
 from packages.inference.base import InferenceProvider
-from packages.inference.ollama import OllamaProvider
+from packages.inference.ollama import OllamaProvider, warm_quietly
 from packages.inference.router import InferenceMode, InferenceRouter
 from packages.rag.embeddings import FastEmbedProvider
 from packages.rag.orchestrator import HybridRagOrchestrator
@@ -43,7 +43,14 @@ logger = get_logger(__name__)
 async def lifespan(app: FastAPI):
     settings = get_settings()
 
-    ollama_provider = OllamaProvider(settings.ollama_host, settings.ollama_primary_model)
+    ollama_provider = OllamaProvider(
+        settings.ollama_host,
+        settings.ollama_primary_model,
+        timeout_seconds=settings.ollama_timeout_seconds,
+    )
+    # Precarga en segundo plano: tras reiniciar el servidor, la primera pregunta ya no
+    # espera a que Ollama suba el modelo a la GPU (ni agota el timeout si tarda).
+    warm_task = asyncio.create_task(warm_quietly(ollama_provider))
     providers: dict[InferenceMode, InferenceProvider] = {InferenceMode.NORMAL: ollama_provider}
     airllm_provider = None
     if settings.airllm_enabled:
@@ -78,6 +85,7 @@ async def lifespan(app: FastAPI):
     set_rag_orchestrator(orchestrator)
     logger.info("rag_orchestrator_ready", reranker_enabled=settings.rag_reranker_enabled)
     yield
+    warm_task.cancel()
     await ollama_provider.aclose()
     if airllm_provider is not None:
         await airllm_provider.aclose()

@@ -40,6 +40,9 @@ class Settings(BaseSettings):
     ollama_primary_model: str = "qwen2.5:7b-instruct-q4_K_M"
     ollama_powerful_model: str = "llama3.1:8b-instruct-q4_K_M"
     ollama_embedding_model: str = "nomic-embed-text"
+    # Espera máxima por respuesta de Ollama: tras un reinicio la primera petición carga el
+    # modelo en la GPU (15 GB de Gemma 4 desde un disco frío pasaban de 120 s).
+    ollama_timeout_seconds: float = 300.0
 
     airllm_enabled: bool = False
     airllm_service_url: str = "http://127.0.0.1:11500"
