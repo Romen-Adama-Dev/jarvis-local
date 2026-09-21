@@ -1,0 +1,29 @@
+# Módulos de sonda del blackbox-exporter (perfil monitoring).
+modules:
+  http_2xx:
+    prober: http
+    timeout: 10s
+    http:
+      # CouchDB responde 401 sin credenciales: sigue vivo.
+      valid_status_codes: [200, 401]
+      preferred_ip_protocol: ip4
+  # /ready responde 200 también cuando falta una dependencia: se mira el cuerpo.
+  http_ready:
+    prober: http
+    timeout: 15s
+    http:
+      preferred_ip_protocol: ip4
+      fail_if_body_not_matches_regexp: ['"ready":\s*true']
+  http_openproject:
+    prober: http
+    timeout: 15s
+    http:
+      preferred_ip_protocol: ip4
+      # Sin esto OpenProject redirige a https (se publica por Tailscale).
+      headers:
+        X-Forwarded-Proto: https
+  tcp_connect:
+    prober: tcp
+    timeout: 5s
+    tcp:
+      preferred_ip_protocol: ip4

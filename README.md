@@ -28,6 +28,7 @@ Perfiles opcionales en `COMPOSE_PROFILES` (`.env`):
 | `pm` | OpenProject: empresas, proyectos, tareas, hitos, riesgos, Gantt, reuniones | `docs/OPENPROJECT.md` |
 | `livesync` | Memoria de Jarvis en Obsidian del iPhone y el portátil | `docs/OBSIDIAN.md` |
 | `vault` | Historial del vault de Obsidian en un repositorio git privado | `docs/MEMORY.md` |
+| `monitoring` | Panel de Grafana (servicios, API, GPU, servidor) y alertas por Telegram | `docs/MONITORING.md` |
 
 ## Qué hace desde Telegram
 
