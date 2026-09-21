@@ -47,7 +47,7 @@ Perfiles opcionales (`COMPOSE_PROFILES` en `.env`, separados por comas):
 | `vault` | `vault-sync`: vault de Obsidian en un repo git privado (`VAULT_GIT_URL`, `VAULT_SSH_KEY_PATH`; ver `docs/MEMORY.md`) |
 | `livesync` | `couchdb`, `livesync-init` y `livesync-bridge`: Obsidian en el móvil y el portátil en tiempo real, por Tailscale (`docs/OBSIDIAN.md`) |
 | `pm` | OpenProject (`openproject`, `openproject-worker`, `openproject-setup`, `openproject-db-init`, `openproject-cache`): tableros, tickets, Gantt, hitos y riesgos manejados desde Telegram con la skill `jarvis-pm`; con `tailscale`, en `https://<nombre>.ts.net:8445` (`docs/OPENPROJECT.md`) |
-| `monitoring` | Prometheus + Grafana |
+| `monitoring` | Prometheus, Alertmanager, Grafana y exportadores (sondas, servidor, GPU): panel y alertas por Telegram (`docs/MONITORING.md`) |
 | `assistant` | changedetection |
 | `automation` | n8n |
 | `webui` | Open WebUI (habla con Ollama directamente, sin RAG ni herramientas de Jarvis) |

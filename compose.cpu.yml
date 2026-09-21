@@ -11,3 +11,7 @@ services:
     environment:
       # Transcripción de reuniones en CPU: turbo es lento sin GPU.
       MEETINGS_WHISPER_MODEL: ${MEETINGS_WHISPER_MODEL:-small}
+  # Sin GPU no hay métricas de NVIDIA: dcgm-exporter pasa a un perfil que nadie activa.
+  dcgm-exporter:
+    profiles: !override ["gpu-monitoring"]
+    gpus: !reset []
