@@ -1,6 +1,10 @@
 # Integración continua de Jarvis Local: en cada PR y en cada push a main comprueba el
-# código Python (ruff, pyright, pytest), los scripts de shell (shellcheck), que compose.yml
-# es válido con todos los perfiles y sin .env, y que las imágenes propias se construyen.
+# código Python (ruff, pyright, pytest), los scripts de shell (shellcheck) y que
+# compose.yml es válido con todos los perfiles y sin .env (~1 min).
+#
+# La construcción de las imágenes (jarvis-local con TeXLive, jarvis-openclaw compilando
+# whisper.cpp) tarda 10-20 min: no corre en el desarrollo diario, solo al publicar una
+# versión (tag v*, p. ej. v1.0.0) o lanzándola a mano (Actions → CI → Run workflow).
 #
 # scripts/check-integrations no se ejecuta aquí: necesita la pila levantada con GPU,
 # modelos descargados y las cuentas reales (Telegram, correo). Se lanza en el servidor
@@ -11,6 +15,7 @@ on:
   pull_request:
   push:
     branches: [main]
+    tags: ["v*"]
   workflow_dispatch:
 
 permissions:
@@ -74,6 +79,7 @@ jobs:
     name: Imagen ${{ matrix.name }}
     runs-on: ubuntu-24.04
     needs: [python]
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v')
     strategy:
       fail-fast: false
       matrix:

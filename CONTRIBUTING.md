@@ -31,8 +31,10 @@ Estas comprobaciones deben pasar antes de abrir un PR. `ruff` aplica
 
 La CI (`.github/workflows/ci.yml`) las repite en cada PR y en cada push a `main`,
 junto con los tests del servicio AirLLM, `shellcheck --severity=warning` sobre los
-scripts, `docker compose config` con todos los perfiles (con y sin `.env`) y la
-construcción de las imágenes `jarvis-local` y `jarvis-openclaw` con una prueba de humo.
+scripts y `docker compose config` con todos los perfiles (con y sin `.env`). La
+construcción de las imágenes `jarvis-local` y `jarvis-openclaw` (10-20 min) solo corre al
+publicar una versión con un tag `v*` o a mano (Actions → CI → Run workflow), no en el
+desarrollo diario.
 `scripts/check-integrations` no corre en la CI (necesita GPU, modelos y cuentas
 reales): lánzalo en el servidor después de desplegar.
 
