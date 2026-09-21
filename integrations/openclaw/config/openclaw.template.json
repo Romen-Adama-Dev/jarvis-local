@@ -108,9 +108,19 @@
           "OPENPROJECT_URL": "http://127.0.0.1:__OPENPROJECT_PORT__",
           "OPENPROJECT_HTTPS_PORT": "__OPENPROJECT_HTTPS_PORT__",
           "JARVIS_API_URL": "http://127.0.0.1:8000",
-          "JARVIS_API_INTERNAL_TOKEN": "__JARVIS_API_INTERNAL_TOKEN__"
+          "JARVIS_API_INTERNAL_TOKEN": "__JARVIS_API_INTERNAL_TOKEN__",
+          "JARVIS_OUTBOX_DIR": "__HOME__/.openclaw/workspace-jarvis/outbox"
         },
         "requestTimeoutMs": 300000
+      },
+      "jarvis-office": {
+        "command": "__REPO_DIR__/.venv/bin/python",
+        "args": [
+          "__REPO_DIR__/integrations/openclaw/skills/jarvis-office/server.py"
+        ],
+        "env": {
+          "JARVIS_OUTBOX_DIR": "__HOME__/.openclaw/workspace-jarvis/outbox"
+        }
       },
       "jarvis-email": {
         "command": "__REPO_DIR__/.venv/bin/python",
@@ -173,6 +183,7 @@
           "jarvis-rag__*",
           "jarvis-calendar__*",
           "jarvis-email__*",
+          "jarvis-office__*",
           "wiki_apply",
           "wiki_get",
           "wiki_lint",
