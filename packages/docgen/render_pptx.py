@@ -58,9 +58,7 @@ def render_pptx(doc: GeneratedDoc, out_path: Path) -> None:
             paragraph = text_frame.add_paragraph()
             paragraph.text = bullet
 
-        footer = slide.shapes.add_textbox(
-            _FOOTER_LEFT, _FOOTER_TOP, _FOOTER_WIDTH, _FOOTER_HEIGHT
-        )
+        footer = slide.shapes.add_textbox(_FOOTER_LEFT, _FOOTER_TOP, _FOOTER_WIDTH, _FOOTER_HEIGHT)
         footer.text_frame.text = _footer_sources(section)
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
