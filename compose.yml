@@ -473,8 +473,8 @@ services:
 
   livesync-bridge:
     build:
-      context: https://github.com/vrtmrz/livesync-bridge.git#c3760beaa0851214da4860903445d7f6420ca025
-    image: jarvis-livesync-bridge:c3760be
+      context: infra/livesync-bridge
+    image: jarvis-livesync-bridge:c3760be-borrados
     restart: unless-stopped
     profiles: ["livesync"]
     networks:

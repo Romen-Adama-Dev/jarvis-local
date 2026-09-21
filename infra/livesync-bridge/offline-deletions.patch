@@ -1,0 +1,91 @@
+diff --git a/PeerStorage.ts b/PeerStorage.ts
+index 87de897..01c5f8c 100644
+--- a/PeerStorage.ts
++++ b/PeerStorage.ts
+@@ -32,6 +32,7 @@ export class PeerStorage extends Peer {
+         }
+         try {
+             await Deno.remove(path);
++            localStorage.removeItem(this._getKey(`file-stat-${lp}`));
+             this.receiveLog(` ${path} deleted`);
+         } catch (ex) {
+             this.receiveLog(` ${path} delete failed`, LOG_LEVEL_NOTICE);
+@@ -197,6 +198,7 @@ export class PeerStorage extends Peer {
+                 this.sendLog(`${path} delete detected`);
+                 await this.dispatchToHub(this, this.toGlobalPath(path), false);
+             }
++            localStorage.removeItem(this._getKey(`file-stat-${this.toLocalPath(path)}`));
+         });
+ 
+     }
+@@ -244,6 +246,37 @@ export class PeerStorage extends Peer {
+     }
+     watcherDeno?: Deno.FsWatcher;
+ 
++    // Files deleted while the bridge was stopped never produce a watcher event, so they
++    // stayed in CouchDB (and on every other device) forever. Every file the bridge has
++    // seen has a file-stat entry; one whose file is gone now was deleted offline.
++    // Safety net: if most known files are missing (empty or unmounted directory, partial
++    // restore) nothing is deleted.
++    async scanOfflineDeletions(seen: Set<string>) {
++        const prefix = this._getKey("file-stat-");
++        const known: string[] = [];
++        for (let i = 0; i < localStorage.length; i++) {
++            const key = localStorage.key(i);
++            if (key?.startsWith(prefix)) known.push(key.substring(prefix.length));
++        }
++        const missing: string[] = [];
++        for (const lp of known) {
++            if (seen.has(lp)) continue;
++            const stat = await Deno.stat(this.toStoragePath(lp)).catch(() => null);
++            if (!stat) missing.push(lp);
++        }
++        if (missing.length == 0) return;
++        const limit = Math.max(this.config.offlineDeletionLimit ?? 0.5, 0);
++        if (missing.length > known.length * limit) {
++            this.normalLog(`Offline deletions: ${missing.length} of ${known.length} known files are missing; not propagating (offlineDeletionLimit=${limit})`, LOG_LEVEL_NOTICE);
++            return;
++        }
++        this.normalLog(`Offline deletions detected: ${missing.length}`);
++        for (const lp of missing) {
++            this.debugLog(`Offline deletion detected: ${lp}`);
++            await this.dispatchDeleted(this.toStoragePath(lp));
++        }
++    }
++
+     processFile(event: Deno.FsEvent) {
+         for (const path of event.paths) {
+             const key = `${event.kind}-${path}`;
+@@ -277,15 +310,18 @@ export class PeerStorage extends Peer {
+         const lP = this.toStoragePath(this.toLocalPath("."));
+         this.normalLog(`Scan offline changes: ${this.config.scanOfflineChanges ? "Enabled, now starting..." : "Disabled"}`);
+         if (this.config.scanOfflineChanges) {
++            const seen = new Set<string>();
+             for await (const entry of walk(lP)) {
+                 if (entry.isFile) {
+                     const ePath = this.toPosixPath(relative(this.toLocalPath("."), entry.path));
++                    seen.add(this.toLocalPath(ePath));
+                     if (await this.isChanged(ePath)) {
+                         this.debugLog(`Offline changes detected: ${ePath}`);
+                         await this.dispatch(entry.path);
+                     }
+                 }
+             }
++            await this.scanOfflineDeletions(seen);
+         }
+         const watcher = Deno.watchFs(lP,
+             {
+diff --git a/types.ts b/types.ts
+index f4d3f57..c7e721f 100644
+--- a/types.ts
++++ b/types.ts
+@@ -7,6 +7,9 @@ export type PeerConf = PeerStorageConf | PeerCouchDBConf;
+ 
+ export interface PeerStorageConf {
+     scanOfflineChanges?: boolean;
++    // Max. fraction of known files that may be missing at start-up for their deletion to be
++    // propagated (default 0.5).
++    offlineDeletionLimit?: number;
+     type: "storage";
+     group?: string;
+     name: string;
