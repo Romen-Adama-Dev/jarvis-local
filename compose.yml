@@ -9,7 +9,7 @@
 #
 # ollama, openclaw, api y worker usan network_mode: host y se hablan por 127.0.0.1; el
 # resto publica sus puertos solo en 127.0.0.1. Perfiles opcionales (COMPOSE_PROFILES):
-# tailscale, livesync, pm, vault, assistant, automation, webui, monitoring.
+# tailscale, livesync, pm, vault, deep, assistant, automation, webui, monitoring.
 name: jarvis-local
 
 x-logging: &logging
@@ -203,6 +203,34 @@ services:
       timeout: 10s
       retries: 5
       start_period: 30s
+    logging: *logging
+
+  # Modo profundo /deep (docs/AIRLLM.md): modelos mayores que la VRAM, capa a capa desde
+  # disco. COMPOSE_PROFILES=...,deep y AIRLLM_ENABLED=true + AIRLLM_MODEL en .env. Los
+  # shards van a jarvis_srv (models/airllm), fuera de las copias de seguridad.
+  airllm:
+    build:
+      context: services/airllm
+    image: jarvis-airllm:latest
+    restart: unless-stopped
+    profiles: ["deep"]
+    network_mode: host
+    gpus: all
+    env_file: *env-file
+    environment:
+      AIRLLM_HOST: 127.0.0.1
+      AIRLLM_PORT: "11500"
+      AIRLLM_MODELS_DIR: /srv/jarvis/models/airllm
+    volumes:
+      - jarvis_srv:/srv/jarvis
+    healthcheck:
+      # Sano en cuanto responde: la carga del modelo (minutos u horas la primera vez) se
+      # sigue en /health (status: checking, loading, ready).
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://127.0.0.1:11500/health', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
     logging: *logging
 
   openclaw:
