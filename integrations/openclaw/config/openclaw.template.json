@@ -310,7 +310,15 @@
     }
   },
   "plugins": {
+    "load": {
+      "paths": [
+        "__REPO_DIR__/integrations/openclaw/plugins/jarvis-menu"
+      ]
+    },
     "entries": {
+      "jarvis-menu": {
+        "enabled": true
+      },
       "searxng": {
         "enabled": true,
         "config": {
@@ -354,6 +362,7 @@
       }
     },
     "allow": [
+      "jarvis-menu",
       "searxng",
       "telegram",
       "memory-wiki",

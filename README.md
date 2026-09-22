@@ -54,6 +54,10 @@ Perfiles opcionales en `COMPOSE_PROFILES` (`.env`):
   exportación de tareas de OpenProject a Excel (`docs/DOCGEN.md`), **voz** local (whisper + Piper), **búsqueda web** con SearXNG y
   **directorio de servicios** con enlaces y estado.
 
+* **Menú de botones** con `/menu`: acta de reunión, añadir a la memoria, tarea en
+  OpenProject, informe de estado, búsqueda web y agenda, sin escribir comandos; lo que
+  escribe sigue pidiendo tu «sí» (`docs/TELEGRAM.md`).
+
 Para probarlo todo con un proyecto ficticio (incluido el guion del audio de una reunión):
 `docs/DEMO.md`.
 
