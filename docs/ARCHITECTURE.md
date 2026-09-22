@@ -2,6 +2,10 @@
 
 ## Contexto real del hardware (auditoría 2026-07-12)
 
+> Servidor original del proyecto. Desde el 15-09-2026 Jarvis corre en una VM de GCP con
+> NVIDIA L4 (23 GB) y Docker Compose: modelos en `docs/MODELS.md`, despliegue en
+> `docs/DOCKER.md`.
+
 | Componente | Detalle |
 |---|---|
 | CPU | Intel Core i7-6700K (4c/8t) |
@@ -23,7 +27,7 @@ Por tanto:
 * `/srv/jarvis/*` se crea sobre el SSD raíz (partición LVM), con los ~97 GB disponibles.
 * Solo se descargan modelos pequeños (objetivo: modelos Ollama de 4-8 GB cuantizados, y un modelo AirLLM reducido para validar el pipeline, no modelos de cientos de GB).
 * Si en el futuro se añade un disco dedicado, `/srv/jarvis/models` se migra sin tocar `sdb` ni `sdc`.
-* Esta limitación se documenta también en `docs/OPERATIONS.md` y `docs/BENCHMARKS.md`.
+* Esta limitación se documenta también en `docs/BENCHMARKS.md`.
 
 ### Usuario de sistema dedicado
 

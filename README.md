@@ -69,7 +69,7 @@ crear tareas desde un acta) pide un "sí" explícito antes.
 
 ## Estado
 
-Fases 0 a 5.3 hechas; en curso la Fase 6 (monitorización, copias de seguridad, CI).
+Fases 0 a 6 hechas (la 6 —monitorización, copias de seguridad y CI— cerrada el 21-09-2026).
 Estado detallado y lo que queda en `docs/ROADMAP.md`; criterios de aceptación en
 `docs/ACCEPTANCE.md`; arquitectura en `docs/ARCHITECTURE.md`.
 
