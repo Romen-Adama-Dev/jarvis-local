@@ -21,6 +21,32 @@ Los comandos base (`/status`, `/new`, `/reset`, `/think`, etc.) son nativos de O
 
 **Pendiente**: `/upload` (adjuntar documentos desde Telegram) y `/cancel` de trabajos concretos aún no están conectados a la skill; `/jobs` y la cancelación por API sí funcionan vía `jarvis_jobs`/`jarvis_cancel_job`.
 
+## Menú de botones (`/menu`)
+
+`/menu` abre un teclado en línea con las automatizaciones frecuentes. Lo registra el plugin
+de OpenClaw `jarvis-menu` (`integrations/openclaw/plugins/jarvis-menu/`, cargado desde
+`plugins.load.paths` en `integrations/openclaw/config/openclaw.template.json`):
+
+| Botón | Qué hace |
+|---|---|
+| 🎙️ Acta de reunión | Pide la grabación y el proyecto, transcribe y prepara el borrador del acta (`docs/ACTAS.md`) |
+| 🧠 Añadir a la memoria | Pregunta qué guardar (nota, decisión, riesgo) y de qué proyecto; lo escribe en el vault |
+| ✅ Tarea en OpenProject | Pide proyecto, asunto, tipo, vencimiento y responsable, y crea la tarea |
+| 📄 Informe de estado | Informe de seguimiento de un proyecto de OpenProject |
+| 🔎 Búsqueda web | Búsqueda con el SearXNG del servidor, con enlaces |
+| 📅 Agenda | Reuniones y vencimientos de los próximos 7 días |
+
+Cada botón envía al agente una petición en lenguaje natural por el camino normal de
+entrada (`submitText`), como si la hubieras escrito tú: usa las mismas herramientas MCP y
+las mismas confirmaciones. Las acciones que escriben (acta a OpenProject, nota en la
+memoria, tarea) enseñan antes el resumen y solo se ejecutan tras un «sí» explícito; los
+envíos de correo siguen con su token de confirmación de siempre. Los botones solo
+responden al dueño (`allowFrom`) y en chat privado; en un grupo se ignoran.
+
+Para añadir un botón: una entrada en `ACTIONS` de `actions.js` (id corto, `callback_data`
+de 64 bytes como máximo). Pruebas: `node --test 'integrations/openclaw/plugins/**/*.test.js'`.
+Tras cambiarlo, `docker compose up -d --build openclaw`.
+
 ## Seguridad
 
 * Sin webhook público: long polling gestionado por el propio proceso de OpenClaw.

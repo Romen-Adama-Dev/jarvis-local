@@ -50,6 +50,16 @@ jobs:
         working-directory: services/airllm
         run: uv run --frozen pytest -q
 
+  plugins:
+    name: Plugins de OpenClaw (node --test)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node --test 'integrations/openclaw/plugins/**/*.test.js'
+
   shell:
     name: Scripts de shell (shellcheck)
     runs-on: ubuntu-24.04
