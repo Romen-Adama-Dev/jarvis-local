@@ -1,5 +1,13 @@
 # OpenClaw — integración
 
+> **Despliegue por defecto: Docker Compose** (servicio `openclaw`, imagen de
+> `integrations/openclaw/Dockerfile`, configuración generada en cada arranque por
+> `integrations/openclaw/docker-entrypoint.sh` a partir de
+> `integrations/openclaw/config/openclaw.template.json`; ver `docs/DOCKER.md`). Las
+> secciones «Instalación», «Correo y calendario (gog)», «Instalación reproducible»,
+> «Daemon» y «Verificación de red» describen la instalación sin Docker (systemd de
+> usuario), que se mantiene como alternativa.
+
 ## Instalación
 
 OpenClaw (`openclaw/openclaw`, licencia MIT) se instala solo para el usuario humano de desarrollo (`jarvis`, uid 1000), nunca para `jarvis-svc`: es el plano de control personal desde el móvil, no un servicio de la plataforma.
@@ -21,11 +29,11 @@ Archivo: `~/.openclaw/openclaw.json` (JSON5/JSON, permisos `600`, fuera del repo
 
 Decisiones clave:
 
-* **Modelo**: proveedor `custom` apuntando directamente al endpoint OpenAI-compatible de Ollama (`http://127.0.0.1:11434/v1`), con los dos modelos seleccionados en `docs/BENCHMARKS.md` (`qwen2.5:7b-instruct-q4_K_M` rápido por defecto, `llama3.1:8b-instruct-q4_K_M` potente disponible). Ollama y Jarvis API ya cumplen "proveedor local" exigido por el prompt; no fue necesario levantar un endpoint OpenAI-compatible adicional en Jarvis API para esto.
-* **`agents.defaults.memorySearch.enabled: false`**: por defecto OpenClaw usa OpenAI para búsqueda semántica de memoria. Se desactiva explícitamente para no violar el principio "sin fallback a proveedores externos".
+* **Modelo**: proveedor `custom` apuntando directamente al endpoint OpenAI-compatible de Ollama (`http://127.0.0.1:11434/v1`), con `OLLAMA_PRIMARY_MODEL`, que `scripts/select-models` elige según la VRAM (`docs/MODELS.md`; en la L4, `gemma4:26b-a4b-it-qat`; en la GTX 1070 original, `qwen2.5:7b-instruct-q4_K_M`). Ollama y Jarvis API ya cumplen "proveedor local" exigido por el prompt; no fue necesario levantar un endpoint OpenAI-compatible adicional en Jarvis API para esto.
+* **`memory.search`**: activada con embeddings locales (`provider: ollama-embeddings`, modelo `embeddinggemma`; requiere `ollama` en `plugins.allow`). Por defecto OpenClaw usaría OpenAI, así que nunca se deja el proveedor sin fijar (principio "sin fallback a proveedores externos").
 * **Sandbox**: `agents.defaults.sandbox.mode: "off"`. Se probó `"non-main"` (sandbox Docker para sesiones no principales) pero el host no soporta el aislamiento por namespaces que requiere (`bwrap: setting up uid map: Permission denied`, ver aviso de `openclaw doctor`), y con un único usuario autorizado no hay sesiones "no principales" reales que proteger. Si en el futuro se añaden más agentes/canales, revisar esta decisión.
-* **`tools.deny`**: se deniega explícitamente `exec, process, code_execution, browser, cron, nodes, gateway, image_generate, music_generate, video_generate, tts`. Esto es lo que garantiza "no ejecución de shell arbitraria desde Telegram": el agente no tiene ninguna vía de shell, solo las herramientas MCP explícitas de `jarvis-rag`.
-* **`tools.sandbox.tools.alsoAllow: ["jarvis-rag__*"]`**: necesario para que las herramientas del servidor MCP sigan siendo visibles si en el futuro se reactiva el sandbox.
+* **`tools.deny`**: se deniegan `process`, `code_execution`, `browser`, `cron`, `nodes`, `gateway`, generación de imagen/música/vídeo, `tts`, las herramientas de sesiones y subagentes, entre otras (lista completa en la plantilla). `exec` **no** está denegado desde el 13-07: pasa por exec approvals (sección «Ejecución de comandos desde Telegram»).
+* **`tools.sandbox.tools.alsoAllow`** (`jarvis-rag__*`, `jarvis-calendar__*`, `jarvis-email__*`, `jarvis-office__*` y las `wiki_*`): necesario para que las herramientas del servidor MCP sigan siendo visibles si en el futuro se reactiva el sandbox.
 * **`gateway.auth`**: token generado automáticamente por `openclaw doctor --fix` (websocket del gateway protegido incluso en loopback).
 
 ## Workspace del agente (plantillas)
@@ -64,12 +72,14 @@ En vez de enseñar al agente a invocar `curl`/shell (lo cual violaría "no shell
 | `jarvis_jobs` | `GET /v1/jobs` | Trabajos activos |
 | `jarvis_cancel_job` | `POST /v1/jobs/{id}/cancel` | Cancelar un trabajo |
 
-Registrado en `mcp.servers.jarvis-rag` de `openclaw.json`, lanzado vía `uv run --frozen --project /home/jarvis/jarvis-local python .../server.py`, con `JARVIS_API_URL`, `JARVIS_API_INTERNAL_TOKEN` y `JARVIS_DATA_ROOT` como variables de entorno del propio proceso MCP (nunca visibles para el modelo).
+La tabla recoge las herramientas originales; hoy hay más (subida y movimiento de documentos, documentos generados, actas, memoria, directorio de servicios). La lista vigente, con cuándo usar cada una, está en `integrations/openclaw/workspace/AGENTS.md` y en `integrations/openclaw/skills/jarvis-rag/SKILL.md`.
+
+Registrado en `mcp.servers.jarvis-rag` de `openclaw.json`, lanzado con el Python del venv del repo (`<repo>/.venv/bin/python .../server.py`), con `JARVIS_API_URL`, `JARVIS_API_INTERNAL_TOKEN` y `JARVIS_DATA_ROOT` como variables de entorno del propio proceso MCP (nunca visibles para el modelo).
 
 **Pendiente deliberadamente fuera de esta fase** (no se expone ninguna herramienta para esto todavía, para no saltarse la exigencia de confirmación explícita de acciones administrativas):
 
 * Reinicio de servicios permitidos (`ollama`, `jarvis-api`, `jarvis-worker`) — requiere conectar `packages/security/confirmation.py` (`ConfirmationService`, ya implementado en la Fase 5) a un flujo de confirmación de dos pasos antes de exponerlo como herramienta.
-* Subida de documentos (`/v1/documents`) y reindexación — Telegram permite adjuntar archivos; falta implementar la recepción del adjunto en la skill.
+* Reindexación desde el chat. (La subida de documentos ya está hecha: ver «Subida de documentos al RAG desde Telegram».)
 
 ## Skills de terceros (ClawHub)
 
@@ -170,7 +180,7 @@ Con la compactación arreglada, la caché de prefijo de Ollama por fin actúa: e
 Decisión (2026-07-13, a petición del propietario): se habilita `exec` en el gateway, sustituyendo la prohibición total de shell por un **modelo de aprobación explícita**. Esto revisa el principio original "no shell arbitrario desde Telegram" de forma defendible:
 
 * Política: `openclaw exec-policy set --host gateway --security allowlist --ask on-miss --ask-fallback deny`.
-* Lista blanca (en `~/.openclaw/exec-approvals.json`, agente `main`): solo lectura — `uptime`, `uname`, `df`, `free`, `date`, `whoami`, `ls`, `du`, `ps`, `nvidia-smi`, `ollama`. Corren sin preguntar.
+* Lista blanca (en `~/.openclaw/exec-approvals.json`, agente `main`): solo lectura — `uptime`, `uname`, `df`, `free`, `date`, `whoami`, `ls`, `du`, `ps` (en Docker la aplica `docker-entrypoint.sh`; la instalación sin Docker añade `nvidia-smi` y `ollama`). Corren sin preguntar.
 * **Cualquier otro comando** queda retenido y Telegram muestra botones de aprobación nativos (`/approve`); sin interfaz disponible, se deniega (`askFallback: deny`). Verificado: un `touch` no listado no se ejecutó sin aprobación.
 * Los comandos corren como usuario `jarvis`, nunca root; una escalada `sudo` requeriría aprobación explícita del propietario en cada ocasión.
 * Sigue habiendo un único usuario de Telegram autorizado (allowlist por ID) y auditoría de sesión.
@@ -180,10 +190,10 @@ Riesgo aceptado y mitigación: un documento malicioso del RAG podría intentar i
 
 ## Búsqueda web local (SearXNG)
 
-`web_search` está habilitado usando **SearXNG autohosteado** (perfil `assistant` de `compose.yml`, imagen fijada por digest, solo `127.0.0.1:8888`, formato JSON habilitado en `infra/compose/searxng/settings.yml`). OpenClaw lo usa mediante el plugin oficial `@openclaw/searxng-plugin` (`tools.web.search.provider: "searxng"`, `plugins.allow: ["searxng"]`). Las consultas de búsqueda salen a los buscadores agregados desde el servidor propio, sin API keys ni proveedores comerciales; la inferencia sigue siendo 100% local.
+`web_search` está habilitado usando **SearXNG autohosteado** (servicio por defecto de `compose.yml`, sin perfil; imagen fijada por digest, solo `127.0.0.1:8888`, formato JSON habilitado en `infra/compose/searxng/settings.yml`). OpenClaw lo usa mediante el plugin oficial `@openclaw/searxng-plugin` (`tools.web.search.provider: "searxng"`, `plugins.allow: ["searxng"]`). Las consultas de búsqueda salen a los buscadores agregados desde el servidor propio, sin API keys ni proveedores comerciales; la inferencia sigue siendo 100% local.
 
 ```bash
-docker compose --profile assistant up -d searxng
+docker compose up -d searxng
 ```
 
 ## Voz (STT y TTS locales)

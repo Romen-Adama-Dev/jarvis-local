@@ -19,7 +19,7 @@ Los comandos base (`/status`, `/new`, `/reset`, `/think`, etc.) son nativos de O
 
 `/deep` es asíncrono por diseño (criterio 17): `jarvis_deep` encola un trabajo y responde al momento con su identificador, el worker ejecuta la consulta contra AirLLM sin bloquear al bot, y la respuesta se recoge con `jarvis_job_result` (o se lista con `/jobs`). Ver `docs/AIRLLM.md`.
 
-**Pendiente**: `/upload` (adjuntar documentos desde Telegram) y `/cancel` de trabajos concretos aún no están conectados a la skill; `/jobs` y la cancelación por API sí funcionan vía `jarvis_jobs`/`jarvis_cancel_job`.
+Los adjuntos de Telegram se indexan con `jarvis_upload` tras preguntar si van al RAG y a qué empresa o proyecto (ver `docs/OPENCLAW.md`, «Subida de documentos al RAG desde Telegram»); los trabajos se listan y cancelan con `jarvis_jobs`/`jarvis_cancel_job`.
 
 ## Menú de botones (`/menu`)
 
