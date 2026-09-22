@@ -23,3 +23,8 @@ htmlcov/
 .claude/
 infra/compose/changedetection/
 /backups/
+# Clave SSH del vault (VAULT_SSH_KEY_PATH por defecto) y datos de n8n/Open WebUI
+/vault_ssh_key
+/vault_ssh_key.pub
+infra/compose/n8n_data/
+infra/compose/webui_data/

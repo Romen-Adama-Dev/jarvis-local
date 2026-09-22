@@ -146,5 +146,12 @@ if [[ -d "$STATE_DIR/wiki/main" ]]; then
     || echo "AVISO: no se pudo escribir SERVICIOS.md en el vault" >&2
 fi
 
+# El agente puede leer su propio entorno (/proc/self/environ): el gateway no necesita
+# ninguno de estos secretos (Telegram y el token del panel ya están en $CONFIG y en
+# $STATE_DIR/secrets, el token de la API en la configuración de cada servidor MCP).
+unset MAIL_PASSWORD CALDAV_PASSWORD COUCHDB_PASSWORD LIVESYNC_PASSPHRASE LIVESYNC_URI_PASSPHRASE \
+  OPENPROJECT_ADMIN_PASSWORD POSTGRES_PASSWORD SEARXNG_SECRET GRAFANA_ADMIN_PASSWORD TS_AUTHKEY \
+  TELEGRAM_BOT_TOKEN OPENCLAW_GATEWAY_TOKEN JARVIS_API_INTERNAL_TOKEN
+
 echo "== Gateway OpenClaw en 127.0.0.1:${OPENCLAW_GATEWAY_PORT:-18789} (Tailscale: ${TAILSCALE_MODE}) =="
 exec openclaw gateway --port "${OPENCLAW_GATEWAY_PORT:-18789}"

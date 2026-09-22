@@ -28,12 +28,18 @@ class RedisConfirmationStore(ConfirmationStore):
         await self._client.set(_KEY_PREFIX + confirmation.token, serialized, ex=ttl)
 
     async def get(self, token: str) -> PendingConfirmation | None:
-        raw = await self._client.get(_KEY_PREFIX + token)
-        if raw is None:
-            return None
-        data = json.loads(raw)
-        data.setdefault("payload", {})
-        return PendingConfirmation(**data)
+        return _decode(await self._client.get(_KEY_PREFIX + token))
+
+    async def pop(self, token: str) -> PendingConfirmation | None:
+        return _decode(await self._client.getdel(_KEY_PREFIX + token))
 
     async def delete(self, token: str) -> None:
         await self._client.delete(_KEY_PREFIX + token)
+
+
+def _decode(raw: str | bytes | None) -> PendingConfirmation | None:
+    if raw is None:
+        return None
+    data = json.loads(raw)
+    data.setdefault("payload", {})
+    return PendingConfirmation(**data)
