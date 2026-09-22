@@ -48,6 +48,9 @@ Perfiles opcionales en `COMPOSE_PROFILES` (`.env`):
 * **Una sola memoria** en Obsidian: red de conocimiento con empresas, proyectos,
   personas, hitos, riesgos, reuniones y documentos enlazados (vista de grafo), compartida
   con la wiki de OpenProject; "recuerda que…" por Telegram la amplía (`docs/OBSIDIAN.md`).
+* **Coaching ágil** (retros, planificación de sprint, historias de usuario, métricas y
+  salud del equipo) con la skill de ClawHub `agile-toolkit`, revisada y copiada en el repo
+  (`integrations/openclaw/skills-terceros/README.md`).
 * **Documentos generados** desde el RAG (resumen, DAFO, planes) en DOCX/PPTX/PDF, y
   **documentos ofimáticos a medida** en Excel, Word, PowerPoint y OpenDocument
   (`.xlsx/.docx/.pptx/.ods/.odt/.odp`) con tablas, negritas y totales, incluida la
