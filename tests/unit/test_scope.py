@@ -135,3 +135,17 @@ def test_own_only_filter_excludes_global():
     assert not any(isinstance(c, models.IsEmptyCondition) for c in visible)
     # Sin empresa no hay "propio": sigue viendo lo general.
     assert len(_visible(scope_filter("", "", own_only=True))) == 1
+
+
+def test_scope_rejects_names_without_latin_letters():
+    with pytest.raises(ValidationFailedError, match="empresa"):
+        Scope.of("Рога и копыта")
+    with pytest.raises(ValidationFailedError, match="proyecto"):
+        Scope.of("Acme", "проект")
+
+
+def test_legacy_company_with_empty_slug_is_not_global():
+    scope = scope_from_metadata({"company": "Рога и копыта"})
+    assert not scope.is_global
+    assert scope.payload()["company"]
+    assert scope.payload()["company"] != Scope("Otra").payload()["company"]

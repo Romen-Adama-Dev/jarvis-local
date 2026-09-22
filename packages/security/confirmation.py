@@ -24,6 +24,11 @@ class ConfirmationStore(Protocol):
 
     async def delete(self, token: str) -> None: ...
 
+    async def pop(self, token: str) -> PendingConfirmation | None:
+        """Lee y borra en una sola operación: dos confirmaciones simultáneas no pueden
+        obtener la misma acción."""
+        ...
+
 
 class ConfirmationService:
     def __init__(self, store: ConfirmationStore, ttl_seconds: int) -> None:
@@ -51,13 +56,13 @@ class ConfirmationService:
         return confirmation
 
     async def confirm(self, telegram_user_id: int, token: str) -> PendingConfirmation:
-        pending = await self._store.get(token)
+        pending = await self._store.pop(token)
         if pending is None:
             raise NotFoundError("Confirmación no encontrada o ya usada")
         if pending.telegram_user_id != telegram_user_id:
+            # No era suya: se devuelve al almacén para que su dueño aún pueda confirmarla.
+            await self._store.save(pending)
             raise ValidationFailedError("La confirmación no pertenece a este usuario")
         if time.time() > pending.expires_at:
-            await self._store.delete(token)
             raise ValidationFailedError("La confirmación ha caducado, repite la orden")
-        await self._store.delete(token)
         return pending
