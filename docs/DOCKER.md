@@ -51,6 +51,7 @@ Perfiles opcionales (`COMPOSE_PROFILES` en `.env`, separados por comas):
 | `monitoring` | Prometheus, Alertmanager, Grafana y exportadores (sondas, servidor, GPU): panel y alertas por Telegram (`docs/MONITORING.md`) |
 | `assistant` | changedetection |
 | `automation` | n8n |
+| `deep` | `airllm`: modo `/deep` con AirLLM (`AIRLLM_ENABLED=true`; desactivado en la L4, ver `docs/AIRLLM.md`) |
 | `webui` | Open WebUI (habla con Ollama directamente, sin RAG ni herramientas de Jarvis) |
 
 Orden de arranque: `init` → `postgres`/`searxng`/`ollama` → `ollama-pull` y `api` →

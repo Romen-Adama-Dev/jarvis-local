@@ -17,9 +17,10 @@ Requisitos, servicios, secretos, interfaz web y cómo migrar una instalación pr
 
 ## Camino alternativo: servidor bare-metal con systemd
 
-El despliegue real de este proyecto (ver `docs/ARCHITECTURE.md` y
-`docs/SECURITY.md`) corre Ollama y AirLLM nativos por GPU y la API/worker
-como servicios systemd, no en Docker. Orden de instalación en un Ubuntu
+Fue el despliegue original del proyecto (servidor con GTX 1070, ver
+`docs/ARCHITECTURE.md` y `docs/SECURITY.md`): Ollama y AirLLM nativos por GPU y la
+API/worker como servicios systemd. Desde el 15-09-2026 el despliegue real es el de
+Docker Compose. Orden de instalación en un Ubuntu
 Server limpio:
 
 ```bash
