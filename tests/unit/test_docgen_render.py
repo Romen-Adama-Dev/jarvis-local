@@ -91,3 +91,20 @@ def test_render_pdf_via_pandoc_raises_when_missing_binaries(tmp_path, monkeypatc
 
     with pytest.raises(ProviderUnavailableError):
         render_pdf_via_pandoc(markdown_path, tmp_path / "out.pdf")
+
+
+def test_render_pdf_ignores_raw_latex(tmp_path: Path):
+    import shutil
+
+    if shutil.which("pandoc") is None or shutil.which("xelatex") is None:
+        pytest.skip("pandoc/xelatex no instalados")
+    secret = tmp_path / "secreto.txt"
+    secret.write_text("MARCADOR-SECRETO")
+    markdown = tmp_path / "doc.md"
+    markdown.write_text(f"# Informe\n\n- informe.docx (\\input{{{secret}}})\n")
+    out = tmp_path / "doc.pdf"
+    render_pdf_via_pandoc(markdown, out)
+    from pypdf import PdfReader
+
+    text = "".join(page.extract_text() for page in PdfReader(str(out)).pages)
+    assert "MARCADOR-SECRETO" not in text
