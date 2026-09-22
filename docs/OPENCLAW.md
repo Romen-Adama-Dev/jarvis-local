@@ -71,6 +71,16 @@ Registrado en `mcp.servers.jarvis-rag` de `openclaw.json`, lanzado vía `uv run 
 * Reinicio de servicios permitidos (`ollama`, `jarvis-api`, `jarvis-worker`) — requiere conectar `packages/security/confirmation.py` (`ConfirmationService`, ya implementado en la Fase 5) a un flujo de confirmación de dos pasos antes de exponerlo como herramienta.
 * Subida de documentos (`/v1/documents`) y reindexación — Telegram permite adjuntar archivos; falta implementar la recepción del adjunto en la skill.
 
+## Skills de terceros (ClawHub)
+
+Solo se cargan skills de terceros revisadas y copiadas en
+`integrations/openclaw/skills-terceros/` (lista, versión, licencia, SHA-256 y descartes en
+su `README.md`). OpenClaw las lee con `skills.load.extraDirs`, con la precedencia más
+baja, así que no pueden tapar las propias ni las incluidas. No se instala nada desde
+ClawHub al arrancar (`skills.entries.clawhub` sigue desactivada). Hoy: `agile-toolkit`
+(retros, planificación de sprint, historias de usuario, métricas; solo conocimiento).
+Comprobar: `docker compose exec openclaw openclaw skills info agile-toolkit`.
+
 ## OpenClaw 2026.9 (despliegue 2026-09-15, VM `jarvis-gpu-us`, Ubuntu 22.04)
 
 Lo aprendido al desplegar desde cero sobre una versión de OpenClaw mucho más

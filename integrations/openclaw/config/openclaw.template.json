@@ -258,6 +258,11 @@
     ]
   },
   "skills": {
+    "load": {
+      "extraDirs": [
+        "__REPO_DIR__/integrations/openclaw/skills-terceros"
+      ]
+    },
     "entries": {
       "1password": { "enabled": false },
       "blogwatcher": { "enabled": false },
