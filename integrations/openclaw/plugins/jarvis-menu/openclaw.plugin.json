@@ -1,0 +1,12 @@
+{
+  "id": "jarvis-menu",
+  "name": "Jarvis: menú de acceso rápido",
+  "description": "Comando /menu con botones de Telegram para las automatizaciones frecuentes de Jarvis",
+  "activation": {
+    "onStartup": true
+  },
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false
+  }
+}
