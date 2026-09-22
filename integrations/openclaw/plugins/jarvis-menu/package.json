@@ -1,0 +1,11 @@
+{
+  "name": "jarvis-menu",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Plugin de OpenClaw de jarvis-local: menú de botones en Telegram",
+  "license": "MIT",
+  "openclaw": {
+    "extensions": ["./index.js"]
+  }
+}
