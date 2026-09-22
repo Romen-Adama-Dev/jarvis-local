@@ -175,8 +175,12 @@
       "skill_workshop",
       "ask_user",
       "terminal",
-      "process"
+      "process",
+      "web_fetch"
     ],
+    "fs": {
+      "workspaceOnly": true
+    },
     "sandbox": {
       "tools": {
         "alsoAllow": [

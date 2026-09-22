@@ -9,6 +9,7 @@ vault y en OpenProject es `migracion-erp`.
 * Proyecto: pliegos, actas, entregables; solo la ve ese proyecto.
 """
 
+import hashlib
 import re
 import unicodedata
 from dataclasses import dataclass
@@ -27,6 +28,14 @@ def slugify(text: str) -> str:
     return slug[:100]
 
 
+def _stable_id(name: str) -> str:
+    """`slugify` del nombre; si queda vacío (p. ej. solo cirílico, guardado antes de que
+    `Scope.of` lo rechazara) un hash, nunca "" — vacío significaría ámbito global."""
+    if not name:
+        return ""
+    return slugify(name) or "h-" + hashlib.sha256(name.encode()).hexdigest()[:16]
+
+
 @dataclass(frozen=True, slots=True)
 class Scope:
     company: str = ""
@@ -40,15 +49,25 @@ class Scope:
             raise ValidationFailedError(
                 f"Falta la empresa del proyecto «{project}»: todo proyecto pertenece a una."
             )
+        # Un nombre sin letras ni cifras latinas daría un identificador vacío y el
+        # documento acabaría en el ámbito global, visible para todas las empresas.
+        if company and not slugify(company):
+            raise ValidationFailedError(
+                f"El nombre de empresa «{company}» necesita letras o cifras latinas."
+            )
+        if project and not slugify(project):
+            raise ValidationFailedError(
+                f"El nombre de proyecto «{project}» necesita letras o cifras latinas."
+            )
         return cls(company=company, project=project)
 
     @property
     def company_id(self) -> str:
-        return slugify(self.company) if self.company else ""
+        return _stable_id(self.company)
 
     @property
     def project_id(self) -> str:
-        return slugify(self.project) if self.project else ""
+        return _stable_id(self.project)
 
     @property
     def is_global(self) -> bool:

@@ -14,3 +14,5 @@ infra/compose/changedetection
 infra/compose/webui_data
 infra/monitoring/grafana
 backups
+vault_ssh_key
+vault_ssh_key.pub
