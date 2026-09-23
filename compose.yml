@@ -371,6 +371,7 @@ services:
     network_mode: host
     user: "${JARVIS_UID:-1000}:${JARVIS_GID:-1000}"
     command: ["python", "-m", "packages.knowledge.red", "--vault", "/state/wiki/main",
+              "--workspace", "/state/workspace-jarvis",
               "--every", "${KNOWLEDGE_REFRESH_SECONDS:-600}"]
     env_file: *env-file
     volumes:
