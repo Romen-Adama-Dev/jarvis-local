@@ -92,7 +92,7 @@ def jarvis_ask(query: str, company: str = "", project: str = "") -> str:
     documentación aislada: pasa `company` y/o `project` del contexto de la conversación.
     Con proyecto se busca en ese proyecto, en la documentación de su empresa y en la
     general; solo con empresa, en toda la empresa y la general; sin nada, solo en la
-    general (PMBOK, metodologías). Nunca mezcla empresas."""
+    general (guías, metodologías, normas). Nunca mezcla empresas."""
     response = _client.post("/v1/rag/query", json={"query": query, **_scope(company, project)})
     if message := _api_message(response):
         return message
@@ -156,7 +156,7 @@ def jarvis_generate_doc(
 ) -> str:
     """Genera un documento fundamentado en el RAG de Jarvis y lo deja listo para enviarlo
     por el chat o adjuntarlo a un correo. `kind`: "resumen" (resumen de un tema o de un
-    documento indexado, p. ej. "Guía del PMBOK 7ª edición"), "dafo" o "plan" (plan de
+    documento indexado, p. ej. "Guía de Scrum"), "dafo" o "plan" (plan de
     coordinación de proyecto). `format`: pdf, docx, pptx o md.
 
     `company`/`project`: de qué empresa o proyecto sale la información (mismo aislamiento
@@ -310,7 +310,7 @@ def _resolve_upload_path(file_path: str) -> Path | None:
 def jarvis_upload(file_path: str, company: str = "", project: str = "") -> str:
     """Sube un documento al RAG de Jarvis para indexarlo. `file_path` puede ser la ruta
     completa o simplemente el nombre del adjunto tal como aparece en
-    `<file name="...">` (p. ej. "PMBOK-7Ed.pdf"). Antes de llamarla, pregunta siempre
+    `<file name="...">` (p. ej. "manual-calidad.pdf"). Antes de llamarla, pregunta siempre
     al usuario (1) si el documento debe añadirse al RAG, y (2) si es documentación
     general, de una empresa o de un proyecto (usa jarvis_list_projects para ofrecerle
     los existentes). General: sin company ni project. Empresa: solo `company`.

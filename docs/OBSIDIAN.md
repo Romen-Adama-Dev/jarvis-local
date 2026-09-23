@@ -146,8 +146,9 @@ Actas del vault · documentos del RAG ──────────────
   sobrescribe. `knowledge` copia ese archivo al vault como `memoria/Directivas de
   Jarvis.md`, de solo lectura: para cambiar una directiva, pídesela a Jarvis. El
   *dreaming* de OpenClaw está desactivado para que nada reescriba ese archivo por su
-  cuenta. La plantilla inicial (método Arquitecto/Operador) está en
-  `integrations/openclaw/workspace/MEMORY.md`.
+  cuenta. La plantilla (`integrations/openclaw/workspace/MEMORY.md`) no trae ninguna
+  directiva ni método de trabajo: cada usuario le dicta los suyos. Ejemplos para trabajo
+  predictivo, Scrum y Kanban en [ejemplos/directivas.md](ejemplos/directivas.md).
 
 Dónde escribir cada cosa:
 
