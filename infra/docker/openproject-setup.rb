@@ -2,7 +2,9 @@
 # openproject-setup con `rails runner` después de las migraciones y el seed. Idempotente.
 #
 # 1. Tipo de paquete de trabajo "Riesgo" (registro de riesgos), activo en todos los
-#    proyectos y con los mismos flujos de estado que "Tarea".
+#    proyectos y con los mismos flujos de estado que "Tarea". También "Historia de
+#    usuario" y "Épico", que OpenProject trae pero no activa en los proyectos nuevos: así
+#    un proyecto ágil tiene sus tipos (cada proyecto usa los de su metodología).
 # 2. Usuario administrador "jarvis" (el que usa el servidor MCP jarvis-pm, así la
 #    actividad aparece como "Jarvis") con la clave de API que generó init.
 # 3. La primera vez, borra los proyectos de demostración que siembra OpenProject.
@@ -32,8 +34,10 @@ unless risk
   Workflow.copy(task_type, nil, [risk], [])
   puts "tipo creado: Riesgo"
 end
+agile = Type.where(name: ["Historia de usuario", "Épico", "User story", "Epic"]).to_a
+agile.each { |type| type.update!(is_default: true) unless type.is_default }
 Project.find_each do |project|
-  project.types << risk unless project.types.include?(risk)
+  ([risk] + agile).each { |type| project.types << type unless project.types.include?(type) }
 end
 
 # --- 2. Usuario Jarvis y clave de API -----------------------------------------------------

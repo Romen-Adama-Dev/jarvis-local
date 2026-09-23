@@ -138,12 +138,15 @@ Actas del vault · documentos del RAG ──────────────
 * **Jarvis**: "recuerda que en Web corporativa el cliente prefiere los viernes" →
   `jarvis_remember` lo añade a la sección **Notas** de esa nota; sale en Obsidian, en la
   wiki del proyecto y en `memory_search`. Si es alguien o algo que aún no tiene nota,
-  la crea: una persona en `entities/personas/` o un tema general (una metodología, una
+  la crea: una persona en `entities/personas/`, una metodología en
+  `memoria/metodologias/` (cada método en su nota, sin mezclarse) o un tema general (una
   preferencia) en `memoria/`.
 * **Directivas de Jarvis**: lo que le pides que sea parte de su forma de trabajar ("a
   partir de ahora…") lo escribe él en el `MEMORY.md` de su workspace, que OpenClaw le
   carga en cada conversación y que un reinicio no pisa; si cambias de criterio, lo
-  sobrescribe. `knowledge` copia ese archivo al vault como `memoria/Directivas de
+  sobrescribe dentro de su zona (**General**, **Metodologías** con una zona por método,
+  **Proyectos** con el método de cada uno; ver "Metodologías por proyecto" en
+  [EMPRESAS.md](EMPRESAS.md)). `knowledge` copia ese archivo al vault como `memoria/Directivas de
   Jarvis.md`, de solo lectura: para cambiar una directiva, pídesela a Jarvis. El
   *dreaming* de OpenClaw está desactivado para que nada reescriba ese archivo por su
   cuenta. La plantilla (`integrations/openclaw/workspace/MEMORY.md`) no trae ninguna

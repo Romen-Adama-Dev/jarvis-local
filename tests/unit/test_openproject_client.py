@@ -142,6 +142,12 @@ def test_find_project_ignores_accents_and_case(op):
     assert op.find_project("acme")["id"] == 1
 
 
+def test_find_project_accepts_company_label(op):
+    assert op.find_project("Acme Consulting › Migración ERP")["id"] == 2
+    with pytest.raises(ValidationFailedError):
+        op.find_project("Otra › Inexistente")
+
+
 def test_find_project_unknown_lists_options(op):
     with pytest.raises(ValidationFailedError, match="Acme Consulting, Migración ERP"):
         op.find_project("Otro")
