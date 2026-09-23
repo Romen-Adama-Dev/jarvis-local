@@ -4,7 +4,7 @@ Es la misma jerarquía que OpenProject (empresa = proyecto raíz, proyecto = hij
 identificadores se normalizan igual (`slugify`), así que "Migración ERP" en el RAG, en el
 vault y en OpenProject es `migracion-erp`.
 
-* Global: documentación general (PMBOK, metodologías); la ve cualquier consulta.
+* Global: documentación general (guías, metodologías, normas); la ve cualquier consulta.
 * Empresa: manuales, plantillas y normas de una empresa; la ven sus proyectos.
 * Proyecto: pliegos, actas, entregables; solo la ve ese proyecto.
 """
