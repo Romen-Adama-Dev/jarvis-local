@@ -34,14 +34,18 @@ Resultado de las comprobaciones automáticas: ningún enlace roto; rutas inexist
 | 16 | `docs/DOCKER.md` | Falta el perfil `deep` en la tabla de perfiles | Añadido |
 | 17 | `docs/ACCEPTANCE.md` | Criterio 5 en ✅ sin decir que AirLLM está desactivado (criterio 16); criterio 23 con un número de tests fijo | Aclarado |
 
+## Los siete casos de criterio — resueltos el 23-09
+
+| # | Qué pasaba | Qué se ha hecho |
+|---|---|---|
+| A | `docs/OPENCLAW.md` mezclaba la instalación con systemd (julio) y la de Docker (septiembre), con secciones largas de incidentes con Qwen que ya no aplican a Gemma | Dividido: `docs/OPENCLAW.md` describe solo el despliegue con Docker y conserva un resumen «Lecciones que siguen vigentes»; la instalación sin Docker, los incidentes de julio (prompt gigante, latencia), el watchdog de systemd y las notas del despliegue de septiembre pasan a `docs/OPENCLAW-HISTORICO.md` |
+| B | La sección «Correo y calendario (gog)» describía OAuth de Google, sustituido por IMAP/SMTP y CalDAV/OpenProject | La sección vigente remite a `docs/EMAIL.md` y `docs/CALENDAR.md`; `gog` queda en el documento histórico, con las referencias de `MSGRAPH.md` y `ROADMAP.md` actualizadas |
+| C | `docs/ARCHITECTURE.md` describía el hardware del servidor original y el diagrama no incluía OpenProject, LiveSync ni Tailscale | Reescrito: despliegue actual (VM de GCP con L4, compose y perfiles), diagrama con OpenProject, vault, LiveSync/CouchDB, Tailscale, SearXNG y monitorización, lista de paquetes al día y el servidor original reducido a una nota |
+| D | La tabla de hardening de `docs/SECURITY.md` y sus pendientes eran del servidor original | Comprobado en la VM (`ss -tlnp`, `sshd -T`, `/etc/sudoers.d`, UFW) y rehecha con lo que es cierto hoy; añadido el resumen de la auditoría del 22-09 y los pendientes reales |
+| E | La sección de exec de `AGENTS.md` citaba `nvidia-smi` y `ollama` y decía que `write`/`edit` llegan al home | Ya corregido en `fix/seguridad-auditoria` (PR #13), que además limita las herramientas de ficheros al workspace |
+| F | Los niveles `vram_7000` y `vram_21000` de `BENCHMARKS.md`/`MODELS.md` no están medidos | Nada que corregir: los propios documentos lo dicen. Revisar solo si se cambia de GPU |
+| G | `docs/TEAMS.md` describía un canal preparado pero sin probar | El documento abre con un aviso de estado: preparado, sin probar y fuera del alcance verificado del TFM. **La decisión de si Teams sigue en el alcance sigue siendo tuya**; si se descarta, el documento y `scripts/configure-teams` se pueden retirar en un commit aparte |
+
 ## Pendiente de tu criterio
 
-| # | Dónde | Qué pasa | Propuesta |
-|---|---|---|---|
-| A | `docs/OPENCLAW.md` entero | Mitad instalación con systemd (julio), mitad Docker (septiembre); secciones largas de incidentes con Qwen (prompt gigante, latencia) que ya no aplican a Gemma | Dividirlo en `OPENCLAW.md` (Docker, vigente) y `OPENCLAW-BAREMETAL.md` o un anexo histórico |
-| B | `docs/OPENCLAW.md` «Correo y calendario (gog)» | Describe `gog` con OAuth de Google, sustituido por IMAP/SMTP + CalDAV/OpenProject y las skills `jarvis-email`/`jarvis-calendar` (`EMAIL.md`, `CALENDAR.md`) | Borrar la sección o moverla al anexo histórico |
-| C | `docs/ARCHITECTURE.md` | Toda la sección de hardware y el usuario `jarvis-svc` son del servidor original; el diagrama no incluye OpenProject, LiveSync ni Tailscale | Reescribir con la arquitectura de compose |
-| D | `docs/SECURITY.md` | La tabla de hardening y los pendientes (SSH por clave, `sudoers.d/jarvis-temp`) son del servidor original; no se sabe si aplican a la VM | Confirmar en la VM y rehacer la tabla; enlazar el resumen de la auditoría de seguridad del 22-09 |
-| E | `integrations/openclaw/workspace/AGENTS.md` (sección exec) | Cita `nvidia-smi` y `ollama` en la lista blanca (en Docker no están) y dice que `write`/`edit` llegan al home | Corregido en la rama `fix/seguridad-auditoria`, que limita las herramientas de ficheros al workspace |
-| F | `docs/BENCHMARKS.md`, `docs/MODELS.md` | Los niveles distintos de `vram_7000` y `vram_21000` no están medidos (lo dicen ellos mismos) | Nada que corregir; revisar si se cambia de GPU |
-| G | `docs/TEAMS.md` | Canal preparado pero sin probar (falta el registro en Azure) | Decidir si Teams sigue en el alcance del TFM |
+* **G**: decidir si Microsoft Teams sigue en el alcance del TFM.

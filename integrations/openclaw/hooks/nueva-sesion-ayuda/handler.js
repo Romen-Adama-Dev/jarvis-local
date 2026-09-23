@@ -1,6 +1,6 @@
 const GUIA = `🤖 *Jarvis — sesión nueva lista*
 
-Soy tu asistente local: la IA corre en tu servidor (Ollama + GTX 1070), sin nube.
+Soy tu asistente local: la IA corre en tu servidor (Ollama sobre su GPU), sin nube.
 
 📚 *Documentación (RAG)*
 • Adjunta un PDF, DOCX, TXT, MD, HTML, CSV o XLSX y lo indexo (máx. 50 MiB).

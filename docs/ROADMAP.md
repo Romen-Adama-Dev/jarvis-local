@@ -164,7 +164,7 @@ scopes `Calendars.Read`/`Calendars.ReadWrite`), expone `/v1/calendar/events`
 `payload` de `ConfirmationService.request(...)` para guardar el evento
 propuesto hasta la confirmación. Nuevo servidor MCP `jarvis-calendar`
 (`jarvis_calendar_availability`, `jarvis_calendar_propose_event`,
-`jarvis_calendar_confirm_event`) con la misma advertencia que `gog`: **crear
+`jarvis_calendar_confirm_event`) con la misma advertencia de siempre: **crear
 un evento nunca invita a terceros de forma autónoma**, solo tras confirmación
 explícita del propietario cuando la propuesta incluye invitados.
 
