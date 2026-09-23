@@ -90,6 +90,7 @@ volumes:
   prometheus_data:
   alertmanager_data:
   grafana_data:
+  backup_metrics:
 
 services:
   # --- Arranque: secretos + modelos -------------------------------------------------
@@ -236,6 +237,7 @@ services:
       - couchdb_data:/data/couchdb-data
       - couchdb_config:/data/couchdb-config
       - openproject_assets:/data/openproject-assets
+      - backup_metrics:/metrics
     depends_on:
       postgres:
         condition: service_healthy
@@ -765,8 +767,11 @@ services:
       - --path.rootfs=/host
       - --web.listen-address=127.0.0.1:9100
       - --collector.filesystem.mount-points-exclude=^/(dev|proc|sys|run|var/lib/docker/.+|var/lib/containerd/.+)($$|/)
+      # Hora de la última copia de seguridad (servicio backup): alerta CopiaAtrasada.
+      - --collector.textfile.directory=/textfile
     volumes:
       - /:/host:ro,rslave
+      - backup_metrics:/textfile:ro
     logging: *logging
 
   # Métricas de la GPU NVIDIA (uso, VRAM, temperatura, consumo, errores Xid). Sin GPU,

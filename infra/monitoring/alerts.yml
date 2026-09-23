@@ -46,6 +46,15 @@ groups:
           summary: "Queda menos del 10 % de disco"
           description: "Libres {{ $value | humanizePercentage }} en /. Modelos, imágenes y copias de seguridad crecen: revisa `docker system df`."
 
+      - alert: CopiaAtrasada
+        expr: time() - jarvis_backup_last_success_timestamp_seconds > 26 * 3600
+        for: 30m
+        labels:
+          severity: warning
+        annotations:
+          summary: "No hay copia de seguridad reciente"
+          description: "La última copia correcta es de hace {{ $value | humanizeDuration }}. Mira `docker compose logs backup` o haz una con `scripts/backup`."
+
       - alert: MemoriaBaja
         expr: node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes < 0.05
         for: 10m
