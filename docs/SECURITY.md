@@ -12,7 +12,7 @@ de `docs/ACCEPTANCE.md` verifica la exposición real con `ss -tlnp`.
 | SSH sin contraseña | ✅ | `sshd -T`: `passwordauthentication no`, `permitrootlogin without-password`. Acceso solo con clave. |
 | sudo sin contraseña | ✅ no hay reglas propias | `/etc/sudoers.d/` solo contiene lo que pone cloud-init y Google (`90-cloud-init-users`, `google_sudoers`). La regla temporal `jarvis-temp` del servidor original no existe aquí. |
 | Contenedores sin privilegios | ✅ | Ningún servicio usa `privileged`. `openclaw` y `tailscale` usan `network_mode: host` por necesidad (el gateway publica por Tailscale y el agente resuelve nombres del tailnet); el resto va en la red interna de compose. |
-| El agente solo ve su workspace | ✅ desde el 22-09 | `tools.fs.workspaceOnly: true` y `web_fetch` denegado en OpenClaw; el gateway arranca sin los secretos que no necesita en su entorno (ver «Auditoría de seguridad» abajo). |
+| El agente solo ve su workspace | ✅ desde el 22-09 | `tools.fs.workspaceOnly: true` y `web_fetch` y `web_search` denegados en OpenClaw (internet solo con `jarvis_web_sources`/`jarvis_web_read` y aprobación del usuario); el gateway arranca sin los secretos que no necesita en su entorno (ver «Auditoría de seguridad» abajo). |
 | Secretos fuera de git | ✅ | `.env`, `vault_ssh_key` y los datos de estado están en `.gitignore` y `.dockerignore`; solo se versiona `.env.example` sin valores reales. |
 | Copias de seguridad cifradas en reposo | ⏳ | Copias diarias de Postgres, Qdrant, estado de OpenClaw y CouchDB con restauración probada (`docs/BACKUP.md`); quedan dentro de la VM, sin cifrado adicional ni copia fuera del servidor. |
 

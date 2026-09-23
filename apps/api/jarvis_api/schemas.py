@@ -73,6 +73,9 @@ class RagQueryRequest(BaseModel):
     # en la suya; con proyecto, además en la del proyecto (packages/core/scope.py).
     company: str = ""
     project: str = ""
+    # Metodologías del proyecto (packages/core/directives.py): con alguna, solo se ven
+    # los documentos de esas metodologías y los que no tienen ninguna.
+    methodologies: list[str] = Field(default_factory=list, max_length=10)
     filters: dict = Field(default_factory=dict)
     top_k: int = 8
     conversation_id: uuid.UUID | None = None
@@ -93,6 +96,7 @@ class GenerateDocumentRequest(BaseModel):
     format: str = "pdf"
     company: str = ""
     project: str = ""
+    methodologies: list[str] = Field(default_factory=list, max_length=10)
     filters: dict = Field(default_factory=dict)
     telegram_user_id: int | None = None
 
@@ -129,6 +133,11 @@ class ProjectListResponse(BaseModel):
 class DocumentScopeRequest(BaseModel):
     company: str = ""
     project: str = ""
+
+
+class DocumentMethodologyRequest(BaseModel):
+    # Nombre legible ("Scrum", "PMI"); vacío = sin metodología (lo ve cualquier proyecto).
+    methodology: str = Field(default="", max_length=64)
 
 
 class JobResponse(BaseModel):

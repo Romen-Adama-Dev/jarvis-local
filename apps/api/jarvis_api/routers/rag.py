@@ -35,7 +35,7 @@ async def query(
     scope = await resolve_scope(session, payload.company, payload.project)
     result = await orchestrator.query(
         payload.query,
-        filters=scoped_filters(payload.filters, scope),
+        filters=scoped_filters(payload.filters, scope, payload.methodologies),
         top_k=payload.top_k,
     )
     return _to_response(result)

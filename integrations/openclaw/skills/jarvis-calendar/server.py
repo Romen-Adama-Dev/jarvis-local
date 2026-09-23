@@ -102,7 +102,7 @@ def jarvis_calendar_propose_event(
     minutes = max(1, int(draft["expires_at"] - time.time()) // 60)
     return (
         f"Propuesta lista — {draft['summary']}.\n"
-        "Enséñasela a Romen y pregúntale si la creas. Si dice que sí, llama TÚ a "
+        "Enséñasela al usuario y pregúntale si la creas. Si dice que sí, llama TÚ a "
         f"jarvis_calendar_confirm_event con token=\"{draft['token']}\" (no le pidas que "
         f"escriba ningún comando). Caduca en {minutes} min."
     )

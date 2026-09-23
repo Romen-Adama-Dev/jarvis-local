@@ -210,7 +210,7 @@ def test_remember_creates_person_or_topic_only_when_asked(vault):
     assert topic == vault / "memoria/Metodología de trabajo.md"
     red.remember(vault, "metodologia", "Daily de 15 minutos", day)  # ya existe: la encuentra
     assert topic.read_text().count("- 2026-03-03:") == 2
-    with pytest.raises(LookupError, match="'persona' o 'tema'"):
+    with pytest.raises(LookupError, match="'persona', 'tema' o 'metodologia'"):
         red.remember(vault, "Otra", "x", day, new="empresa")
 
 
@@ -242,3 +242,13 @@ def test_directives_are_mirrored_and_not_rememberable(vault, tmp_path):
 def test_note_name_is_safe():
     assert red.note_name('Riesgo: "pagos" #1 / [x]') == "Riesgo pagos 1 x"
     assert red.note_name("a" * 100) == "a" * 80
+
+
+def test_each_methodology_has_its_own_note(vault):
+    day = datetime.date(2026, 3, 3)
+    scrum = red.remember(vault, "Scrum", "La retro va antes de la planning", day, new="metodologia")
+    pmi = red.remember(vault, "PMI", "Línea base aprobada", day, new="metodologia")
+    assert scrum == vault / "memoria/metodologias/Scrum.md"
+    assert pmi == vault / "memoria/metodologias/PMI.md"
+    assert red.remember(vault, "scrum", "Daily de 15 minutos", day) == scrum
+    assert "Línea base" not in scrum.read_text()

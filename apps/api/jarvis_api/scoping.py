@@ -5,6 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.core.db.models import Document
+from packages.core.directives import methodology_id
 from packages.core.errors import ValidationFailedError
 from packages.core.scope import Scope, scope_from_metadata, slugify
 
@@ -65,9 +66,17 @@ async def resolve_scope(session: AsyncSession, company: str | None, project: str
     return Scope.of(company, project)
 
 
-def scoped_filters(filters: dict | None, scope: Scope) -> dict:
-    """Filtros de búsqueda con el ámbito impuesto (sustituye cualquier `scope` recibido)."""
+def scoped_filters(
+    filters: dict | None, scope: Scope, methodologies: list[str] | None = None
+) -> dict:
+    """Filtros de búsqueda con el ámbito impuesto (sustituye cualquier `scope` recibido) y,
+    si se piden, las metodologías del proyecto (packages/core/directives.py)."""
+    ids = list(dict.fromkeys(i for i in map(methodology_id, methodologies or []) if i))
     return {
         **(filters or {}),
-        "scope": {"company": scope.company_id, "project": scope.project_id},
+        "scope": {
+            "company": scope.company_id,
+            "project": scope.project_id,
+            **({"methodologies": ids} if ids else {}),
+        },
     }

@@ -10,6 +10,7 @@ from apps.api.jarvis_api.deps import DbSession, QdrantDep, SettingsDep
 from apps.api.jarvis_api.queue import get_arq_pool
 from apps.api.jarvis_api.schemas import (
     DocumentListResponse,
+    DocumentMethodologyRequest,
     DocumentResponse,
     DocumentScopeRequest,
     GenerateDocumentRequest,
@@ -19,6 +20,7 @@ from apps.api.jarvis_api.schemas import (
 )
 from apps.api.jarvis_api.scoping import known_scopes, resolve_scope, scoped_filters
 from packages.core.db.models import Document, Job
+from packages.core.directives import methodology_id
 from packages.core.errors import ConflictError, NotFoundError, ValidationFailedError
 from packages.core.jobs import FILE_JOB_TYPES
 from packages.docgen.templates import SECTION_TEMPLATES
@@ -78,6 +80,35 @@ async def set_scope(
     return DocumentResponse.model_validate(document)
 
 
+@router.patch("/{document_id}/methodology", response_model=DocumentResponse)
+async def set_methodology(
+    document_id: uuid.UUID,
+    payload: DocumentMethodologyRequest,
+    session: DbSession,
+    settings: SettingsDep,
+    qdrant: QdrantDep,
+) -> DocumentResponse:
+    """Marca un documento con una metodología ("Scrum", "PMI"…) o se la quita (vacío),
+    sin reindexarlo: los proyectos de otra metodología dejan de verlo."""
+    document = await session.get(Document, document_id)
+    if document is None or document.deleted_at is not None:
+        raise NotFoundError("Documento no encontrado")
+    name = payload.methodology.strip()
+    if name and not methodology_id(name):
+        raise ValidationFailedError(f"La metodología «{name}» necesita letras o cifras latinas.")
+    others = {k: v for k, v in (document.doc_metadata or {}).items() if k != "methodology"}
+    document.doc_metadata = {**others, **({"methodology": name} if name else {})}
+    await set_document_scope(
+        qdrant,
+        settings.qdrant_collection,
+        str(document.id),
+        {"methodology": methodology_id(name) or None},
+    )
+    await session.commit()
+    await session.refresh(document)
+    return DocumentResponse.model_validate(document)
+
+
 @router.get("/{document_id}", response_model=DocumentResponse)
 async def get_document(document_id: uuid.UUID, session: DbSession) -> DocumentResponse:
     document = await session.get(Document, document_id)
@@ -94,8 +125,14 @@ async def upload_document(
     telegram_user_id: int | None = None,
     company: str | None = None,
     project: str | None = None,
+    methodology: str | None = None,
 ) -> JobResponse:
     scope = await resolve_scope(session, company, project)
+    methodology = (methodology or "").strip()[:64]
+    if methodology and not methodology_id(methodology):
+        raise ValidationFailedError(
+            f"La metodología «{methodology}» necesita letras o cifras latinas."
+        )
     safe_name = validate_filename(file.filename or "")
     content = await file.read()
     validate_size(len(content), settings.max_upload_mb)
@@ -127,7 +164,7 @@ async def upload_document(
         size_bytes=len(content),
         status="pending",
         uploaded_by=telegram_user_id,
-        doc_metadata=scope.metadata(),
+        doc_metadata={**scope.metadata(), **({"methodology": methodology} if methodology else {})},
     )
     session.add(document)
     await session.flush()
@@ -205,7 +242,7 @@ async def generate_document(payload: GenerateDocumentRequest, session: DbSession
         payload.kind,
         payload.topic,
         payload.format,
-        scoped_filters(payload.filters, scope),
+        scoped_filters(payload.filters, scope, payload.methodologies),
     )
 
     return JobResponse.model_validate(job)

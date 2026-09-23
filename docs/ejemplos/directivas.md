@@ -5,9 +5,28 @@ usuario quien le dice cómo trabaja, desde el chat ("a partir de ahora…"). Jar
 escribe en `MEMORY.md` y lo aplica desde el siguiente mensaje (ver "Directivas de Jarvis"
 en [OBSIDIAN.md](../OBSIDIAN.md)).
 
+`MEMORY.md` tiene zonas: **General** (vale para todo), **Metodologías** (una `###` por
+método, se añaden las que hagan falta) y **Proyectos** (qué método sigue cada uno). Los
+métodos no se mezclan salvo que se pida: ver "Metodologías por proyecto" en
+[EMPRESAS.md](../EMPRESAS.md).
+
 Estos son solo ejemplos de lo que se le puede dictar; ninguno viene activado. Cuando una
-directiva nombre un libro o una guía, indéxalo antes como documentación general (sin
-empresa ni proyecto): el repo no trae ninguno.
+directiva nombre un libro o una guía, indéxalo antes como documentación general con su
+metodología (`jarvis_upload(..., methodology="PMI")`): el repo no trae ninguno. Si no
+lo tienes, Jarvis te propondrá fuentes de internet y solo usará las que apruebes.
+
+## Asignar métodos a proyectos
+
+> App de reservas de Estudio Delta va con Scrum; la Migración ERP de Acme, con PMI.
+
+Jarvis lo escribe en la zona **Proyectos**:
+
+```markdown
+## Proyectos
+
+- Estudio Delta › App de reservas: Scrum
+- Acme › Migración ERP: PMI
+```
 
 ## Predictivo con PMBOK y un libro de formularios
 
