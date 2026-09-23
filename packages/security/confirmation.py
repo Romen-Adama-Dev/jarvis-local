@@ -55,6 +55,9 @@ class ConfirmationService:
         await self._store.save(confirmation)
         return confirmation
 
+    async def cancel(self, token: str) -> None:
+        await self._store.delete(token)
+
     async def confirm(self, telegram_user_id: int, token: str) -> PendingConfirmation:
         pending = await self._store.pop(token)
         if pending is None:

@@ -322,11 +322,15 @@
   "plugins": {
     "load": {
       "paths": [
-        "__REPO_DIR__/integrations/openclaw/plugins/jarvis-menu"
+        "__REPO_DIR__/integrations/openclaw/plugins/jarvis-menu",
+        "__REPO_DIR__/integrations/openclaw/plugins/jarvis-aprobaciones"
       ]
     },
     "entries": {
       "jarvis-menu": {
+        "enabled": true
+      },
+      "jarvis-aprobaciones": {
         "enabled": true
       },
       "searxng": {
@@ -380,6 +384,7 @@
     },
     "allow": [
       "jarvis-menu",
+      "jarvis-aprobaciones",
       "searxng",
       "telegram",
       "memory-wiki",
