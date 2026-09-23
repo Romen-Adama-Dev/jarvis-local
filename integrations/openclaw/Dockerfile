@@ -73,6 +73,7 @@ RUN useradd --uid 1000 --create-home --home-dir /home/jarvis jarvis \
     && install -m 755 /app/integrations/openclaw/config/jarvis-tts /opt/piper/bin/jarvis-tts \
     && mkdir -p /home/jarvis/.local/bin /home/jarvis/.openclaw \
     && ln -s /opt/piper/bin/jarvis-tts /home/jarvis/.local/bin/jarvis-tts \
+    && install -m 755 /app/integrations/openclaw/config/jarvis-admin /usr/local/bin/jarvis-admin \
     && chown -R jarvis:jarvis /home/jarvis \
     && chmod 1777 /home/jarvis /home/jarvis/.local /home/jarvis/.local/bin
 

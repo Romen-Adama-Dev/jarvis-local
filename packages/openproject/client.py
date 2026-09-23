@@ -328,6 +328,55 @@ class OpenProjectClient:
         params = {"filters": json.dumps(filters), "sortBy": json.dumps([["dueDate", "asc"]])}
         return self._elements("/work_packages", params)
 
+    # --- Administración (jarvis-admin: siempre con aprobación del propietario) ----------
+
+    def users(self) -> list[dict]:
+        """Usuarios humanos (activos, invitados o bloqueados)."""
+        return [u for u in self._elements("/users") if u.get("login")]
+
+    def find_user(self, name: str) -> dict:
+        users = self.users()
+        for user in users:
+            if _normalize(name) in {
+                _normalize(str(user.get(k, ""))) for k in ("login", "email", "name")
+            }:
+                return user
+        return self._match(users, name, "El usuario")
+
+    def create_user(self, name: str, email: str) -> dict:
+        """Da de alta a una persona como usuario invitado: OpenProject le manda por correo
+        el enlace para elegir contraseña."""
+        if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email):
+            raise ValidationFailedError(f"«{email}» no parece un correo.")
+        first, _, last = " ".join(name.split()).partition(" ")
+        if not first:
+            raise ValidationFailedError("Falta el nombre.")
+        body = {
+            "login": email.lower(),
+            "email": email.lower(),
+            "firstName": first,
+            "lastName": last or "-",
+            "status": "invited",
+        }
+        return self._request("POST", "/users", json=body)
+
+    def add_member(self, project: str, user: str, role: str = "Miembro") -> dict:
+        """Añade a un usuario a un proyecto con un rol (así se le pueden asignar tareas)."""
+        found_project = self.find_project(project)
+        found_user = self.find_user(user)
+        found_role = self._match(self._elements("/roles"), role, "El rol")
+        return self._request(
+            "POST",
+            "/memberships",
+            json={
+                "_links": {
+                    "project": {"href": f"/api/v3/projects/{found_project['id']}"},
+                    "principal": {"href": found_user["_links"]["self"]["href"]},
+                    "roles": [{"href": found_role["_links"]["self"]["href"]}],
+                }
+            },
+        )
+
     # --- Reuniones ----------------------------------------------------------------------
 
     def users_by_email(self) -> dict[str, dict]:
