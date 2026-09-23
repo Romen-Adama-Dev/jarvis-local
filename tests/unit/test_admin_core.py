@@ -21,8 +21,12 @@ def test_valid_branch(name, ok):
 def test_check_service():
     services = ["api", "openclaw", "admin"]
     assert core.check_service("api", services) is None
-    assert "no se gestiona" in core.check_service("admin", services)
-    assert "Hay: admin, api, openclaw" in core.check_service("nada", services)
+    admin_result = core.check_service("admin", services)
+    assert admin_result is not None
+    assert "no se gestiona" in admin_result
+    missing_result = core.check_service("nada", services)
+    assert missing_result is not None
+    assert "Hay: admin, api, openclaw" in missing_result
 
 
 def test_log_lines_are_bounded():
