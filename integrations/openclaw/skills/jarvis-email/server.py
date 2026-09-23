@@ -112,7 +112,7 @@ def jarvis_email_draft(
     minutes = max(1, int(data["expires_at"] - time.time()) // 60)
     return (
         f"Borrador listo — {data['summary']}.\n"
-        "Enséñale a Romen destinatario, asunto, cuerpo y adjunto, y pregúntale si lo envías. "
+        "Enséñale al usuario destinatario, asunto, cuerpo y adjunto, y pregúntale si lo envías. "
         f"Si dice que sí, llama TÚ a jarvis_email_confirm_send con token=\"{data['token']}\" "
         f"(no le pidas que escriba ningún comando). Caduca en {minutes} min."
     )

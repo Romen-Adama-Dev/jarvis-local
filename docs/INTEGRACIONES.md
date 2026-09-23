@@ -6,7 +6,7 @@ Investigación (2026-07-13) de proyectos autohosteados con licencia libre que Op
 
 | Proyecto | Licencia | Para qué | Estado |
 |---|---|---|---|
-| SearXNG | AGPL-3.0 | Búsqueda web sin API keys: da `web_search` a OpenClaw manteniendo las consultas en servidor propio | ✅ Perfil `assistant` de compose, plugin oficial configurado |
+| SearXNG | AGPL-3.0 | Búsqueda web sin API keys, con las consultas en servidor propio; el agente la usa con `jarvis_web_sources`/`jarvis_web_read` y aprobación del usuario | ✅ Perfil `assistant` de compose, plugin oficial configurado |
 | whisper.cpp | MIT | Transcripción local de notas de voz de Telegram (modelo small q5, español, ~5 s por nota en CPU) | ✅ Paquete de Ubuntu + modelo en `/srv/jarvis/models/whisper`, cableado en `tools.media.audio` |
 | Piper TTS | MIT | Respuestas con voz en español (es_ES-davefx-medium); modo `inbound`: responde con audio solo si le hablas | ✅ `uv tool install piper-tts` + wrapper `jarvis-tts`, cableado en `messages.tts` |
 | changedetection.io | Apache-2.0 | Vigilar páginas web (precios, convocatorias…) | ✅ Perfil `assistant`, `127.0.0.1:5000` |

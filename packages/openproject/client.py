@@ -142,6 +142,15 @@ class OpenProjectClient:
 
     def find_project(self, name: str) -> dict:
         projects = self.projects()
+        if "›" in name:  # "Empresa › Proyecto", como los lista pm_projects
+            company, _, project = (part.strip() for part in name.rpartition("›"))
+            for candidate in projects:
+                parent = (candidate["_links"].get("parent") or {}).get("title") or ""
+                if _normalize(candidate.get("name", "")) == _normalize(project) and (
+                    _normalize(parent) == _normalize(company)
+                ):
+                    return candidate
+            name = project
         for key in ("identifier", "name"):
             for project in projects:
                 if _normalize(str(project.get(key, ""))) == _normalize(name):

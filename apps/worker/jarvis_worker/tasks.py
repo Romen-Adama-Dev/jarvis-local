@@ -10,6 +10,7 @@ from sqlalchemy import delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.core.db.models import Chunk, Document, Job
+from packages.core.directives import methodology_from_metadata, methodology_id
 from packages.core.jobs import (
     mark_cancelled,
     mark_completed,
@@ -89,6 +90,7 @@ async def _run_ingestion(
 
     now = datetime.datetime.now(datetime.UTC).isoformat()
     scope = scope_from_metadata(document.doc_metadata).payload()
+    methodology = methodology_id(methodology_from_metadata(document.doc_metadata)) or None
     points = []
     chunk_rows = []
     for chunk in chunks:
@@ -107,6 +109,7 @@ async def _run_ingestion(
                 tags=[],
                 company=scope["company"],
                 project=scope["project"],
+                methodology=methodology,
             )
         )
         chunk_rows.append(

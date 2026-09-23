@@ -725,17 +725,25 @@ def write_pages(vault: Path, pages: list[Page], snap: Snapshot) -> int:
 # --- Memoria escrita por Jarvis --------------------------------------------------------
 
 NOTES_HEADING = "## Notas"
-# Empresas, proyectos (dentro de su empresa), personas y temas generales: sobre eso se
-# pueden anotar cosas. Las directivas de Jarvis no: son una copia de su MEMORY.md.
+# Empresas, proyectos (dentro de su empresa), personas, temas generales y metodologías:
+# sobre eso se pueden anotar cosas. Las directivas de Jarvis no: son una copia de su
+# MEMORY.md. Cada metodología tiene su nota (lo aprendido trabajando con ella), aparte de
+# las demás para que no se mezclen; sus reglas cortas están en su zona de MEMORY.md.
 TOPICS_DIR = "memoria"
+METHODOLOGIES_DIR = f"{TOPICS_DIR}/metodologias"
 DIRECTIVES_NOTE = f"{TOPICS_DIR}/Directivas de Jarvis"
 REMEMBER_GLOBS = (
     "entities/empresas/*.md",
     "entities/empresas/*/*.md",
     "entities/personas/*.md",
     f"{TOPICS_DIR}/*.md",
+    f"{METHODOLOGIES_DIR}/*.md",
 )
-NEW_NOTE_DIRS = {"persona": "entities/personas", "tema": TOPICS_DIR}
+NEW_NOTE_DIRS = {
+    "persona": "entities/personas",
+    "tema": TOPICS_DIR,
+    "metodologia": METHODOLOGIES_DIR,
+}
 
 
 def _rememberable(vault: Path) -> list[Path]:
@@ -760,13 +768,14 @@ def find_note(vault: Path, about: str) -> Path:
     names = ", ".join(p.stem for p in notes) or "ninguna (¿está activa la red de conocimiento?)"
     raise LookupError(
         f"No hay nota de «{about}». Hay: {names}. Para crearla, repite con "
-        "new='persona' (una persona) o new='tema' (un tema general)."
+        "new='persona' (una persona), new='tema' (un tema general) o new='metodologia' "
+        "(una metodología de trabajo)."
     )
 
 
 def _new_note(vault: Path, about: str, kind: str) -> Path:
     if kind not in NEW_NOTE_DIRS:
-        raise LookupError(f"new debe ser 'persona' o 'tema', no «{kind}».")
+        raise LookupError(f"new debe ser 'persona', 'tema' o 'metodologia', no «{kind}».")
     name = note_name(about)
     if _key(name) == _key(Path(DIRECTIVES_NOTE).name):
         raise LookupError("Las directivas se editan en MEMORY.md, no con jarvis_remember.")
@@ -783,7 +792,7 @@ def remember(
 ) -> Path:
     """Añade una nota fechada fuera del bloque generado de la nota de `about`: se conserva
     al regenerar la red, sale en Obsidian y en la wiki de OpenProject. Con `new`
-    ("persona" o "tema") crea la nota si aún no existe."""
+    ("persona", "tema" o "metodologia") crea la nota si aún no existe."""
     try:
         note = find_note(vault, about)
     except LookupError:

@@ -1,8 +1,11 @@
-"""Copia el ámbito (empresa/proyecto) de cada documento de PostgreSQL al payload de sus
-fragmentos en Qdrant y crea los índices de ámbito. Para instalaciones anteriores al RAG
-multiempresa; idempotente:
+r"""Copia el ámbito (empresa/proyecto) y la metodología de cada documento de PostgreSQL al
+payload de sus fragmentos en Qdrant y crea los índices de ámbito. Para instalaciones
+anteriores al RAG multiempresa o a las metodologías; idempotente:
 
-    docker compose exec api python -m apps.api.jarvis_api.sync_scopes
+    docker compose exec api /app/infra/docker/entrypoint.sh \
+        python -m apps.api.jarvis_api.sync_scopes
+
+(por el entrypoint, que carga la contraseña de PostgreSQL de /run/jarvis).
 """
 
 import asyncio
@@ -12,6 +15,7 @@ from sqlalchemy import select
 
 from packages.core.db.models import Document
 from packages.core.db.session import make_engine, make_session_factory
+from packages.core.directives import methodology_from_metadata, methodology_id
 from packages.core.scope import scope_from_metadata
 from packages.core.settings import get_settings
 from packages.rag.store import ensure_scope_indexes, set_document_scope
@@ -32,8 +36,12 @@ async def main() -> None:
             ).scalars()
             for document in documents:
                 scope = scope_from_metadata(document.doc_metadata)
+                methodology = methodology_from_metadata(document.doc_metadata)
                 await set_document_scope(
-                    qdrant, settings.qdrant_collection, str(document.id), scope.payload()
+                    qdrant,
+                    settings.qdrant_collection,
+                    str(document.id),
+                    {**scope.payload(), "methodology": methodology_id(methodology) or None},
                 )
                 print(f"{document.filename}: {scope.label()}")
     finally:

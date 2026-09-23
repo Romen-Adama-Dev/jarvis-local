@@ -24,6 +24,8 @@ class ChunkPoint:
     # Ámbito (packages/core/scope.py): identificadores de empresa y proyecto, o None.
     company: str | None = None
     project: str | None = None
+    # Metodología del documento (packages/core/directives.py), o None.
+    methodology: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -70,7 +72,7 @@ async def ensure_scope_indexes(client: AsyncQdrantClient, collection_name: str) 
                 type=models.KeywordIndexType.KEYWORD, is_tenant=True
             ),
         )
-    for field in ("project", "document_id"):
+    for field in ("project", "document_id", "methodology"):
         if field not in existing:
             await client.create_payload_index(
                 collection_name, field, field_schema=models.PayloadSchemaType.KEYWORD
@@ -107,6 +109,7 @@ async def upsert_chunks(
                     "tags": point.tags,
                     "company": point.company,
                     "project": point.project,
+                    "methodology": point.methodology,
                 },
             )
         )
@@ -133,7 +136,8 @@ async def delete_by_document(
 async def set_document_scope(
     client: AsyncQdrantClient, collection_name: str, document_id: str, payload: dict
 ) -> None:
-    """Cambia empresa/proyecto de todos los fragmentos de un documento sin reindexarlo."""
+    """Cambia empresa/proyecto (o metodología) de todos los fragmentos de un documento sin
+    reindexarlo."""
     await client.set_payload(
         collection_name=collection_name,
         payload=payload,
@@ -157,10 +161,18 @@ def _match(key: str, value: str) -> models.FieldCondition:
     return models.FieldCondition(key=key, match=models.MatchValue(value=value))
 
 
-def scope_filter(company_id: str, project_id: str, *, own_only: bool = False) -> models.Filter:
+def scope_filter(
+    company_id: str,
+    project_id: str,
+    *,
+    own_only: bool = False,
+    methodologies: list[str] | None = None,
+) -> models.Filter:
     """Qué documentos ve una consulta: los globales siempre; los de la empresa (sin
     proyecto) si hay empresa; los del proyecto si hay proyecto. Nunca los de otra empresa
-    ni los de otro proyecto. `own_only` quita los globales (búsqueda solo en lo propio)."""
+    ni los de otro proyecto. `own_only` quita los globales (búsqueda solo en lo propio).
+    Con `methodologies`, además, solo los de esas metodologías y los que no tienen
+    ninguna: un proyecto Scrum no ve la guía de PMI."""
     visible: list[models.Condition] = [] if own_only and company_id else [_is_empty("company")]
     if company_id and project_id:
         visible += [
@@ -169,7 +181,15 @@ def scope_filter(company_id: str, project_id: str, *, own_only: bool = False) ->
         ]
     elif company_id:
         visible.append(_match("company", company_id))
-    return models.Filter(should=visible)
+    if not methodologies:
+        return models.Filter(should=visible)
+    method = models.Filter(
+        should=[
+            _is_empty("methodology"),
+            models.FieldCondition(key="methodology", match=models.MatchAny(any=methodologies)),
+        ]
+    )
+    return models.Filter(must=[models.Filter(should=visible), method])
 
 
 def _build_filter(filters: dict) -> models.Filter | None:
@@ -181,6 +201,7 @@ def _build_filter(filters: dict) -> models.Filter | None:
                 scope.get("company", ""),
                 scope.get("project", ""),
                 own_only=bool(scope.get("own_only")),
+                methodologies=list(scope.get("methodologies") or []),
             )
         )
     if document_id := filters.get("document_id"):
