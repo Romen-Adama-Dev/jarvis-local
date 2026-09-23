@@ -1,0 +1,12 @@
+{
+  "id": "jarvis-aprobaciones",
+  "name": "Jarvis: aprobación de correos",
+  "description": "Botones Enviar/Descartar de los borradores de correo: la aprobación no pasa por el modelo",
+  "activation": {
+    "onStartup": true
+  },
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false
+  }
+}

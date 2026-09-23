@@ -1,0 +1,11 @@
+{
+  "name": "jarvis-aprobaciones",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Plugin de OpenClaw de jarvis-local: aprobación de correos con botones de Telegram",
+  "license": "MIT",
+  "openclaw": {
+    "extensions": ["./index.js"]
+  }
+}
