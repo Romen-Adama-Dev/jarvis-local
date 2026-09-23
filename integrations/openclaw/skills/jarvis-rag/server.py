@@ -467,16 +467,18 @@ def _resolve_audio(file_path: str) -> Path | None:
 
 
 @mcp.tool()
-def jarvis_remember(about: str, text: str) -> str:
-    """Guarda algo que Jarvis debe recordar sobre un proyecto, una empresa o una persona
-    ("recuerda que el cliente prefiere reuniones por la mañana"). Va a la nota de `about`
-    en Obsidian, que es la memoria común: también sale en la wiki del proyecto en
-    OpenProject y en las búsquedas de memoria. `about` es el nombre tal cual."""
+def jarvis_remember(about: str, text: str, new: str = "") -> str:
+    """Guarda algo que Jarvis debe recordar sobre un proyecto, una empresa, una persona o un
+    tema general ("recuerda que el cliente prefiere reuniones por la mañana"). Va a la nota
+    de `about` en Obsidian, que es la memoria común: también sale en la wiki del proyecto en
+    OpenProject y en las búsquedas de memoria. `about` es el nombre tal cual. Si la nota no
+    existe, `new="persona"` (alguien nuevo) o `new="tema"` (p. ej. "Metodología de
+    trabajo") la crea. Las directivas de Jarvis no van aquí: van en su MEMORY.md."""
     sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
     from packages.knowledge.red import remember
 
     try:
-        note = remember(JARVIS_VAULT_DIR, about, text)
+        note = remember(JARVIS_VAULT_DIR, about, text, new=new.strip().lower())
     except (LookupError, OSError) as exc:
         return f"No se guardó: {exc}"
     return f"Anotado en {note.relative_to(JARVIS_VAULT_DIR)}."

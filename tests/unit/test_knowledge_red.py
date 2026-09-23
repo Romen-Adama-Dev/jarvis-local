@@ -200,6 +200,45 @@ def test_remember_appends_outside_generated_block(vault):
         red.remember(vault, "Otra cosa", "x")
 
 
+def test_remember_creates_person_or_topic_only_when_asked(vault):
+    day = datetime.date(2026, 3, 3)
+    with pytest.raises(LookupError, match="new='persona'"):
+        red.remember(vault, "Carmen", "Le gusta Marvel", day)
+    person = red.remember(vault, "Carmen", "Le gusta Marvel", day, new="persona")
+    assert person == vault / "entities/personas/Carmen.md"
+    topic = red.remember(vault, "Metodología de trabajo", "PMBOK y Snyder", day, new="tema")
+    assert topic == vault / "memoria/Metodología de trabajo.md"
+    red.remember(vault, "metodologia", "Arquitecto y Operador", day)  # ya existe: la encuentra
+    assert topic.read_text().count("- 2026-03-03:") == 2
+    with pytest.raises(LookupError, match="'persona' o 'tema'"):
+        red.remember(vault, "Otra", "x", day, new="empresa")
+
+
+def test_generated_person_keeps_notes_written_by_remember(vault):
+    """Si la red genera después a esa persona, rellena el bloque y respeta las notas."""
+    snap = _snapshot(vault)
+    red.remember(vault, "Alex Gil", "Prefiere correo", datetime.date(2026, 3, 3), new="persona")
+    red.write_pages(vault, red.build_pages(snap), snap)
+    text = (vault / "entities/personas/Alex Gil.md").read_text()
+    assert "generatedBy" in text and "[[Tienda online]]" in text
+    assert text.index(red.END) < text.index("- 2026-03-03: Prefiere correo")
+
+
+def test_directives_are_mirrored_and_not_rememberable(vault, tmp_path):
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    assert not red.mirror_directives(workspace, vault)  # sin MEMORY.md no hace nada
+    (workspace / "MEMORY.md").write_text("# Directivas\n\n- Arquitecto y Operador\n")
+    assert red.mirror_directives(workspace, vault)
+    assert not red.mirror_directives(workspace, vault)  # sin cambios no reescribe
+    note = vault / f"{red.DIRECTIVES_NOTE}.md"
+    assert "- Arquitecto y Operador" in note.read_text()
+    with pytest.raises(LookupError):
+        red.remember(vault, "Directivas de Jarvis", "x")
+    with pytest.raises(LookupError, match="MEMORY.md"):
+        red.remember(vault, "Directivas de Jarvis", "x", new="tema")
+
+
 def test_note_name_is_safe():
     assert red.note_name('Riesgo: "pagos" #1 / [x]') == "Riesgo pagos 1 x"
     assert red.note_name("a" * 100) == "a" * 80
