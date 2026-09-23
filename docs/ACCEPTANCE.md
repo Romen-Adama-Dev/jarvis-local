@@ -19,7 +19,7 @@ implementado · ⛔ criterio retirado del alcance.
 | 11 | Un PDF puede enviarse por Telegram | ✅ | El PMBOK 7.ª ed. (PDF de 370 páginas) llegó por Telegram el 15-09 y está indexado (nombre `…---<uuid>.pdf` que OpenClaw da a los adjuntos; localización por nombre en `b3b6b3b`). |
 | 12 | El PDF se indexa correctamente | ✅ | 8 documentos y 770 fragmentos en PostgreSQL y Qdrant, separados por empresa y proyecto (`docs/EMPRESAS.md`). |
 | 13 | Una pregunta sobre el PDF devuelve respuesta con página y fuente | ✅ | `/v1/rag/query` sobre App de reservas devuelve respuesta con 4 fuentes (21-09); en Telegram, con cita (20-09). |
-| 14 | Una pregunta sin evidencia se rechaza correctamente | ⏳ | El modelo se abstiene ("No cuento con información suficiente en los documentos…", pregunta sobre gofio escaldado, 21-09), pero `insufficient_evidence` sale `false`: solo se marca cuando la recuperación no encuentra ningún candidato. Falta marcarlo también cuando el modelo se abstiene. |
+| 14 | Una pregunta sin evidencia se rechaza correctamente | ✅ | Sin candidatos, o con candidatos que no responden: el modelo se abstiene con la marca `SIN_EVIDENCIA:` y la API devuelve `insufficient_evidence=true`, sin fuentes. Comprobado el 23-09: «¿Cómo se prepara el gofio escaldado?» → `true`, 0 fuentes; «¿Qué es el acta de constitución?» → `false`, 8 fuentes. |
 | 15 | `/ask` utiliza Ollama | ✅ | `InferenceMode.NORMAL` → `OllamaProvider`; respuestas en 14 s. |
 | 16 | `/deep` utiliza AirLLM | ⛔ | **Criterio retirado el 23-09**, por el mismo motivo que el 5: ninguna consulta profunda terminaba en esta GPU (~37 s por token leyendo las capas del disco). El modo profundo deja de existir; las consultas se responden con Ollama. |
 | 17 | Un trabajo largo no bloquea Telegram | ✅ | Verificado en su día con una generación de AirLLM en curso: `/v1/rag/query` respondió en 14 s. El mecanismo es el mismo que siguen usando la generación de documentos y las actas de reunión: cola `arq` en el worker, la API responde 202 y el bot no espera. |
@@ -36,5 +36,4 @@ implementado · ⛔ criterio retirado del alcance.
 
 ## Pendiente
 
-* Criterio 14: marcar `insufficient_evidence` cuando el modelo se abstiene.
 * UAT con usuarios y medición del ahorro de tiempo (Fase 5.1 del TFM, `docs/ROADMAP.md`).

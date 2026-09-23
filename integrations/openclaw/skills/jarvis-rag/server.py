@@ -110,7 +110,9 @@ def _methodologies(scope: dict, methodology: str) -> tuple[list[str], str]:
 
 def _format_answer(data: dict) -> str:
     if data.get("insufficient_evidence"):
-        return data.get("warning") or "No hay evidencia suficiente en la documentación indexada."
+        warning = data.get("warning") or "No hay evidencia suficiente en la documentación indexada."
+        # Cuando el modelo se abstiene, su frase dice qué falta; sin candidatos, viene vacía.
+        return f"{warning}\n{data['answer']}" if data.get("answer") else warning
 
     lines = [data["answer"], "", "Fuentes:"]
     for source in data.get("sources", []):
