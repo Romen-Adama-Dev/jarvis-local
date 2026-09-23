@@ -67,6 +67,16 @@ bien y además es más rápido en CPU (6 s frente a 8,7 s con 24 candidatos en e
 servidor), pero su licencia es **CC-BY-NC-4.0**: solo para uso no comercial (p. ej. el
 TFM). Se elige con `RAG_RERANKER_MODEL` en `.env`.
 
+## Documentos en otro idioma
+
+La búsqueda léxica (BM25) no cruza idiomas y el reranker por defecto compara mal una
+pregunta en español con un párrafo en inglés: un libro en inglés indexado como
+documentación general no llegaba nunca a la respuesta si se preguntaba en español. Con
+`RAG_QUERY_TRANSLATION=true` (por defecto), el modelo local traduce la pregunta al inglés
+(una llamada corta), se busca con las dos, cada lista se reordena con su propia pregunta y
+se queda lo mejor de ambas. La respuesta sigue siendo en español y cita las fuentes de los
+dos idiomas. Si la traducción falla, se busca solo con la pregunta original.
+
 ## Pendiente
 
 * **Permisos por usuario**: hoy Telegram admite solo al propietario, que ve todas las

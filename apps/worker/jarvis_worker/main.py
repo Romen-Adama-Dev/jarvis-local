@@ -56,6 +56,7 @@ async def on_startup(ctx: dict[str, Any]) -> None:
         InferenceRouter(providers={InferenceMode.NORMAL: docgen_ollama_provider}),
         powerful_model=settings.ollama_powerful_model,
         reranker=docgen_reranker,
+        translate_queries=settings.rag_query_translation,
     )
 
     logger.info("worker_started")

@@ -25,6 +25,9 @@ class Settings(BaseSettings):
     # ordena mucho mejor en español (y es más rápido), pero su licencia es CC-BY-NC-4.0:
     # solo para uso no comercial. Ver packages/rag/reranker.py.
     rag_reranker_model: str = "BAAI/bge-reranker-base"
+    # Busca también con la pregunta traducida al inglés (una llamada corta al modelo):
+    # sin esto, un documento en inglés no aparece si se pregunta en español.
+    rag_query_translation: bool = True
 
     redis_host: str = "127.0.0.1"
     redis_port: int = 6379

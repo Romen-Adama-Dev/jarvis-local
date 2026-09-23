@@ -68,6 +68,7 @@ async def lifespan(app: FastAPI):
         get_inference_router(),
         powerful_model=settings.ollama_powerful_model,
         reranker=reranker,
+        translate_queries=settings.rag_query_translation,
     )
     set_rag_orchestrator(orchestrator)
     logger.info("rag_orchestrator_ready", reranker_enabled=settings.rag_reranker_enabled)
