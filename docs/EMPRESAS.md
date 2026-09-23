@@ -21,8 +21,8 @@ solo en la general.
   de cada empresa y la búsqueda filtrada rinde como si fueran colecciones separadas, sin
   duplicar el índice. Es la forma de multitenencia que recomienda Qdrant frente a una
   colección por cliente, que no escala y complica la documentación compartida.
-* **El filtro lo impone la API** (`apps/api/jarvis_api/scoping.py`): `/v1/rag/query`,
-  `/v1/rag/deep-query` y `/v1/documents/generate` reciben `company`/`project` y
+* **El filtro lo impone la API** (`apps/api/jarvis_api/scoping.py`): `/v1/rag/query`
+  y `/v1/documents/generate` reciben `company`/`project` y
   sustituyen cualquier filtro de ámbito que mande el cliente. El modelo no puede saltárselo.
 * **Nombres tolerantes**: "globex" se resuelve a "Globex Corp" y "migracion erp" a
   "Migración ERP" si no hay ambigüedad; un proyecto sin empresa se completa con la de sus

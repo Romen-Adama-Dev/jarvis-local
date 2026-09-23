@@ -23,12 +23,10 @@ sudo mkdir -p \
     "${SRV_ROOT}/data" \
     "${SRV_ROOT}/documents" \
     "${SRV_ROOT}/models/ollama" \
-    "${SRV_ROOT}/models/airllm" \
     "${SRV_ROOT}/backups" \
     "${SRV_ROOT}/logs"
 sudo chown -R "${SERVICE_USER}:${SERVICE_USER}" "${SRV_ROOT}"
 sudo chmod 750 "${SRV_ROOT}" "${SRV_ROOT}"/data "${SRV_ROOT}"/documents "${SRV_ROOT}"/models "${SRV_ROOT}"/backups "${SRV_ROOT}"/logs
-sudo chmod 750 "${SRV_ROOT}"/models/ollama "${SRV_ROOT}"/models/airllm
 
 echo "== Grupo ${SERVICE_USER} para ${HUMAN_USER} =="
 if ! id -nG "${HUMAN_USER}" | tr ' ' '\n' | grep -qx "${SERVICE_USER}"; then
