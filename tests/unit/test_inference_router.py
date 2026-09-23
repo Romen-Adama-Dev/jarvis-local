@@ -68,23 +68,17 @@ async def test_chat_routes_normal_mode_to_ollama_style_provider():
 
 
 @pytest.mark.asyncio
-async def test_deep_mode_without_airllm_configured_raises():
-    router = InferenceRouter(providers={InferenceMode.NORMAL: FakeProvider("ollama")})
+async def test_mode_without_provider_configured_raises():
+    router = InferenceRouter(providers={})
 
     with pytest.raises(ProviderUnavailableError):
-        await router.chat(InferenceMode.DEEP, [ChatMessage(role=Role.USER, content="hola")])
+        await router.chat(InferenceMode.NORMAL, [ChatMessage(role=Role.USER, content="hola")])
 
 
 @pytest.mark.asyncio
 async def test_health_all_reports_each_provider():
-    router = InferenceRouter(
-        providers={
-            InferenceMode.NORMAL: FakeProvider("ollama", healthy=True),
-            InferenceMode.DEEP: FakeProvider("airllm", healthy=False),
-        }
-    )
+    router = InferenceRouter(providers={InferenceMode.NORMAL: FakeProvider("ollama", healthy=True)})
 
     health = await router.health_all()
 
     assert health["normal"].healthy is True
-    assert health["deep"].healthy is False

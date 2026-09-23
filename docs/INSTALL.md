@@ -18,7 +18,7 @@ Requisitos, servicios, secretos, interfaz web y cómo migrar una instalación pr
 ## Camino alternativo: servidor bare-metal con systemd
 
 Fue el despliegue original del proyecto (servidor con GTX 1070, ver
-`docs/ARCHITECTURE.md` y `docs/SECURITY.md`): Ollama y AirLLM nativos por GPU y la
+`docs/ARCHITECTURE.md` y `docs/SECURITY.md`): Ollama nativo por GPU y la
 API/worker como servicios systemd. Desde el 15-09-2026 el despliegue real es el de
 Docker Compose. Orden de instalación en un Ubuntu
 Server limpio:
@@ -37,24 +37,21 @@ scripts/install-ollama
 scripts/select-models --dry-run
 #   sin --dry-run escribe .env; scripts/quickstart también lo invoca
 
-# 5. AirLLM (opcional, modo /deep; ver docs/AIRLLM.md)
-scripts/install-airllm
-
-# 6. Telegram + OpenClaw (opcional, capa de interacción; ver docs/TELEGRAM.md
+# 5. Telegram + OpenClaw (opcional, capa de interacción; ver docs/TELEGRAM.md
 #    y docs/OPENCLAW.md)
 scripts/configure-telegram
 scripts/install-openclaw
 
-# 6.1 Microsoft Teams (opcional, segundo canal; requiere Azure Bot ya
+# 5.1 Microsoft Teams (opcional, segundo canal; requiere Azure Bot ya
 #     registrado y túnel hacia el messaging endpoint; ver docs/TEAMS.md)
 scripts/configure-teams
 
-# 7. Generación de documentos en PDF (opcional; ver docs/DOCGEN.md). Sin este
+# 6. Generación de documentos en PDF (opcional; ver docs/DOCGEN.md). Sin este
 #    paso, la generación de documentos sigue funcionando en md/docx/pptx.
 scripts/install-docgen
 
-# 8. Sincroniza el código a /srv/jarvis/app, aplica migraciones y arranca
-#    jarvis-api.service / jarvis-worker.service (y airllm.service si aplica)
+# 7. Sincroniza el código a /srv/jarvis/app, aplica migraciones y arranca
+#    jarvis-api.service / jarvis-worker.service
 scripts/deploy
 ```
 

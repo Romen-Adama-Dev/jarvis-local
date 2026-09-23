@@ -46,9 +46,6 @@ jobs:
         run: uv run --frozen pyright
       - name: pytest
         run: uv run --frozen pytest -q
-      - name: pytest (servicio AirLLM)
-        working-directory: services/airllm
-        run: uv run --frozen pytest -q
 
   plugins:
     name: Plugins de OpenClaw (node --test)

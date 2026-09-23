@@ -1,5 +1,4 @@
 import asyncio
-import dataclasses
 import datetime
 import re
 import tempfile
@@ -7,7 +6,6 @@ import uuid
 from pathlib import Path
 from typing import Any
 
-import httpx
 from sqlalchemy import delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -158,110 +156,6 @@ async def ingest_document(ctx: dict[str, Any], document_id: str, job_id: str) ->
 
 async def reindex_document(ctx: dict[str, Any], document_id: str, job_id: str) -> None:
     await ingest_document(ctx, document_id, job_id)
-
-
-VRAM_GUARD_INTERVAL_SECONDS = 20.0
-
-
-def _is_generation_timeout(exc: BaseException) -> bool:
-    """AirLLM agotó su tiempo (504) o el cliente dejó de esperar: reintentar solo duplicaría
-    la espera (cada intento relee el modelo entero por cada token)."""
-    if isinstance(exc, httpx.TimeoutException):
-        return True
-    return isinstance(exc, httpx.HTTPStatusError) and exc.response.status_code == 504
-
-
-async def _evict_ollama_models(ollama: Any, released: list[str], job_id: str) -> None:
-    try:
-        for name in await ollama.release_vram():
-            if name not in released:
-                released.append(name)
-    except Exception as exc:
-        logger.warning("ollama_release_vram_failed", job_id=job_id, error=str(exc))
-
-
-async def _vram_guard(
-    ollama: Any,
-    released: list[str],
-    job_id: str,
-    interval_seconds: float = VRAM_GUARD_INTERVAL_SECONDS,
-) -> None:
-    while True:
-        await asyncio.sleep(interval_seconds)
-        await _evict_ollama_models(ollama, released, job_id)
-
-
-async def deep_rag_query(
-    ctx: dict[str, Any],
-    job_id: str,
-    query: str,
-    filters: dict | None = None,
-    top_k: int = 8,
-) -> None:
-    session_factory = ctx["session_factory"]
-    async with session_factory() as session:
-        job = await session.get(Job, uuid.UUID(job_id))
-        if job is None:
-            logger.error("deep_rag_query_missing_job", job_id=job_id)
-            return
-        if job.status == "cancelling":
-            await mark_cancelled(session, job)
-            return
-        orchestrator = ctx.get("deep_orchestrator")
-        if orchestrator is None:
-            await mark_failed(
-                session, job, "AirLLM está deshabilitado en el worker (AIRLLM_ENABLED=false)"
-            )
-            return
-        await mark_running(session, job)
-        ollama = ctx.get("ollama_provider")
-        released: list[str] = []
-        guard: asyncio.Task | None = None
-        if ollama is not None:
-            await _evict_ollama_models(ollama, released, job_id)
-            guard = asyncio.create_task(_vram_guard(ollama, released, job_id))
-        try:
-            try:
-                answer = await orchestrator.query(query, deep=True, filters=filters, top_k=top_k)
-            except Exception as first_exc:
-                if _is_generation_timeout(first_exc):
-                    raise
-                logger.warning(
-                    "deep_rag_query_retrying",
-                    job_id=job_id,
-                    error=f"{type(first_exc).__name__}: {first_exc}",
-                )
-                if ollama is not None:
-                    await _evict_ollama_models(ollama, released, job_id)
-                answer = await orchestrator.query(query, deep=True, filters=filters, top_k=top_k)
-        except Exception as exc:
-            detail = f"{type(exc).__name__}: {exc}".rstrip(": ")
-            logger.error("deep_rag_query_failed", job_id=job_id, error=detail)
-            await mark_failed(session, job, f"Error en consulta profunda: {detail}")
-            return
-        finally:
-            if guard is not None:
-                guard.cancel()
-            if ollama is not None and released:
-                try:
-                    await ollama.warm(released)
-                except Exception as exc:
-                    logger.warning(
-                        "ollama_warm_failed", job_id=job_id, models=released, error=str(exc)
-                    )
-        await mark_completed(
-            session,
-            job,
-            {
-                "query": query,
-                "answer": answer.answer,
-                "sources": [dataclasses.asdict(s) for s in answer.sources],
-                "confidence": answer.confidence,
-                "insufficient_evidence": answer.insufficient_evidence,
-                "warning": answer.warning,
-            },
-        )
-        logger.info("deep_rag_query_completed", job_id=job_id)
 
 
 def _write_generated_document(doc: GeneratedDoc, fmt: str, out_path: Path) -> None:

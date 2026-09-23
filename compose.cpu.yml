@@ -6,10 +6,6 @@ services:
     gpus: !reset []
   ollama:
     gpus: !reset []
-  airllm:
-    gpus: !reset []
-    environment:
-      AIRLLM_DEVICE: cpu
   worker:
     gpus: !reset []
     environment:

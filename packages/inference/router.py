@@ -6,7 +6,6 @@ from packages.inference.base import ChatMessage, InferenceProvider, InferenceRes
 
 class InferenceMode(StrEnum):
     NORMAL = "normal"
-    DEEP = "deep"
 
 
 class InferenceRouter:

@@ -51,7 +51,6 @@ Perfiles opcionales (`COMPOSE_PROFILES` en `.env`, separados por comas):
 | `monitoring` | Prometheus, Alertmanager, Grafana y exportadores (sondas, servidor, GPU): panel y alertas por Telegram (`docs/MONITORING.md`) |
 | `assistant` | changedetection |
 | `automation` | n8n |
-| `deep` | `airllm`: modo `/deep` con AirLLM (`AIRLLM_ENABLED=true`; desactivado en la L4, ver `docs/AIRLLM.md`) |
 | `webui` | Open WebUI (habla con Ollama directamente, sin RAG ni herramientas de Jarvis) |
 
 Orden de arranque: `init` → `postgres`/`searxng`/`ollama` → `ollama-pull` y `api` →
@@ -166,7 +165,6 @@ docker compose up -d
 
 ## Límites
 
-* AirLLM (`/deep`) no está contenerizado (`docs/AIRLLM.md`).
 * whisper.cpp se compila con AVX2; en CPUs anteriores a ~2013 construye la imagen con
   `--build-arg WHISPER_AVX2=OFF`.
 * Las imágenes se construyen en local; publicarlas en GHCR evitaría el build del primer

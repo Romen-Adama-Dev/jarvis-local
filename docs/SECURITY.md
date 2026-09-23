@@ -8,7 +8,7 @@ Esta tabla es la del servidor original (bare metal, julio de 2026). En la VM de 
 |---|---|---|
 | Usuario de servicio dedicado | ✅ `jarvis-svc` (system, sin shell, sin sudo) | Propietario de `/srv/jarvis`. Ver `scripts/bootstrap-server`. |
 | `/srv/jarvis` con permisos mínimos | ✅ `750`, propietario `jarvis-svc` | El usuario humano `jarvis` está en el grupo `jarvis-svc` para desplegar/leer logs. |
-| UFW | ✅ activo, `deny incoming` por defecto, solo `22/tcp` permitido | El resto de servicios (Postgres, Redis, Qdrant, Ollama, AirLLM, OpenClaw) se vinculan a `127.0.0.1` o red interna Docker, nunca se abren en UFW. |
+| UFW | ✅ activo, `deny incoming` por defecto, solo `22/tcp` permitido | El resto de servicios (Postgres, Redis, Qdrant, Ollama, OpenClaw) se vinculan a `127.0.0.1` o red interna Docker, nunca se abren en UFW. |
 | SSH por clave | ⏳ Pendiente de confirmación del usuario | Se detectó `PasswordAuthentication yes` efectivo (por `/etc/ssh/sshd_config.d/99-password.conf`, que sobreescribe el `no` de cloud-init por orden de carga). Hay 2 claves en `authorized_keys`. Se desactivará `PasswordAuthentication` en cuanto el usuario confirme que el acceso por clave funciona desde su cliente. |
 | sudo NOPASSWD temporal | ⚠️ Activo para `jarvis` vía `/etc/sudoers.d/jarvis-temp` | Necesario porque la ejecución de Claude Code no dispone de TTY para introducir contraseña interactiva. **Revocar al finalizar el despliegue** con `sudo rm /etc/sudoers.d/jarvis-temp`. Ver «Pendientes de esta fase» abajo. |
 | Secretos fuera de git | ✅ `.env` en `.gitignore`, solo se versiona `.env.example` sin valores reales | |
