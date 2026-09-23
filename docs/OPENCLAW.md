@@ -65,7 +65,6 @@ En vez de enseñar al agente a invocar `curl`/shell (lo cual violaría "no shell
 | Herramienta MCP | Endpoint de Jarvis API | Uso |
 |---|---|---|
 | `jarvis_ask` | `POST /v1/rag/query` | Consulta normal (Ollama) |
-| `jarvis_deep` | `POST /v1/rag/deep-query` | Consulta profunda (AirLLM, Fase 8) |
 | `jarvis_status` | `GET /health`, `GET /ready` | Salud del sistema |
 | `jarvis_models` | `GET /v1/models` | Modelos disponibles |
 | `jarvis_disk` | — (lee `shutil.disk_usage` sobre `/srv/jarvis` en el propio host) | Espacio de disco |

@@ -25,7 +25,7 @@ El prompt original asumía un disco adicional dedicado a `/srv/jarvis/models`. A
 Por tanto:
 
 * `/srv/jarvis/*` se crea sobre el SSD raíz (partición LVM), con los ~97 GB disponibles.
-* Solo se descargan modelos pequeños (objetivo: modelos Ollama de 4-8 GB cuantizados, y un modelo AirLLM reducido para validar el pipeline, no modelos de cientos de GB).
+* Solo se descargan modelos pequeños (objetivo: modelos Ollama cuantizados que quepan en la VRAM disponible, no modelos de cientos de GB).
 * Si en el futuro se añade un disco dedicado, `/srv/jarvis/models` se migra sin tocar `sdb` ni `sdc`.
 * Esta limitación se documenta también en `docs/BENCHMARKS.md`.
 
@@ -47,9 +47,7 @@ flowchart TD
     API --> JOBS[Job Service]
     API --> ROUTER[Inference Router]
     ROUTER --> OLLAMA[Ollama Provider]
-    ROUTER --> AIRLLM[AirLLM Provider]
     OLLAMA --> OLLAMASVC[(Ollama systemd :11434 127.0.0.1)]
-    AIRLLM --> AIRLLMSVC[(airllm-service systemd :11500 127.0.0.1)]
     RAGO --> QDRANT[(Qdrant)]
     DOC --> PG[(PostgreSQL)]
     JOBS --> REDIS[(Redis)]
@@ -96,10 +94,9 @@ Ver README.md. Se respeta la estructura pedida en el prompt (`apps/`, `packages/
 * `packages/security`: autorización, auditoría, validación de entrada, allowlist de herramientas, protección prompt injection.
 * `packages/documents`: parsers, hashing, deduplicación, chunking.
 * `packages/rag`: embeddings, almacén vectorial, recuperación híbrida, construcción de citas.
-* `packages/inference`: abstracción `InferenceProvider`, `OllamaProvider`, `AirLLMProvider`, router.
-* `apps/api`: FastAPI, únicamente orquesta los paquetes anteriores. No contiene lógica de infraestructura de Ollama/AirLLM más allá de llamadas HTTP a través de `packages/inference`.
+* `packages/inference`: abstracción `InferenceProvider`, `OllamaProvider`, router.
+* `apps/api`: FastAPI, únicamente orquesta los paquetes anteriores. No contiene lógica de infraestructura de Ollama más allá de llamadas HTTP a través de `packages/inference`.
 * `apps/worker`: cola `arq` sobre Redis para ingestión y tareas largas.
-* `services/airllm`: microservicio HTTP independiente, entorno Python aislado propio.
 * `integrations/openclaw`: configuración y skill de OpenClaw, sin lógica de dominio.
 
 ## Proveedores de inferencia
@@ -114,8 +111,8 @@ InferenceProvider (Protocol)
 └── capabilities() -> ProviderCapabilities
 ```
 
-Ningún otro paquete importa `ollama` ni clientes HTTP de AirLLM directamente; todo pasa por `packages/inference`.
+Ningún otro paquete importa `ollama` ni habla HTTP con el motor de inferencia directamente; todo pasa por `packages/inference`.
 
 ## Seguridad de red
 
-Todos los servicios (Ollama, Qdrant, PostgreSQL, Redis, airllm-service, OpenClaw gateway, Jarvis API) se vinculan a `127.0.0.1` o a la red interna de Docker (`jarvis_internal`, sin `ports:` publicados salvo los estrictamente necesarios, y solo a loopback). UFW deniega entrada por defecto salvo SSH.
+Todos los servicios (Ollama, Qdrant, PostgreSQL, Redis, OpenClaw gateway, Jarvis API) se vinculan a `127.0.0.1` o a la red interna de Docker (`jarvis_internal`, sin `ports:` publicados salvo los estrictamente necesarios, y solo a loopback). UFW deniega entrada por defecto salvo SSH.

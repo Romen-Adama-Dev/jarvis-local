@@ -8,7 +8,7 @@ skill `jarvis-email`) y de calendario (`docs/CALENDAR.md`,
 
 **Importante — a diferencia del resto del sistema, estas dos integraciones
 salen a la nube de Microsoft.** El RAG (documentos, embeddings, Qdrant) y la
-inferencia (Ollama/AirLLM) son 100% locales y no salen del servidor; pero
+inferencia (Ollama) son 100% locales y no salen del servidor; pero
 cada lectura de bandeja, cada correo enviado y cada evento de calendario es
 una llamada real a `https://graph.microsoft.com`, así que esos datos (asuntos,
 cuerpos de correo, participantes de reuniones) sí viajan a servidores de

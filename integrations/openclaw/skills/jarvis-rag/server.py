@@ -106,24 +106,6 @@ def jarvis_ask(query: str, company: str = "", project: str = "") -> str:
     return answer
 
 
-@mcp.tool()
-def jarvis_deep(query: str, company: str = "", project: str = "") -> str:
-    """Encola una consulta RAG en modo profundo (AirLLM, lenta, para tareas sin urgencia),
-    con el mismo aislamiento por empresa/proyecto que jarvis_ask. Devuelve un
-    identificador de trabajo; recoge el resultado con jarvis_job_result."""
-    response = _client.post("/v1/rag/deep-query", json={"query": query, **_scope(company, project)})
-    if response.status_code == 503:
-        detail = response.json()
-        return detail.get("message") or "El modo profundo (AirLLM) no está disponible."
-    response.raise_for_status()
-    job = response.json()
-    return (
-        f"Consulta profunda encolada como trabajo {job['id']} ({job['status']}). "
-        "AirLLM es lento por diseño (carga el modelo por capas desde disco): "
-        "consulta el resultado en unos minutos con jarvis_job_result."
-    )
-
-
 def _slug(text: str, max_len: int = 40) -> str:
     ascii_text = unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode()
     slug = re.sub(r"[^a-z0-9]+", "-", ascii_text.lower()).strip("-")
@@ -223,8 +205,6 @@ def jarvis_job_result(job_id: str) -> str:
             f"Trabajo {job_id}: {status} ({job.get('progress', 0)}%). Vuelve a consultar más tarde."
         )
     result = job.get("result") or {}
-    if job.get("job_type") == "deep_query" and "answer" in result:
-        return _format_answer(result)
     if job.get("job_type") == "generate_document" and "storage_path" in result:
         return _format_generated_document(job_id, result)
     if job.get("job_type") == "meeting_minutes" and "minutes" in result:
@@ -235,7 +215,7 @@ def jarvis_job_result(job_id: str) -> str:
 @mcp.tool()
 def jarvis_status() -> str:
     """Consulta la salud de Jarvis API y sus dependencias (Postgres, Redis, Qdrant,
-    Ollama, AirLLM)."""
+    Ollama)."""
     health = _client.get("/health").json()
     ready = _client.get("/ready").json()
     lines = [f"API: {health['status']} (v{health['version']})", f"Listo: {ready['ready']}"]

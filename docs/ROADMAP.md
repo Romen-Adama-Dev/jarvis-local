@@ -22,8 +22,8 @@ servidor hacia APIs en la nube.
 - **Metodología:** híbrida **Water-Scrum-Fall** (gobierno predictivo → construcción
   iterativa → cierre predictivo), justificada con la **matriz de Stacey** y Cynefin.
 - **Arquitectura:** FastAPI + worker asíncrono + PostgreSQL + Redis + Qdrant +
-  inferencia local (Ollama para lo normal, AirLLM para el modo `/deep`). OpenClaw
-  y Telegram como capa opcional de interacción.
+  inferencia local con Ollama. OpenClaw y Telegram como capa opcional de
+  interacción.
 - **Verificado en el MVP:** subida e indexación de PDF, respuesta con documento y
   sección, **abstención** cuando no hay evidencia, health checks, despliegue Docker,
   ejecución local de modelos, control de acceso, voz local y supervisión.
@@ -48,7 +48,7 @@ Leyenda: ✅ hecho · 🟡 parcial · ⬜ por hacer
 |---|---|---|---|
 | **Ingesta + RAG** (PDF → chunks → embeddings → Qdrant → respuesta con fuente) | ✅ núcleo del proyecto | ✅ `packages/rag`, `packages/documents`, Qdrant | 🟡 mejor ingesta (Docling: escaneados/tablas) |
 | **Multiempresa: documentación aislada por empresa y proyecto** | 🟡 (propuesta: colecciones separadas por cliente) | ✅ general / empresa / proyecto en el payload de Qdrant con `company` como tenant (`is_tenant`); la API impone el filtro en RAG, modo profundo y documentos generados; nombres tolerantes, reasignación sin reindexar y sitio reservado en el contexto para lo propio (`docs/EMPRESAS.md`); validado: sin fugas entre dos empresas | ⬜ permisos por usuario con varios usuarios |
-| **Inferencia local** (Ollama normal, AirLLM `/deep`) | ✅ | ✅ Ollama en contenedor con GPU (versión fijada); `services/airllm`; **auto-selección de modelo por VRAM** (`scripts/select-models`, la aplica `init`); `gemma4:26b-a4b-it-qat` en GPUs de 21-38 GB; limpieza opcional de modelos sin usar (`OLLAMA_PRUNE_UNUSED`) | 🟡 AirLLM `/deep` sin verificar en compose |
+| **Inferencia local** | ✅ | ✅ Ollama en contenedor con GPU (versión fijada); **auto-selección de modelo por VRAM** (`scripts/select-models`, la aplica `init`); `gemma4:26b-a4b-it-qat` en GPUs de 21-38 GB; limpieza opcional de modelos sin usar (`OLLAMA_PRUNE_UNUSED`). El modo profundo con AirLLM se evaluó y se retiró el 23-09 (`docs/BENCHMARKS.md`) | — |
 | **Abstención sin evidencia** | ✅ | ✅ `packages/rag/orchestrator.py` | — |
 | **API + worker** | ✅ | ✅ FastAPI (`apps/api`) + arq (`apps/worker`) | — |
 | **Infra reproducible** (Postgres/Redis/Qdrant, Docker) | ✅ | ✅ **todo Jarvis con `docker compose up`** (`docs/DOCKER.md`): `init` genera secretos y elige modelo, OpenClaw con voz y skills MCP en imagen propia, perfiles opcionales; `compose.cpu.yml` sin GPU | 🟡 CI que construya las imágenes y pruebe el arranque |
@@ -129,13 +129,13 @@ el agente llama a una herramienta MCP local y responde con trazabilidad.
 **Fase 2 — Generación de documentos (✅ cerrada).**
 *Skill* doc-gen: DAFO o plan de coordinación, con secciones fijas por tipo de
 documento, cada una resuelta con una llamada independiente a
-`HybridRagOrchestrator.query(...)` (el mismo motor que `/ask`/`/deep`: sin
+`HybridRagOrchestrator.query(...)` (el mismo motor que `/ask`: sin
 prompt ni retrieval nuevos, sin superficie de alucinación adicional; una
 sección sin evidencia lo dice explícitamente en vez de inventar). Salida en
 `.md`/`.docx`/`.pptx` (python-docx/python-pptx, ya dependencias del proyecto)
 y `.pdf` (Pandoc + XeLaTeX vía subproceso, sin plantilla LaTeX vendorizada por
 licencia; `scripts/install-docgen` o la imagen Docker). Expuesta como trabajo
-asíncrono (`POST /v1/documents/generate`, igual que `/deep-query`) y como
+asíncrono (`POST /v1/documents/generate`) y como
 herramienta MCP `jarvis_generate_doc` en la skill `jarvis-rag`. El archivo
 generado se entrega por Telegram (ver `docs/DOCGEN.md`).
 
@@ -215,8 +215,8 @@ TFM), y decisión OpenClaw vs. cliente MCP ligero (Hermes/ZeroClaw). Tareas conc
 * **Copias de seguridad y restauración** probadas de PostgreSQL, Qdrant, estado de
   OpenClaw y CouchDB (criterios 21-22 de `docs/ACCEPTANCE.md`).
 * **CI**: tests, ruff y pyright en cada PR, y construcción de las imágenes de compose.
-* **Validaciones de punta a punta** (21-09): AirLLM `/deep`, Obsidian móvil → vault sin
-  reiniciar el puente, prueba sin Internet (criterio 27, `scripts/test-offline`). Correo y
+* **Validaciones de punta a punta** (21-09): Obsidian móvil → vault sin reiniciar el
+  puente, prueba sin Internet (criterio 27, `scripts/test-offline`). Correo y
   calendario (OpenProject) validados el 18-09.
 * **CI de integraciones**: ejecutar `scripts/check-integrations` tras cada despliegue.
 * **`docs/ACCEPTANCE.md`** actualizado el 21-09.
@@ -256,8 +256,8 @@ Web corporativa (etiqueta `v0.6-simulacion` para el estado anterior).
 |---|---|---|
 | ~~Privacidad (antes de publicar el repo)~~ ✅ 20-09 | Workspace de OpenClaw convertido en plantillas (`__OWNER__`, `__OWNER_FULL__`, `__OWNER_TZ__`, `__SERVER_HW__`) que el arranque rellena desde `.env` y del hardware detectado (`docs/OPENCLAW.md`). Reescribir el historial **no hace falta**: no hay correos, tailnet, IPs ni rutas personales en ningún commit; el único nombre propio del repo es el titular del copyright en `LICENSE`, que debe estar | — |
 | ~~Operación (Fase 6)~~ ✅ 21-09 | Monitorización con alertas por Telegram (`docs/MONITORING.md`), copias diarias con restauración probada (`docs/BACKUP.md`), CI (`.github/workflows/ci.yml`; `check-integrations` sigue en el servidor porque necesita GPU y cuentas reales). Queda: alerta si la última copia tiene más de 26 h (`backups/.ultima-copia` → textfile de node-exporter) | Media |
-| ~~Documentación~~ ✅ 21-09 | `docs/ACCEPTANCE.md` al día: 25 de 27 criterios verificados; el 14 (abstención) marca bien la respuesta pero no el campo `insufficient_evidence`, y el 16 (`/deep`) no termina en esta VM | Media |
-| Validaciones (21-09) | ✅ Obsidian móvil → vault sin reiniciar el puente, y los borrados hechos con el puente parado ya llegan al móvil (`infra/livesync-bridge`); ✅ sin Internet, `scripts/test-offline` 7/7; ❌ AirLLM `/deep`: el servicio corre en compose (perfil `deep`) pero a ~37 s/token ninguna consulta termina en la L4 — decidir si se descarta o se prueba con un modelo que no quepa en la GPU y disco NVMe | Media |
+| ~~Documentación~~ ✅ 21-09 | `docs/ACCEPTANCE.md` al día: 25 de 27 criterios verificados; el 14 (abstención) marca bien la respuesta pero no el campo `insufficient_evidence` | Media |
+| Validaciones (21-09) | ✅ Obsidian móvil → vault sin reiniciar el puente, y los borrados hechos con el puente parado ya llegan al móvil (`infra/livesync-bridge`); ✅ sin Internet, `scripts/test-offline` 7/7. AirLLM `/deep` se descartó el 23-09: ~37 s/token en la L4, ninguna consulta terminaba (`docs/BENCHMARKS.md`) | Media |
 | Calendario | Mover y cancelar reuniones; reuniones recurrentes; recordatorio diario por Telegram ("qué tengo hoy", vencidos) con el cron de OpenClaw; huecos comunes | Media |
 | Correo | Correo entrante en OpenProject (respuestas a avisos como comentarios) con un buzón aparte para no chocar con Jarvis; clasificación automática de la bandeja | Media |
 | Proyectos | Plantillas Water-Scrum-Fall en OpenProject; horas y presupuesto; informe semanal automático | Media |

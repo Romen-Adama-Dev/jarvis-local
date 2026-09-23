@@ -30,7 +30,7 @@ Estas comprobaciones deben pasar antes de abrir un PR. `ruff` aplica
 `tests`.
 
 La CI (`.github/workflows/ci.yml`) las repite en cada PR y en cada push a `main`,
-junto con los tests del servicio AirLLM, `shellcheck --severity=warning` sobre los
+junto con `shellcheck --severity=warning` sobre los
 scripts y `docker compose config` con todos los perfiles (con y sin `.env`). La
 construcción de las imágenes `jarvis-local` y `jarvis-openclaw` (10-20 min) solo corre al
 publicar una versión con un tag `v*` o a mano (Actions → CI → Run workflow), no en el
@@ -50,8 +50,8 @@ reales): lánzalo en el servidor después de desplegar.
   (`git log --oneline`); esta es la convención definitiva del proyecto, no
   solo una costumbre.
 * No añadas dependencias que llamen a APIs externas de inferencia (OpenAI,
-  Anthropic, etc.) en el camino de producción. Ollama y AirLLM son los únicos
-  proveedores de inferencia soportados.
+  Anthropic, etc.) en el camino de producción. Ollama es el único proveedor de
+  inferencia soportado.
 * Nunca versiones secretos: `.env` está en `.gitignore`; usa `.env.example`
   como plantilla y documenta cualquier variable nueva ahí.
 * Cualquier acción con efectos externos (enviar un correo, crear un evento de

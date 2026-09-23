@@ -79,7 +79,6 @@ Estado detallado y lo que queda en `docs/ROADMAP.md`; criterios de aceptación e
 apps/            API (FastAPI) y worker (arq)
 packages/        Dominio: core, security, documents, rag, inference, meetings, docgen,
                  office, openproject, imapsmtp, caldavcal, msgraph
-services/airllm/ Microservicio AirLLM (modo /deep)
 integrations/    OpenClaw: imagen, configuración, workspace y skills MCP
                  (jarvis-rag, jarvis-email, jarvis-calendar, jarvis-pm, jarvis-office)
 infra/           Arranque de los contenedores (init, OpenProject, LiveSync, Tailscale...)

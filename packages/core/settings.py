@@ -44,13 +44,6 @@ class Settings(BaseSettings):
     # modelo en la GPU (15 GB de Gemma 4 desde un disco frío pasaban de 120 s).
     ollama_timeout_seconds: float = 300.0
 
-    airllm_enabled: bool = False
-    airllm_service_url: str = "http://127.0.0.1:11500"
-    airllm_model: str = "unset-hasta-benchmark"
-    airllm_max_concurrency: int = 1
-    airllm_timeout_seconds: float = 1800.0
-    airllm_release_ollama_vram: bool = True
-
     telegram_bot_token: str = ""
     telegram_authorized_user_ids: str = ""
     openclaw_gateway_host: str = "127.0.0.1"

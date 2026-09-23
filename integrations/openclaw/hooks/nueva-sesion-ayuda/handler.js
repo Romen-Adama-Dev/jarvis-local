@@ -8,8 +8,7 @@ Soy tu asistente local: la IA corre en tu servidor (Ollama + GTX 1070), sin nube
 • "¿Qué trabajos de indexación hay?" · "Cancela el trabajo X".
 • Si no hay evidencia en tus documentos, te lo digo — no invento.
 
-🧠 *Modo profundo (/deep)*
-• "Analiza en profundidad ..." o "/deep ..." — encolo la consulta en AirLLM (lento por diseño, sin prisas) y te doy un número de trabajo.
+🧠 *Trabajos largos*
 • "¿Cómo va el trabajo X?" / "dame el resultado del trabajo X" — recojo la respuesta cuando termine.
 
 📧 *Correo y calendario* (Google, requiere autorización única del propietario)
