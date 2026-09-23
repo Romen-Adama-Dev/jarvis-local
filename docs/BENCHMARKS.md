@@ -150,5 +150,6 @@ VRAM) se midió en julio de 2026 sobre una GTX 1070 y en septiembre sobre la L4 
 despliegue actual. En la L4 la generación se quedó en ~37 s por token: ninguna
 consulta llegó a terminar dentro del tiempo máximo del trabajo. Se retiró del
 proyecto el 23-09-2026 junto con el servicio, el perfil `deep` y la herramienta
-`jarvis_deep`; las mediciones completas están en el historial de git (`docs/AIRLLM.md`
-y `docs/benchmarks/airllm-*.md` hasta el commit de retirada).
+`jarvis_deep`. Las mediciones completas (dos informes de julio y la guía del servicio)
+se retiraron con él y quedan en el historial de git, en el commit anterior a la
+retirada.
