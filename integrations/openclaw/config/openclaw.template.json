@@ -176,7 +176,8 @@
       "ask_user",
       "terminal",
       "process",
-      "web_fetch"
+      "web_fetch",
+      "web_search"
     ],
     "fs": {
       "workspaceOnly": true

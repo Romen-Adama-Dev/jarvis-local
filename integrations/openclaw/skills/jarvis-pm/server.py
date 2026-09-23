@@ -17,6 +17,7 @@ from mcp.server.fastmcp import FastMCP
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
 
+from packages.core.directives import parse_directives  # noqa: E402
 from packages.core.errors import JarvisError, ValidationFailedError  # noqa: E402
 from packages.office import build_document, media_reply, parse_blocks  # noqa: E402
 from packages.openproject.client import (  # noqa: E402
@@ -28,9 +29,10 @@ from packages.openproject.config import config_from_env  # noqa: E402
 
 mcp = FastMCP("jarvis-pm")
 
-JARVIS_OUTBOX_DIR = Path(
-    os.environ.get("JARVIS_OUTBOX_DIR", Path.home() / ".openclaw" / "workspace-jarvis" / "outbox")
+JARVIS_WORKSPACE_DIR = Path(
+    os.environ.get("JARVIS_WORKSPACE_DIR", Path.home() / ".openclaw" / "workspace-jarvis")
 )
+JARVIS_OUTBOX_DIR = Path(os.environ.get("JARVIS_OUTBOX_DIR", JARVIS_WORKSPACE_DIR / "outbox"))
 _EXPORT_LIMIT = 500
 
 _client: OpenProjectClient | None = None
@@ -66,18 +68,29 @@ def _safe(fn):
 @mcp.tool()
 @_safe
 def pm_projects() -> str:
-    """Lista las empresas y proyectos de OpenProject (los proyectos cuelgan de su empresa)."""
+    """Lista las empresas y proyectos de OpenProject (los proyectos cuelgan de su empresa)
+    y la metodología de cada proyecto según MEMORY.md, que es la que debes aplicar al
+    planificarlo."""
     op = _op()
     projects = op.projects()
     if not projects:
         return "No hay proyectos todavía."
+    try:
+        memory = (JARVIS_WORKSPACE_DIR / "MEMORY.md").read_text(encoding="utf-8")
+    except OSError:
+        memory = ""
+    directives = parse_directives(memory)
     names = {p["id"]: p["name"] for p in projects}
     lines = []
     for p in projects:
         parent = (p["_links"].get("parent") or {}).get("href")
         parent_name = names.get(int(parent.rsplit("/", 1)[-1])) if parent else None
         prefix = f"{parent_name} › " if parent_name else ""
-        lines.append(f"- {prefix}{p['name']} ({op.project_url(p)})")
+        method = ""
+        if parent_name:
+            ids = directives.for_project(parent_name, p["name"])
+            method = f" · metodología: {' + '.join(ids)}" if ids else " · sin metodología"
+        lines.append(f"- {prefix}{p['name']}{method} ({op.project_url(p)})")
     return "\n".join(lines)
 
 
@@ -131,9 +144,11 @@ def pm_create_task(
     assignee: str = "",
     priority: str = "",
 ) -> str:
-    """Crea un paquete de trabajo en un proyecto. `kind`: Tarea, Hito o Riesgo (u otro
-    tipo activo en el proyecto). Fechas en AAAA-MM-DD; si la tarea tiene un periodo
-    ("del 21 al 23"), pasa `start_date` y `due_date` para que salga como barra en el Gantt.
+    """Crea un paquete de trabajo en un proyecto. `kind`: Tarea, Hito, Riesgo, Historia de
+    usuario o Épico (u otro tipo activo en el proyecto); usa los de la metodología del
+    proyecto (MEMORY.md): en uno ágil, historias y épicos, no hitos de fase. Fechas en
+    AAAA-MM-DD; si la tarea tiene un periodo ("del 21 al 23"), pasa `start_date` y
+    `due_date` para que salga como barra en el Gantt.
     Un hito solo lleva `due_date`. `assignee` es el nombre de una persona
     del proyecto. Para un riesgo, pon en `description` probabilidad, impacto y mitigación."""
     op = _op()

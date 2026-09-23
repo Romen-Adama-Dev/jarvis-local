@@ -35,6 +35,36 @@ solo en la general.
   Qdrant van los identificadores normalizados (`acme-consulting`, `migracion-erp`), los
   mismos que usa OpenProject.
 
+## Metodologías por proyecto
+
+Cada proyecto puede seguir su metodología (Scrum, PMI, cascada…) sin que se mezclen:
+
+* **Dónde se decide**: en las zonas de `MEMORY.md` de Jarvis. **Metodologías** tiene una
+  zona `### <Nombre>` por método con sus reglas (se añaden las que hagan falta) y
+  **Proyectos** una línea por proyecto: `- Estudio Delta › App de reservas: Scrum`.
+  Se dicta desde el chat ("App de reservas va con Scrum") y Jarvis lo escribe con
+  herramientas de jarvis-rag, no a mano: `jarvis_set_methodology` (reglas de un método;
+  un método desconocido exige `new=true`), `jarvis_set_project_methodology` y
+  `jarvis_set_directive` (lo general). Cada cambio se fusiona regla a regla ("Sprints:
+  de tres semanas" sustituye solo esa regla) y nunca pisa otro método ni otro proyecto. Ejemplos en [ejemplos/directivas.md](ejemplos/directivas.md).
+* **Documentos con metodología**: la Guía de Scrum, el PMBOK… se suben con su método
+  (`jarvis_upload(..., methodology="Scrum")`) o se marcan después
+  (`jarvis_document_methodology`, `PATCH /v1/documents/{id}/methodology`). En Qdrant van
+  en el campo `methodology` del payload (indexado).
+* **El filtro**: `jarvis_ask` y `jarvis_generate_doc` leen la metodología del proyecto en
+  `MEMORY.md` y la mandan a la API (`methodologies`); la consulta solo ve documentos de
+  esa metodología y los que no tienen ninguna (normas, manuales de la empresa, lo del
+  proyecto). Un proyecto Scrum no recibe párrafos del PMBOK. El aislamiento por empresa
+  se mantiene igual.
+* **Mezclar**, solo si se pide: una línea `PMI + Scrum` en **Proyectos** (proyecto
+  híbrido) o, para una pregunta suelta, "compáralo con PMI" (`methodology="Scrum + PMI"`).
+* **Sin documentación del método**: `jarvis_list_projects` lo marca "SIN documentos
+  indexados". Jarvis no responde de memoria: primero sugiere aportar la documentación;
+  solo si no la hay, pregunta si busca en internet (SearXNG), propone una lista de
+  fuentes y responde únicamente con las que se aprueben, indicando que vienen de fuera.
+* **Lo aprendido** con cada método (retrospectivas, lecciones) va a su nota del vault,
+  `memoria/metodologias/<Nombre>.md` (`jarvis_remember(..., new="metodologia")`).
+
 ## Desde Telegram
 
 * Al mandar un documento, Jarvis pregunta si va al RAG y si es general, de una empresa o
@@ -53,8 +83,11 @@ Los documentos subidos antes no tenían empresa: pasan a ser **generales**. Desp
 actualizar, crea los índices y copia a Qdrant el ámbito de cada documento:
 
 ```bash
-docker compose exec api python -m apps.api.jarvis_api.sync_scopes
+docker compose exec api /app/infra/docker/entrypoint.sh python -m apps.api.jarvis_api.sync_scopes
 ```
+
+El mismo comando crea el índice de `methodology`; los documentos anteriores quedan sin
+metodología (los ve cualquier proyecto) hasta que se marquen.
 
 y reasigna desde Telegram los que sean de una empresa o un proyecto ("mueve X al proyecto
 Y de la empresa Z").

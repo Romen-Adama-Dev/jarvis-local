@@ -120,7 +120,9 @@ Riesgo aceptado y mitigación: un documento malicioso del RAG podría intentar i
 
 ## Búsqueda web local (SearXNG)
 
-`web_search` está habilitado usando **SearXNG autohosteado** (servicio por defecto de `compose.yml`, sin perfil; imagen fijada por digest, solo `127.0.0.1:8888`, formato JSON habilitado en `infra/compose/searxng/settings.yml`). OpenClaw lo usa mediante el plugin oficial `@openclaw/searxng-plugin` (`tools.web.search.provider: "searxng"`, `plugins.allow: ["searxng"]`). Las consultas de búsqueda salen a los buscadores agregados desde el servidor propio, sin API keys ni proveedores comerciales; la inferencia sigue siendo 100% local.
+La búsqueda usa **SearXNG autohosteado** (servicio por defecto de `compose.yml`, sin perfil; imagen fijada por digest, solo `127.0.0.1:8888`, formato JSON habilitado en `infra/compose/searxng/settings.yml`). OpenClaw lo usa mediante el plugin oficial `@openclaw/searxng-plugin` (`tools.web.search.provider: "searxng"`, `plugins.allow: ["searxng"]`). Las consultas de búsqueda salen a los buscadores agregados desde el servidor propio, sin API keys ni proveedores comerciales; la inferencia sigue siendo 100% local.
+
+El agente **no** tiene `web_search` libre (está en `tools.deny`): internet va después de lo interno y con dos permisos del usuario. `jarvis_web_sources` (jarvis-rag) consulta SearXNG y devuelve solo la lista de fuentes, sin contenido; `jarvis_web_read` entrega el extracto de las que el usuario apruebe. El flujo completo está en `AGENTS.md` ("Primero lo interno; internet solo con permiso").
 
 ```bash
 docker compose up -d searxng
