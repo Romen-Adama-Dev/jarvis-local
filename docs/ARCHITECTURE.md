@@ -1,61 +1,67 @@
 # Arquitectura — Jarvis Local
 
-## Contexto real del hardware (auditoría 2026-07-12)
-
-> Servidor original del proyecto. Desde el 15-09-2026 Jarvis corre en una VM de GCP con
-> NVIDIA L4 (23 GB) y Docker Compose: modelos en `docs/MODELS.md`, despliegue en
-> `docs/DOCKER.md`.
+## Despliegue actual (23-09-2026)
 
 | Componente | Detalle |
 |---|---|
-| CPU | Intel Core i7-6700K (4c/8t) |
-| RAM | 32 GB |
-| GPU | NVIDIA GTX 1070, 8 GB VRAM (driver `nvidia-driver-580`, no instalado al iniciar el proyecto) |
-| SO | Ubuntu 26.04 LTS, systemd, sin virtualización (bare metal) |
-| Disco raíz | LVM sobre SSD de 120 GB, ~97 GB libres tras el sistema base |
-| Disco `sdb` (931 GB) | **Disco dinámico de Windows (LDM)** con volúmenes NTFS "Juegos" y "Familia". Sin espacio libre gestionable desde Linux sin riesgo de corromper la base de datos LDM. **No se toca.** |
-| Disco `sdc` (223 GB) | Disco Windows "Basic" (EFI + reservada MS + NTFS + recuperación), ocupado al 99.7%. **No se toca.** |
+| Servidor | VM `jarvis-gpu-us` en GCP, 8 vCPU (Intel Xeon @ 2.20 GHz), 31 GB de RAM, Ubuntu |
+| GPU | NVIDIA L4, 23 GB de VRAM |
+| Ejecución | Docker Compose (`compose.yml`), un solo `docker compose up -d` (`docs/DOCKER.md`); `compose.cpu.yml` para máquinas sin GPU |
+| Modelos | `gemma4:26b-a4b-it-qat` para el chat y `embeddinggemma` para embeddings, elegidos por VRAM detectada (`scripts/select-models`, `docs/MODELS.md`) |
+| Almacenamiento | Volúmenes de Docker; los modelos y los documentos viven en el volumen `jarvis_srv` (`/srv/jarvis` dentro de los contenedores) |
+| Acceso remoto | Solo por Tailscale: panel de OpenClaw, OpenProject y CouchDB con `tailscale serve` (`docs/ACCESO-REMOTO.md`) |
 
-### Decisión de almacenamiento
+Los servicios opcionales se activan con perfiles de compose (`COMPOSE_PROFILES`):
+`pm` (OpenProject), `vault` y `livesync` (Obsidian), `tailscale`, `monitoring`
+(Prometheus, Grafana, exportadores y alertas), `backup`, `assistant` (SearXNG como
+servicio aparte), `automation` (n8n) y `webui`.
 
-El prompt original asumía un disco adicional dedicado a `/srv/jarvis/models`. Al no existir espacio libre seguro en `sdb`/`sdc`, se aplica la regla de repliegue prevista en el propio encargo:
-
-> "Si no existe almacenamiento suficiente, detén únicamente la descarga de modelos grandes, pero continúa construyendo y validando toda la plataforma con un modelo pequeño."
-
-Por tanto:
-
-* `/srv/jarvis/*` se crea sobre el SSD raíz (partición LVM), con los ~97 GB disponibles.
-* Solo se descargan modelos pequeños (objetivo: modelos Ollama cuantizados que quepan en la VRAM disponible, no modelos de cientos de GB).
-* Si en el futuro se añade un disco dedicado, `/srv/jarvis/models` se migra sin tocar `sdb` ni `sdc`.
-* Esta limitación se documenta también en `docs/BENCHMARKS.md`.
-
-### Usuario de sistema dedicado
-
-El prompt original pide crear un usuario `jarvis` dedicado a los servicios. La cuenta de acceso humana en este servidor ya se llama `jarvis` (uid 1000, grupo `sudo`). Para no colisionar, el usuario de sistema sin privilegios que ejecuta los servicios se llama **`jarvis-svc`** (sin shell de login, sin sudo, propietario de `/srv/jarvis`).
+> **Servidor original.** El proyecto nació en julio de 2026 sobre una máquina bare metal
+> (Intel i7-6700K, 32 GB de RAM, GTX 1070 de 8 GB, Ubuntu con systemd) cuyos dos discos
+> secundarios eran de Windows y no se podían tocar, de ahí la regla de "modelos pequeños
+> sobre el SSD raíz" que marcó las primeras decisiones de `docs/BENCHMARKS.md`. Allí los
+> servicios corrían como un usuario de sistema `jarvis-svc` dueño de `/srv/jarvis`. Ese
+> camino sigue documentado en `docs/INSTALL.md` y `docs/OPENCLAW-HISTORICO.md`, pero el
+> despliegue real es el de Docker Compose desde el 15-09-2026.
 
 ## Diagrama de componentes
 
 ```mermaid
 flowchart TD
-    TG[Telegram] --> OC[OpenClaw daemon]
-    OC -->|skill jarvis-rag| API[Jarvis API - FastAPI]
+    TG[Telegram] --> OC[OpenClaw gateway]
+    TS[Tailscale serve] --> OC
+    OC -->|skills MCP| API[Jarvis API - FastAPI]
+    OC --> VAULT[(Vault Obsidian - memoria)]
     API --> RAGO[RAG Orchestrator]
     API --> DOC[Document Service]
-    API --> CONV[Conversation Service]
-    API --> AUTHZ[Authorization Service]
-    API --> AUDIT[Audit Service]
     API --> JOBS[Job Service]
     API --> ROUTER[Inference Router]
     ROUTER --> OLLAMA[Ollama Provider]
-    OLLAMA --> OLLAMASVC[(Ollama systemd :11434 127.0.0.1)]
+    OLLAMA --> OLLAMASVC[(Ollama - GPU)]
     RAGO --> QDRANT[(Qdrant)]
     DOC --> PG[(PostgreSQL)]
     JOBS --> REDIS[(Redis)]
     JOBS --> WORKER[apps/worker - arq]
     WORKER --> QDRANT
     WORKER --> PG
-    DOC --> FS[(/srv/jarvis/documents)]
+    WORKER --> OLLAMASVC
+    DOC --> FS[(jarvis_srv - documentos)]
+    OC -->|skill jarvis-pm| OP[OpenProject]
+    OP --> PG
+    KN[knowledge] --> VAULT
+    KN --> OP
+    LS[livesync-bridge] --> VAULT
+    LS --> CDB[(CouchDB)]
+    CDB --> IOS[Obsidian en el movil]
+    VS[vault-sync] --> GIT[(Repo privado del vault)]
+    OC --> SX[SearXNG]
+    PROM[Prometheus] --> API
+    PROM --> ALERT[Alertmanager - Telegram]
 ```
+
+Los servicios de la mitad inferior son opcionales y llegan por perfiles: OpenProject
+(`pm`), el vault y su sincronización (`vault`, `livesync`), SearXNG como servicio aparte
+(`assistant`) y la monitorización (`monitoring`).
 
 ## Flujo de una consulta `/ask`
 
@@ -86,7 +92,8 @@ sequenceDiagram
 
 ## Estructura del repositorio
 
-Ver README.md. Se respeta la estructura pedida en el prompt (`apps/`, `packages/`, `services/`, `integrations/`, `infra/`, `scripts/`, `tests/`, `docs/`).
+Ver README.md: `apps/`, `packages/`, `integrations/`, `infra/`, `scripts/`, `tests/` y
+`docs/`.
 
 ## Principio de separación de dominios
 
@@ -95,9 +102,13 @@ Ver README.md. Se respeta la estructura pedida en el prompt (`apps/`, `packages/
 * `packages/documents`: parsers, hashing, deduplicación, chunking.
 * `packages/rag`: embeddings, almacén vectorial, recuperación híbrida, construcción de citas.
 * `packages/inference`: abstracción `InferenceProvider`, `OllamaProvider`, router.
+* `packages/meetings` y `packages/docgen`: transcripción y actas de reunión, y generación de documentos fundamentados en el RAG.
+* `packages/office`: Excel, Word, PowerPoint y OpenDocument a medida.
+* `packages/openproject` y `packages/knowledge`: gestión de proyectos y red de conocimiento del vault.
+* `packages/imapsmtp`, `packages/caldavcal`, `packages/msgraph`: correo y calendario con backends intercambiables.
 * `apps/api`: FastAPI, únicamente orquesta los paquetes anteriores. No contiene lógica de infraestructura de Ollama más allá de llamadas HTTP a través de `packages/inference`.
 * `apps/worker`: cola `arq` sobre Redis para ingestión y tareas largas.
-* `integrations/openclaw`: configuración y skill de OpenClaw, sin lógica de dominio.
+* `integrations/openclaw`: configuración y skills MCP de OpenClaw, sin lógica de dominio.
 
 ## Proveedores de inferencia
 
@@ -115,4 +126,8 @@ Ningún otro paquete importa `ollama` ni habla HTTP con el motor de inferencia d
 
 ## Seguridad de red
 
-Todos los servicios (Ollama, Qdrant, PostgreSQL, Redis, OpenClaw gateway, Jarvis API) se vinculan a `127.0.0.1` o a la red interna de Docker (`jarvis_internal`, sin `ports:` publicados salvo los estrictamente necesarios, y solo a loopback). UFW deniega entrada por defecto salvo SSH.
+Todos los servicios (Ollama, Qdrant, PostgreSQL, Redis, OpenClaw gateway, Jarvis API) se
+vinculan a `127.0.0.1` o a la red interna de Docker, sin `ports:` publicados fuera de
+loopback. Lo único accesible desde fuera de la máquina es SSH y lo que se publica en el
+tailnet con `tailscale serve`. El estado comprobado del host está en `docs/SECURITY.md`
+y el criterio 3 de `docs/ACCEPTANCE.md`.

@@ -1,5 +1,12 @@
 # Microsoft Teams — integración
 
+> **Estado (23-09-2026): preparado, sin probar, fuera del alcance verificado del TFM.**
+> El canal está soportado en la configuración y hay guion de configuración
+> (`scripts/configure-teams`), pero falta el registro de Azure Bot y un túnel público
+> hacia el *messaging endpoint*, que no se pueden montar en este despliegue. Nada de
+> Teams está verificado en `docs/ACCEPTANCE.md`. Este documento describe cómo se
+> activaría, no algo que esté funcionando.
+
 Segundo canal de conversación, además de Telegram (`docs/TELEGRAM.md`). Mismo
 agente OpenClaw, misma skill MCP `jarvis-rag`: OpenClaw es agnóstico de canal,
 así que Teams no necesita ninguna herramienta nueva ni una "capa MCP" aparte —
