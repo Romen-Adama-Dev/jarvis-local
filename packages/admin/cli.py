@@ -87,7 +87,11 @@ def _op_command(args: argparse.Namespace) -> str:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="jarvis-admin", description=__doc__.splitlines()[0])
+    doc_lines = (__doc__ or "").strip().splitlines()
+    parser = argparse.ArgumentParser(
+        prog="jarvis-admin",
+        description=doc_lines[0] if doc_lines else "jarvis-admin",
+    )
     sub = parser.add_subparsers(dest="orden", required=True)
     sub.add_parser("servicios", help="estado de los servicios")
     logs = sub.add_parser("registros", help="últimas líneas del registro de un servicio")
