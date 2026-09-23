@@ -43,6 +43,8 @@ ensure_secret openproject_admin_password "${OPENPROJECT_ADMIN_PASSWORD:-}" 12 "-
 ensure_secret openproject_api_key "${OPENPROJECT_API_KEY:-}" 32
 # Perfil monitoring: contraseña del usuario admin de Grafana.
 ensure_secret grafana_admin_password "${GRAFANA_ADMIN_PASSWORD:-}" 16
+# Perfil admin: token entre `jarvis-admin` (contenedor de OpenClaw) y el servicio admin.
+ensure_secret jarvis_admin_token "${JARVIS_ADMIN_TOKEN:-}" 32
 
 MODELS_ENV="$RUNTIME_DIR/models.env"
 if [[ -n "${OLLAMA_PRIMARY_MODEL:-}" ]]; then
