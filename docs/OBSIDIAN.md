@@ -137,7 +137,17 @@ Actas del vault · documentos del RAG ──────────────
   de la wiki de OpenProject (`sources/openproject/<proyecto>/wiki/`).
 * **Jarvis**: "recuerda que en Web corporativa el cliente prefiere los viernes" →
   `jarvis_remember` lo añade a la sección **Notas** de esa nota; sale en Obsidian, en la
-  wiki del proyecto y en `memory_search`.
+  wiki del proyecto y en `memory_search`. Si es alguien o algo que aún no tiene nota,
+  la crea: una persona en `entities/personas/` o un tema general (una metodología, una
+  preferencia) en `memoria/`.
+* **Directivas de Jarvis**: lo que le pides que sea parte de su forma de trabajar ("a
+  partir de ahora…") lo escribe él en el `MEMORY.md` de su workspace, que OpenClaw le
+  carga en cada conversación y que un reinicio no pisa; si cambias de criterio, lo
+  sobrescribe. `knowledge` copia ese archivo al vault como `memoria/Directivas de
+  Jarvis.md`, de solo lectura: para cambiar una directiva, pídesela a Jarvis. El
+  *dreaming* de OpenClaw está desactivado para que nada reescriba ese archivo por su
+  cuenta. La plantilla inicial (método Arquitecto/Operador) está en
+  `integrations/openclaw/workspace/MEMORY.md`.
 
 Dónde escribir cada cosa:
 

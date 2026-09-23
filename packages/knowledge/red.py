@@ -725,13 +725,28 @@ def write_pages(vault: Path, pages: list[Page], snap: Snapshot) -> int:
 # --- Memoria escrita por Jarvis --------------------------------------------------------
 
 NOTES_HEADING = "## Notas"
-# Empresas, proyectos (dentro de su empresa) y personas: sobre eso se pueden anotar cosas.
-REMEMBER_GLOBS = ("entities/empresas/*.md", "entities/empresas/*/*.md", "entities/personas/*.md")
+# Empresas, proyectos (dentro de su empresa), personas y temas generales: sobre eso se
+# pueden anotar cosas. Las directivas de Jarvis no: son una copia de su MEMORY.md.
+TOPICS_DIR = "memoria"
+DIRECTIVES_NOTE = f"{TOPICS_DIR}/Directivas de Jarvis"
+REMEMBER_GLOBS = (
+    "entities/empresas/*.md",
+    "entities/empresas/*/*.md",
+    "entities/personas/*.md",
+    f"{TOPICS_DIR}/*.md",
+)
+NEW_NOTE_DIRS = {"persona": "entities/personas", "tema": TOPICS_DIR}
+
+
+def _rememberable(vault: Path) -> list[Path]:
+    directives = vault / f"{DIRECTIVES_NOTE}.md"
+    notes = [p for pattern in REMEMBER_GLOBS for p in sorted(vault.glob(pattern))]
+    return [p for p in notes if p != directives]
 
 
 def find_note(vault: Path, about: str) -> Path:
-    """Nota de un proyecto, empresa o persona por su nombre (sin tildes ni mayúsculas)."""
-    notes = [p for pattern in REMEMBER_GLOBS for p in sorted(vault.glob(pattern))]
+    """Nota de un proyecto, empresa, persona o tema por su nombre (sin tildes ni mayúsculas)."""
+    notes = _rememberable(vault)
     wanted = _key(about)
     for matches in (
         [p for p in notes if _key(p.stem) == wanted],
@@ -743,13 +758,38 @@ def find_note(vault: Path, about: str) -> Path:
             names = ", ".join(p.stem for p in matches)
             raise LookupError(f"«{about}» es ambiguo: {names}.")
     names = ", ".join(p.stem for p in notes) or "ninguna (¿está activa la red de conocimiento?)"
-    raise LookupError(f"No hay nota de «{about}». Hay: {names}.")
+    raise LookupError(
+        f"No hay nota de «{about}». Hay: {names}. Para crearla, repite con "
+        "new='persona' (una persona) o new='tema' (un tema general)."
+    )
 
 
-def remember(vault: Path, about: str, text: str, today: datetime.date | None = None) -> Path:
+def _new_note(vault: Path, about: str, kind: str) -> Path:
+    if kind not in NEW_NOTE_DIRS:
+        raise LookupError(f"new debe ser 'persona' o 'tema', no «{kind}».")
+    name = note_name(about)
+    if _key(name) == _key(Path(DIRECTIVES_NOTE).name):
+        raise LookupError("Las directivas se editan en MEMORY.md, no con jarvis_remember.")
+    note = vault / NEW_NOTE_DIRS[kind] / f"{name}.md"
+    note.parent.mkdir(parents=True, exist_ok=True)
+    # Bloque gestionado vacío: si la red genera después esta persona, lo rellena sin
+    # tocar las notas (una nota sin bloque sería "humana" y la red no la tocaría).
+    note.write_text(f"{START}\n# {name}\n{END}\n", encoding="utf-8")
+    return note
+
+
+def remember(
+    vault: Path, about: str, text: str, today: datetime.date | None = None, new: str = ""
+) -> Path:
     """Añade una nota fechada fuera del bloque generado de la nota de `about`: se conserva
-    al regenerar la red, sale en Obsidian y en la wiki de OpenProject."""
-    note = find_note(vault, about)
+    al regenerar la red, sale en Obsidian y en la wiki de OpenProject. Con `new`
+    ("persona" o "tema") crea la nota si aún no existe."""
+    try:
+        note = find_note(vault, about)
+    except LookupError:
+        if not new:
+            raise
+        note = _new_note(vault, about, new)
     content = note.read_text(encoding="utf-8")
     line = f"- {(today or datetime.date.today()).isoformat()}: {' '.join(text.split())}"
     head, sep, tail = content.partition(END) if END in content else (content, "", "")
@@ -759,6 +799,25 @@ def remember(vault: Path, about: str, text: str, today: datetime.date | None = N
         tail = tail.rstrip("\n") + f"\n\n{NOTES_HEADING}\n\n{line}\n"
     note.write_text(head + sep + tail, encoding="utf-8")
     return note
+
+
+def mirror_directives(workspace: Path, vault: Path) -> bool:
+    """Copia de solo lectura del MEMORY.md de Jarvis (sus directivas, que OpenClaw le carga
+    en cada conversación) en el vault, para verla en Obsidian. Devuelve si cambió."""
+    source = workspace / "MEMORY.md"
+    if not source.is_file():
+        return False
+    target = vault / f"{DIRECTIVES_NOTE}.md"
+    content = (
+        f"{_frontmatter({'generatedBy': 'jarvis-directivas'})}\n\n"
+        "> Copia de `MEMORY.md` de Jarvis: los cambios hechos aquí se pierden. "
+        "Para cambiar una directiva, pídeselo a Jarvis.\n\n" + source.read_text(encoding="utf-8")
+    )
+    if target.exists() and target.read_text(encoding="utf-8") == content:
+        return False
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(content, encoding="utf-8")
+    return True
 
 
 # --- Ejecución ---------------------------------------------------------------------------
@@ -794,6 +853,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=next(iter((__doc__ or "").splitlines()), None))
     parser.add_argument("--vault", type=Path, required=True)
     parser.add_argument("--every", type=int, default=0, help="segundos entre pasadas (0 = una)")
+    parser.add_argument("--workspace", type=Path, help="workspace de OpenClaw (su MEMORY.md)")
     args = parser.parse_args()
     while True:
         if args.vault.is_dir():
@@ -801,6 +861,8 @@ def main() -> None:
                 n = refresh(args.vault)
                 if n:
                     print(f"red: {n} notas actualizadas", flush=True)
+                if args.workspace and mirror_directives(args.workspace, args.vault):
+                    print("red: directivas copiadas al vault", flush=True)
             except Exception as exc:  # noqa: BLE001 — un fallo no debe parar el bucle
                 print(f"red: error: {type(exc).__name__}: {exc}", file=sys.stderr, flush=True)
         else:
