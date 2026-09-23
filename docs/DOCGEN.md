@@ -10,7 +10,7 @@ enviarlo por el chat. Es la Fase 2 de `docs/ROADMAP.md`.
 No hay generación libre ni prompt nuevo. Cada tipo de documento define una
 lista fija de secciones (`packages/docgen/templates.py`), cada una con una
 pregunta en español. Por cada sección se llama una vez a
-`HybridRagOrchestrator.query(...)` — el mismo motor que usan `/ask` y `/deep`:
+`HybridRagOrchestrator.query(...)` — el mismo motor que usa `/ask`:
 recuperación híbrida, reranking, presupuesto de contexto y generación
 fundamentada. Si una sección no tiene evidencia en la documentación indexada,
 el documento lo dice explícitamente en esa sección en vez de inventar
@@ -18,7 +18,7 @@ contenido; el resto de secciones no se ven afectadas. Esto significa que
 doc-gen no introduce ninguna superficie nueva de alucinación: hereda las
 mismas garantías de abstención y citación de fuentes que el resto del RAG.
 
-Es un trabajo asíncrono (`arq`), igual que `/deep`: la API devuelve un
+Es un trabajo asíncrono (`arq`): la API devuelve un
 identificador de trabajo (HTTP 202) y el resultado se recoge después.
 
 ## Formatos y dependencias

@@ -4,7 +4,6 @@ from qdrant_client import AsyncQdrantClient
 
 from apps.worker.jarvis_worker.settings import redis_settings
 from apps.worker.jarvis_worker.tasks import (
-    deep_rag_query,
     delete_document,
     generate_document,
     ingest_document,
@@ -14,7 +13,6 @@ from apps.worker.jarvis_worker.tasks import (
 from packages.core.db.session import make_engine, make_session_factory
 from packages.core.logging import configure_logging, get_logger
 from packages.core.settings import get_settings
-from packages.inference.airllm import AirLLMProvider
 from packages.inference.ollama import OllamaProvider
 from packages.inference.router import InferenceMode, InferenceRouter
 from packages.rag.embeddings import FastEmbedProvider
@@ -60,39 +58,10 @@ async def on_startup(ctx: dict[str, Any]) -> None:
         reranker=docgen_reranker,
     )
 
-    if settings.airllm_enabled:
-        airllm_provider = AirLLMProvider(
-            settings.airllm_service_url,
-            settings.airllm_model,
-            timeout_seconds=settings.airllm_timeout_seconds,
-        )
-        ctx["airllm_provider"] = airllm_provider
-        reranker = (
-            FastEmbedReranker(cache_dir=cache_dir, model_name=settings.rag_reranker_model)
-            if settings.rag_reranker_enabled
-            else None
-        )
-        ctx["deep_orchestrator"] = HybridRagOrchestrator(
-            ctx["qdrant_client"],
-            settings.qdrant_collection,
-            ctx["embedding_provider"],
-            InferenceRouter(providers={InferenceMode.DEEP: airllm_provider}),
-            reranker=reranker,
-        )
-        if settings.airllm_release_ollama_vram:
-            ctx["ollama_provider"] = OllamaProvider(
-                settings.ollama_host, settings.ollama_primary_model
-            )
-    logger.info("worker_started", airllm_enabled=settings.airllm_enabled)
+    logger.info("worker_started")
 
 
 async def on_shutdown(ctx: dict[str, Any]) -> None:
-    airllm_provider = ctx.get("airllm_provider")
-    if airllm_provider is not None:
-        await airllm_provider.aclose()
-    ollama_provider = ctx.get("ollama_provider")
-    if ollama_provider is not None:
-        await ollama_provider.aclose()
     for key in ("docgen_ollama_provider", "meetings_llm"):
         provider = ctx.get(key)
         if provider is not None:
@@ -107,7 +76,6 @@ class WorkerSettings:
         ingest_document,
         delete_document,
         reindex_document,
-        deep_rag_query,
         generate_document,
         meeting_minutes,
     ]

@@ -51,7 +51,6 @@ class RagOrchestrator(Protocol):
         self,
         query: str,
         *,
-        deep: bool = False,
         filters: dict | None = None,
         top_k: int = 8,
     ) -> RagAnswer: ...
@@ -62,7 +61,6 @@ class NotConfiguredRagOrchestrator:
         self,
         query: str,
         *,
-        deep: bool = False,
         filters: dict | None = None,
         top_k: int = 8,
     ) -> RagAnswer:
@@ -145,11 +143,10 @@ def select_normal_model(
     powerful_model: str | None,
     threshold_chars: int = POWERFUL_MODEL_CONTEXT_THRESHOLD_CHARS,
 ) -> str | None:
-    """Elige, dentro del modo NORMAL (Ollama), entre el modelo rápido por defecto
-    del provider (devuelve None) y un modelo más potente configurado aparte, según
-    el volumen de contexto recuperado: más contexto implica una síntesis más
-    compleja, donde el modelo más grande rinde mejor. El modo DEEP (AirLLM) es un
-    eje independiente y no se ve afectado por esta heurística.
+    """Elige entre el modelo rápido por defecto del provider (devuelve None) y un
+    modelo más potente configurado aparte, según el volumen de contexto recuperado:
+    más contexto implica una síntesis más compleja, donde el modelo más grande
+    rinde mejor.
     """
     if powerful_model and len(context_block) >= threshold_chars:
         return powerful_model
@@ -184,7 +181,6 @@ class HybridRagOrchestrator:
         self,
         query: str,
         *,
-        deep: bool = False,
         filters: dict | None = None,
         top_k: int = 8,
     ) -> RagAnswer:
@@ -238,14 +234,9 @@ class HybridRagOrchestrator:
         budgeted = _apply_context_budget(deduplicated, self._max_context_chars)
 
         context_block = _build_context_block(budgeted)
-        mode = InferenceMode.DEEP if deep else InferenceMode.NORMAL
-        model = (
-            None
-            if deep
-            else select_normal_model(context_block, powerful_model=self._powerful_model)
-        )
+        model = select_normal_model(context_block, powerful_model=self._powerful_model)
         result = await self._inference.chat(
-            mode,
+            InferenceMode.NORMAL,
             [
                 ChatMessage(role=Role.SYSTEM, content=_SYSTEM_PROMPT),
                 ChatMessage(role=Role.USER, content=f"{context_block}\n\nPregunta: {query}"),

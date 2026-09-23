@@ -15,9 +15,9 @@ Un único bot, administrado íntegramente por OpenClaw (long polling, sin webhoo
 
 ## Comandos
 
-Los comandos base (`/status`, `/new`, `/reset`, `/think`, etc.) son nativos de OpenClaw. Los específicos de Jarvis (`/ask`, `/deep`, `/sources`, `/models`, `/disk`, `/jobs`) se resuelven mediante lenguaje natural invocando las herramientas MCP de la skill `jarvis-rag` (ver `docs/OPENCLAW.md`): no son comandos de barra registrados aparte, la skill instruye al agente para usarlas ante la intención correspondiente.
+Los comandos base (`/status`, `/new`, `/reset`, `/think`, etc.) son nativos de OpenClaw. Los específicos de Jarvis (`/ask`, `/sources`, `/models`, `/disk`, `/jobs`) se resuelven mediante lenguaje natural invocando las herramientas MCP de la skill `jarvis-rag` (ver `docs/OPENCLAW.md`): no son comandos de barra registrados aparte, la skill instruye al agente para usarlas ante la intención correspondiente.
 
-`/deep` es asíncrono por diseño (criterio 17): `jarvis_deep` encola un trabajo y responde al momento con su identificador, el worker ejecuta la consulta contra AirLLM sin bloquear al bot, y la respuesta se recoge con `jarvis_job_result` (o se lista con `/jobs`). Ver `docs/AIRLLM.md`.
+Los trabajos largos (generar un documento, transcribir una reunión) son asíncronos por diseño (criterio 17): la herramienta encola el trabajo y responde al momento con su identificador, el worker lo ejecuta sin bloquear al bot, y el resultado se recoge con `jarvis_job_result` (o se lista con `/jobs`).
 
 Los adjuntos de Telegram se indexan con `jarvis_upload` tras preguntar si van al RAG y a qué empresa o proyecto (ver `docs/OPENCLAW.md`, «Subida de documentos al RAG desde Telegram»); los trabajos se listan y cancelan con `jarvis_jobs`/`jarvis_cancel_job`.
 
