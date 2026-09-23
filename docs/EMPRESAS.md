@@ -6,7 +6,7 @@ RAG, en OpenProject (`docs/OPENPROJECT.md`) y en el vault de Obsidian:
 
 | Nivel | Qué va aquí | Quién lo ve |
 |---|---|---|
-| **General** | PMBOK, Scrum, metodologías, normas públicas | Todas las consultas |
+| **General** | Guías y metodologías (PMBOK, Scrum…), normas públicas | Todas las consultas |
 | **Empresa** | Manuales de procesos, plantillas, normas internas, reglas de negocio | Consultas de esa empresa y de sus proyectos |
 | **Proyecto** | Pliegos, actas, riesgos, presupuestos, entregables | Solo consultas de ese proyecto |
 
@@ -42,7 +42,7 @@ solo en la general.
 * "¿Qué documentación tengo?" → empresas, proyectos y número de documentos.
 * Las preguntas llevan el ámbito de la conversación: "en Migración ERP de Acme, ¿qué se
   decidió sobre…?". Si no está claro de qué proyecto hablas, pregunta.
-* "Mueve el PMBOK a general", "ese pliego es del proyecto X" → cambia el ámbito sin
+* "Mueve la guía a general", "ese pliego es del proyecto X" → cambia el ámbito sin
   reindexar (`PATCH /v1/documents/{id}/scope`).
 * Las actas de reunión se indexan en su proyecto; los documentos generados (resumen,
   DAFO, plan) usan solo la documentación del ámbito pedido.
