@@ -12,8 +12,8 @@ inferencia (Ollama) son 100% locales y no salen del servidor; pero
 cada lectura de bandeja, cada correo enviado y cada evento de calendario es
 una llamada real a `https://graph.microsoft.com`, así que esos datos (asuntos,
 cuerpos de correo, participantes de reuniones) sí viajan a servidores de
-Microsoft. Es el mismo principio que con Teams (`docs/TEAMS.md`) y `gog`
-(Google, ver el apartado "Correo y calendario (gog)" de `docs/OPENCLAW.md`):
+Microsoft. Es el mismo principio que con Teams (`docs/TEAMS.md`) y con el `gog` de Google
+que se usó hasta septiembre (`docs/OPENCLAW-HISTORICO.md`):
 algo que el propietario ya acepta al usar Microsoft 365/Teams, pero que debe
 quedar explícito y no mezclarse con la garantía de privacidad del RAG.
 
@@ -119,6 +119,6 @@ trátalo con el mismo cuidado que un token de bot de Telegram o un
 
 * Herramientas MCP de correo: `docs/EMAIL.md` (leer bandeja, redactar
   borrador, enviar tras confirmación explícita — `packages/security/confirmation.py`,
-  mismo patrón que `gog` en `docs/OPENCLAW.md`).
+  mismo patrón de borrador y confirmación).
 * Herramientas MCP de calendario: `docs/CALENDAR.md` (consultar
   disponibilidad, proponer/crear eventos tras confirmación).

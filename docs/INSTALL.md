@@ -38,7 +38,7 @@ scripts/select-models --dry-run
 #   sin --dry-run escribe .env; scripts/quickstart también lo invoca
 
 # 5. Telegram + OpenClaw (opcional, capa de interacción; ver docs/TELEGRAM.md
-#    y docs/OPENCLAW.md)
+#    y docs/OPENCLAW-HISTORICO.md)
 scripts/configure-telegram
 scripts/install-openclaw
 
