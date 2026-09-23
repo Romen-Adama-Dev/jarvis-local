@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# jarvis-admin (docs/ADMIN.md): fuera de la lista blanca de exec, así que cada llamada pide
+# el botón de aprobación en Telegram.
+set -euo pipefail
+cd /app
+exec .venv/bin/python -m packages.admin.cli "$@"

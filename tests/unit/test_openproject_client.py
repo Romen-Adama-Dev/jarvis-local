@@ -86,10 +86,16 @@ class FakeOpenProject:
             body = json.loads(request.content)
             return httpx.Response(201, json={"id": 3, **body})
         if (method, path) == ("GET", "/users"):
-            return httpx.Response(200, json=_collection([{"_links": {"self": _link("users", 4)}}]))
+            carmen = {"login": "carmen@x.es", "email": "carmen@x.es", "name": "Carmen Ruiz",
+                      "_links": {"self": _link("users", 8)}}  # fmt: skip
+            owner = {"login": "admin", "name": "Admin", "_links": {"self": _link("users", 4)}}
+            return httpx.Response(200, json=_collection([owner, carmen]))
+        if (method, path) == ("POST", "/users"):
+            return httpx.Response(201, json={"name": "Carmen Ruiz", **json.loads(request.content)})
         if (method, path) == ("GET", "/roles"):
             role = {"name": "Administrador de proyecto", "_links": {"self": _link("roles", 5)}}
-            return httpx.Response(200, json=_collection([role]))
+            member = {"name": "Miembro", "_links": {"self": _link("roles", 6)}}
+            return httpx.Response(200, json=_collection([role, member]))
         if (method, path) == ("POST", "/memberships"):
             return httpx.Response(201, json={})
         if path.endswith("/types"):
@@ -264,3 +270,27 @@ def test_describe_shows_period():
 def test_update_changes_subject(op, fake):
     op.update_work_package(50, subject="  Contratar laespiga.es ")
     assert fake.body("PATCH", "/work_packages/50")["subject"] == "Contratar laespiga.es"
+
+
+def test_create_user_is_invited(op, fake):
+    op.create_user("Carmen  Ruiz Gil", "Carmen@X.es")
+    body = fake.body("POST", "/users")
+    assert body == {
+        "login": "carmen@x.es",
+        "email": "carmen@x.es",
+        "firstName": "Carmen",
+        "lastName": "Ruiz Gil",
+        "status": "invited",
+    }
+    with pytest.raises(ValidationFailedError, match="correo"):
+        op.create_user("Carmen", "carmen")
+
+
+def test_add_member_by_name_or_email(op, fake):
+    op.add_member("migracion erp", "carmen ruiz")
+    links = fake.body("POST", "/memberships")["_links"]
+    assert links["project"]["href"] == "/api/v3/projects/2"
+    assert links["principal"]["href"] == "/api/v3/users/8"
+    assert links["roles"] == [{"href": "/api/v3/roles/6"}]
+    with pytest.raises(ValidationFailedError, match="El usuario"):
+        op.add_member("migracion erp", "nadie")
