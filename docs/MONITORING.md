@@ -14,7 +14,7 @@ docker compose --profile monitoring up -d
 | `alertmanager` | 9093 | Envía las alertas por Telegram |
 | `grafana` | 3000 (`GRAFANA_PORT`) | Panel "Jarvis" (`infra/monitoring/grafana/dashboards/jarvis.json`) |
 | `blackbox-exporter` | 9115 | Sondas HTTP y TCP contra cada servicio |
-| `node-exporter` | 9100 | CPU, memoria y disco del servidor |
+| `node-exporter` | 9100 | CPU, memoria y disco del servidor, y la hora de la última copia de seguridad (la escribe el servicio `backup` en el volumen `backup_metrics`) |
 | `dcgm-exporter` | 9400 | GPU NVIDIA: uso, VRAM, temperatura, consumo, errores Xid (sin GPU, `compose.cpu.yml` lo desactiva y pone `MONITOR_GPU=false` a Prometheus para que no lo dé por caído) |
 
 Todos usan `network_mode: host` y escuchan solo en `127.0.0.1`, como `ollama`, `api` y
@@ -45,6 +45,7 @@ Los servicios sin HTTP (`worker`, `knowledge`, `vault-sync`, `livesync-bridge`,
 | `ServicioCaido` | Una sonda falla durante 3 min |
 | `MetricasSinDatos` | Prometheus no puede leer un exportador o la API durante 5 min |
 | `ApiErrores5xx` | Más del 5 % de las peticiones a la API acaban en 5xx durante 10 min |
+| `CopiaAtrasada` | La última copia de seguridad correcta tiene más de 26 h (perfil `backup`; `jarvis_backup_last_success_timestamp_seconds`) |
 | `DiscoCasiLleno` | Menos del 10 % libre en `/` |
 | `MemoriaBaja` | Menos del 5 % de RAM disponible durante 10 min |
 | `GpuTemperaturaAlta` | GPU por encima de 85 °C durante 5 min |

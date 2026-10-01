@@ -3,7 +3,8 @@
 # volúmenes de datos montados en /data/<nombre> y el destino en /backups.
 #
 #   jarvis-backup once                 una copia ahora
-#   jarvis-backup loop                 una copia al día a BACKUP_TIME (hora local, TZ)
+#   jarvis-backup loop                 una copia al día a BACKUP_TIME (hora local, TZ), y
+#                                      otra al arrancar si la última tiene más de un día
 #   jarvis-backup verify <copia>       comprueba las sumas sha256 de una copia
 #   jarvis-backup restore-files <copia>  vuelca los volúmenes (servicios parados)
 #   jarvis-backup restore-db <copia>     PostgreSQL y Qdrant (con postgres y qdrant arriba)
@@ -18,6 +19,8 @@ set -euo pipefail
 BACKUP_DIR=/backups
 KEEP="${BACKUP_KEEP:-7}"
 QDRANT="${QDRANT_URL:-http://qdrant:6333}"
+# Métrica para Prometheus (textfile de node-exporter, perfil monitoring): alerta CopiaAtrasada.
+METRICS_DIR=/metrics
 export PGHOST="${PGHOST:-postgres}" PGUSER="${POSTGRES_USER:-jarvis}"
 [[ -s /data/runtime/postgres_password ]] && PGPASSWORD="$(cat /data/runtime/postgres_password)"
 export PGPASSWORD
@@ -98,7 +101,21 @@ backup_once() {
   log "copia $name terminada: $(du -sh "$dest" | cut -f1) en $dest"
   date +%s >"$BACKUP_DIR/.ultima-copia"
   owner "$BACKUP_DIR/.ultima-copia"
+  write_metrics
   prune
+}
+
+last_backup() { cat "$BACKUP_DIR/.ultima-copia" 2>/dev/null || echo 0; }
+
+# 0 si nunca se ha hecho ninguna: la alerta salta igual que con una copia muy antigua.
+write_metrics() {
+  [[ -d "$METRICS_DIR" ]] || return 0
+  printf '%s\n' \
+    "# HELP jarvis_backup_last_success_timestamp_seconds Fin de la última copia de seguridad correcta." \
+    "# TYPE jarvis_backup_last_success_timestamp_seconds gauge" \
+    "jarvis_backup_last_success_timestamp_seconds $(last_backup)" \
+    >"$METRICS_DIR/jarvis_backup.prom.tmp"
+  mv "$METRICS_DIR/jarvis_backup.prom.tmp" "$METRICS_DIR/jarvis_backup.prom"
 }
 
 prune() {
@@ -168,6 +185,13 @@ restore_db() {
 loop() {
   local at="${BACKUP_TIME:-03:30}" now next
   log "copias diarias a las $at ($(date +%Z)), se guardan las $KEEP últimas en $BACKUP_DIR"
+  write_metrics
+  # Un servidor que se apaga por la noche nunca está encendido a BACKUP_TIME: al arrancar
+  # se recupera la copia perdida. Solo aquí, para que una copia fallida no se repita en bucle.
+  if (($(date +%s) - $(last_backup) > 86400)); then
+    log "la última copia tiene más de un día: se hace una ahora"
+    "$0" once || log "la copia ha fallado; se reintenta a las $at"
+  fi
   while true; do
     now="$(date +%s)"
     next="$(date -d "today $at" +%s)"
