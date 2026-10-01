@@ -44,8 +44,8 @@ Resultado de las comprobaciones automáticas: ningún enlace roto; rutas inexist
 | D | La tabla de hardening de `docs/SECURITY.md` y sus pendientes eran del servidor original | Comprobado en la VM (`ss -tlnp`, `sshd -T`, `/etc/sudoers.d`, UFW) y rehecha con lo que es cierto hoy; añadido el resumen de la auditoría del 22-09 y los pendientes reales |
 | E | La sección de exec de `AGENTS.md` citaba `nvidia-smi` y `ollama` y decía que `write`/`edit` llegan al home | Ya corregido en `fix/seguridad-auditoria` (PR #13), que además limita las herramientas de ficheros al workspace |
 | F | Los niveles `vram_7000` y `vram_21000` de `BENCHMARKS.md`/`MODELS.md` no están medidos | Nada que corregir: los propios documentos lo dicen. Revisar solo si se cambia de GPU |
-| G | `docs/TEAMS.md` describía un canal preparado pero sin probar | El documento abre con un aviso de estado: preparado, sin probar y fuera del alcance verificado del TFM. **La decisión de si Teams sigue en el alcance sigue siendo tuya**; si se descarta, el documento y `scripts/configure-teams` se pueden retirar en un commit aparte |
+| G | `docs/TEAMS.md` describía un canal preparado pero sin probar | **Resuelto el 01-10: Teams sale del alcance.** Se retiran `docs/TEAMS.md`, `scripts/configure-teams` y el canal `msteams` de la plantilla de OpenClaw |
 
 ## Pendiente de tu criterio
 
-* **G**: decidir si Microsoft Teams sigue en el alcance del TFM.
+Nada: los siete casos están resueltos.
