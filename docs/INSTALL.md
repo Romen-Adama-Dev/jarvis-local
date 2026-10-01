@@ -42,10 +42,6 @@ scripts/select-models --dry-run
 scripts/configure-telegram
 scripts/install-openclaw
 
-# 5.1 Microsoft Teams (opcional, segundo canal; requiere Azure Bot ya
-#     registrado y túnel hacia el messaging endpoint; ver docs/TEAMS.md)
-scripts/configure-teams
-
 # 6. Generación de documentos en PDF (opcional; ver docs/DOCGEN.md). Sin este
 #    paso, la generación de documentos sigue funcionando en md/docx/pptx.
 scripts/install-docgen

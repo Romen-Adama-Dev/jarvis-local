@@ -12,9 +12,9 @@ inferencia (Ollama) son 100% locales y no salen del servidor; pero
 cada lectura de bandeja, cada correo enviado y cada evento de calendario es
 una llamada real a `https://graph.microsoft.com`, así que esos datos (asuntos,
 cuerpos de correo, participantes de reuniones) sí viajan a servidores de
-Microsoft. Es el mismo principio que con Teams (`docs/TEAMS.md`) y con el `gog` de Google
+Microsoft. Es el mismo principio que con el `gog` de Google
 que se usó hasta septiembre (`docs/OPENCLAW-HISTORICO.md`):
-algo que el propietario ya acepta al usar Microsoft 365/Teams, pero que debe
+algo que el propietario ya acepta al usar Microsoft 365, pero que debe
 quedar explícito y no mezclarse con la garantía de privacidad del RAG.
 
 ## Qué hay aquí
@@ -38,7 +38,7 @@ quedar explícito y no mezclarse con la garantía de privacidad del RAG.
 ## Registro de la app en Azure AD (paso único del propietario)
 
 Solo el propietario del tenant puede hacerlo, con acceso a Azure Portal /
-Entra ID — igual que el registro de Azure Bot para Teams o el cliente OAuth
+Entra ID — igual que el cliente OAuth
 de Google Cloud Console para `gog`:
 
 1. **Entra ID → App registrations → New registration**.
@@ -71,7 +71,7 @@ scripts/configure-msgraph
 
 1. Pide (o lee de env) `MSGRAPH_CLIENT_ID` y `MSGRAPH_TENANT_ID`, y los
    guarda en `~/.openclaw/secrets/msgraph.env` (permisos `600`, fuera de
-   Git — mismo patrón que `~/.openclaw/secrets/msteams.env` para Teams). No
+   Git). No
    son secretos en el sentido de una contraseña, pero son específicos de
    este host/tenant, así que tampoco van al repositorio.
 2. Ejecuta `uv run python -c "..."` que llama a
