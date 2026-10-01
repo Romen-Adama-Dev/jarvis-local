@@ -49,6 +49,11 @@ ejemplo `restic` o `age`).
 | `BACKUP_TIME` | `03:30` | Hora de la copia diaria, en `JARVIS_OWNER_TIMEZONE` (o `CALENDAR_TIMEZONE`, o UTC) |
 | `BACKUP_KEEP` | `7` | Copias que se conservan |
 
+Si el servidor está apagado a `BACKUP_TIME` (una VM que se para por la noche), el servicio
+hace la copia al arrancar cuando la última tiene más de un día. Con el perfil `monitoring`,
+la alerta `CopiaAtrasada` avisa por Telegram si pasan más de 26 h sin una copia correcta
+(`docs/MONITORING.md`).
+
 Las copias quedan a nombre de `JARVIS_UID`:`JARVIS_GID`.
 
 ## Restaurar
