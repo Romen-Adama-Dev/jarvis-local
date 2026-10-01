@@ -69,14 +69,17 @@ leer no marca nada como leído. Los identificadores de mensaje son UIDs IMAP.
     delimitar entrada no confiable que usa el RAG con `<contexto>` (ver
     `docs/SECURITY.md`).
   * `POST /draft` — valida destinatarios y el adjunto (si lo hay), crea una
-    `PendingConfirmation` vía `ConfirmationService.request(..., payload=...)` y
-    devuelve un `token` + resumen. No envía nada todavía.
+    `PendingConfirmation` vía `ConfirmationService.request(..., payload=...)`, manda
+    al propietario por Telegram el correo completo con los botones Enviar/Descartar y
+    devuelve solo el resumen (sin token). No envía nada todavía.
   * `POST /draft/{token}/confirm` — confirma el token (caduca a los
     `CONFIRMATION_TTL_SECONDS` configurados, un solo uso, ligado al
-    `telegram_user_id` que lo pidió) y solo entonces envía.
+    `telegram_user_id` que lo pidió) y solo entonces envía. Lo llama el plugin
+    `jarvis-aprobaciones` al pulsar Enviar, con el ID de quien pulsa.
+  * `POST /draft/{token}/cancel` — lo mismo con Descartar: borra el borrador.
 * `integrations/openclaw/skills/jarvis-email/` — servidor MCP (`FastMCP`) con
-  cuatro herramientas: `jarvis_email_inbox`, `jarvis_email_read`,
-  `jarvis_email_draft`, `jarvis_email_confirm_send`. Un servidor MCP por
+  tres herramientas: `jarvis_email_inbox`, `jarvis_email_read` y
+  `jarvis_email_draft`. Ninguna envía: el envío solo lo hace el botón. Un servidor MCP por
   capacidad, igual que `jarvis-rag`: no se añade a `jarvis-rag`, es un sibling.
 
 ## Correo y OpenProject
@@ -105,9 +108,16 @@ caducado) el token se borra. El TTL por defecto es de 10 minutos: con un modelo 
 grande cada turno del agente tarda del orden de un minuto, y con 2 minutos los "sí" del
 propietario llegaban cuando el token ya había caducado.
 
-El agente debe mostrar siempre el resumen del borrador, esperar un "sí" explícito del
-propietario y llamar él mismo a `jarvis_email_confirm_send` — la regla está en
-`integrations/openclaw/skills/jarvis-email/SKILL.md` y en el `AGENTS.md` del workspace.
+La aprobación no pasa por el modelo. La API manda el borrador por Telegram (texto plano,
+tal cual se enviará) con dos botones cuyo callback lleva el token
+(`correo:enviar:<token>`, `correo:descartar:<token>`), y el plugin de OpenClaw
+`jarvis-aprobaciones` (`integrations/openclaw/plugins/jarvis-aprobaciones`) confirma
+contra la API con el ID de Telegram de quien pulsa. El agente nunca ve el token ni tiene
+herramienta para confirmar, así que un correo o documento con instrucciones maliciosas no
+puede conseguir que envíe nada, aunque le convenza de que el propietario dijo "sí".
+
+Sin `TELEGRAM_BOT_TOKEN` no se pueden aprobar correos: `POST /draft` responde con error y
+no guarda el borrador.
 
 ## Entrada no confiable
 

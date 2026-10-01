@@ -86,15 +86,12 @@ def jarvis_email_read(message_id: str) -> str:
 def jarvis_email_draft(
     to: str, subject: str, body: str, cc: str = "", attachment_job_id: str = ""
 ) -> str:
-    """Prepara un borrador de correo, pendiente de confirmación explícita del usuario.
+    """Prepara un borrador de correo y se lo manda al usuario por Telegram con los botones
+    Enviar y Descartar. Tú no puedes enviarlo: solo lo envía su botón.
 
     `to` y `cc` aceptan una lista de direcciones separadas por comas o espacios. `body`
     es el texto real que se enviará. `attachment_job_id` (opcional) adjunta el documento
-    de un trabajo de jarvis_generate_doc ya terminado.
-
-    NUNCA llames a jarvis_email_draft y jarvis_email_confirm_send seguidos sin que
-    el usuario haya dicho explícitamente que sí: muestra el resumen del borrador y
-    espera confirmación explícita antes de llamar a jarvis_email_confirm_send."""
+    de un trabajo de jarvis_generate_doc ya terminado."""
     response = _client.post(
         "/v1/email/draft",
         json={
@@ -112,25 +109,10 @@ def jarvis_email_draft(
     minutes = max(1, int(data["expires_at"] - time.time()) // 60)
     return (
         f"Borrador listo — {data['summary']}.\n"
-        "Enséñale al usuario destinatario, asunto, cuerpo y adjunto, y pregúntale si lo envías. "
-        f"Si dice que sí, llama TÚ a jarvis_email_confirm_send con token=\"{data['token']}\" "
-        f"(no le pidas que escriba ningún comando). Caduca en {minutes} min."
+        "Le ha llegado al usuario por Telegram con el correo completo y los botones Enviar y "
+        "Descartar. Dile que lo revise y pulse Enviar si está bien; tú no puedes enviarlo ni "
+        f"confirmarlo por él. Caduca en {minutes} min. Si quiere cambios, prepara otro borrador."
     )
-
-
-@mcp.tool()
-def jarvis_email_confirm_send(token: str) -> str:
-    """Confirma y envía un borrador de correo previamente creado con jarvis_email_draft.
-
-    Solo debe llamarse después de que el usuario haya dado su "sí" explícito al
-    borrador mostrado. Si el token caducó o no existe, devuelve el error tal cual."""
-    response = _client.post(
-        f"/v1/email/draft/{token}/confirm", json={"telegram_user_id": JARVIS_OWNER_TELEGRAM_ID}
-    )
-    if error := _api_error(response, "enviar el correo"):
-        return error
-    data = response.json()
-    return f"Correo enviado a {', '.join(data['to'])}."
 
 
 if __name__ == "__main__":
