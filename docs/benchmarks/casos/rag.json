@@ -1,0 +1,29 @@
+{
+  "_doc": "Preguntas sobre la documentación general indexada (Guía del PMBOK 7.ª ed., en español, y A Project Manager's Book of Forms de Snyder, en inglés). Cada respuesta está comprobada en el texto indexado (página en 'pagina'). 'espera' son grupos de palabras: la respuesta debe contener al menos una de cada grupo (sin tildes ni mayúsculas). 'fuente' es el principio del nombre del archivo que debe salir entre las fuentes. Las preguntas 'fuera' no tienen respuesta en la documentación: Jarvis debe abstenerse.",
+  "dentro": [
+    {"id": "pmbok-dominios", "pregunta": "¿Cuántos dominios de desempeño del proyecto describe la guía del PMBOK?", "espera": [["ocho", "8"]], "fuente": "input-PMBOK", "pagina": 98},
+    {"id": "pmbok-principios", "pregunta": "¿Cuántos principios de la dirección de proyectos recoge el estándar?", "espera": [["12", "doce"]], "fuente": "input-PMBOK", "pagina": 48},
+    {"id": "pmbok-radiador", "pregunta": "¿Qué es un radiador de información?", "espera": [["visible"], ["organizacion", "equipo"]], "fuente": "input-PMBOK", "pagina": 346},
+    {"id": "pmbok-velocidad", "pregunta": "¿Cómo se define la velocidad de un equipo?", "espera": [["tasa", "ritmo"], ["entregables"]], "fuente": "input-PMBOK", "pagina": 349},
+    {"id": "pmbok-sv", "pregunta": "¿Qué es la variación del cronograma (SV)?", "espera": [["valor ganado"], ["valor planificado"]], "fuente": "input-PMBOK", "pagina": 349},
+    {"id": "pmbok-cv", "pregunta": "¿Qué es la variación del costo (CV)?", "espera": [["valor ganado"], ["costo real"]], "fuente": "input-PMBOK", "pagina": 349},
+    {"id": "pmbok-intensificacion", "pregunta": "¿En qué consiste la intensificación del cronograma?", "espera": [["costo"], ["recursos", "personas", "horas"]], "fuente": "input-PMBOK", "pagina": 153},
+    {"id": "pmbok-ejecucion-rapida", "pregunta": "¿Qué es la ejecución rápida como técnica de compresión del cronograma?", "espera": [["paralelo"]], "fuente": "input-PMBOK", "pagina": 336},
+    {"id": "pmbok-planificacion-gradual", "pregunta": "¿Qué es la planificación gradual?", "espera": [["corto plazo"], ["detalle"]], "fuente": "input-PMBOK", "pagina": 345},
+    {"id": "pmbok-moscow", "pregunta": "¿Qué significan las categorías del método MoSCoW?", "espera": [["debe tener", "must"], ["no tendra", "won"]], "fuente": "input-PMBOK", "pagina": 276},
+    {"id": "pmbok-tiempo-ciclo", "pregunta": "¿Qué es el tiempo de ciclo?", "espera": [["tiempo total", "transcurrido"]], "fuente": "input-PMBOK", "pagina": 152},
+    {"id": "pmbok-dod", "pregunta": "¿Qué es la definición de terminado (DoD)?", "espera": [["lista de verificacion", "criterios"]], "fuente": "input-PMBOK", "pagina": 176},
+    {"id": "pmbok-cronograma-hitos", "pregunta": "¿Qué es un cronograma de hitos?", "espera": [["hitos"], ["fechas"]], "fuente": "input-PMBOK", "pagina": 334},
+    {"id": "pmbok-complejidad", "pregunta": "¿Qué modelos ayudan a entender la complejidad de un proyecto?", "espera": [["cynefin"], ["stacey"]], "fuente": "input-PMBOK", "pagina": 260},
+    {"id": "snyder-supuestos", "pregunta": "¿Qué elementos tiene el registro de supuestos según el libro de formularios?", "espera": [["id", "identificador"], ["categor"]], "fuente": "input-Cynthia", "pagina": 48},
+    {"id": "snyder-lecciones", "pregunta": "¿Qué apartados tiene el formulario de lecciones aprendidas del libro de formularios?", "espera": [["funciono", "worked well", "salio bien", "funcionado", "requisitos", "requirements"], ["mejorar", "improved", "mejora", "alcance", "scope"]], "fuente": "input-Cynthia", "pagina": 226, "nota": "Dos respuestas válidas: las columnas de la p. 226 (qué funcionó, qué mejorar) o las categorías de la tabla de la p. 223 (requisitos, alcance, cronograma…)."},
+    {"id": "snyder-equipo", "pregunta": "¿Qué valoraciones usa el formulario de evaluación del desempeño del equipo?", "espera": [["supera", "exceeds", "excede"], ["cumple", "meets"], ["mejora", "improvement", "mejorar"]], "fuente": "input-Cynthia", "pagina": 173},
+    {"id": "snyder-probabilidad", "pregunta": "Según el libro de formularios, ¿de dónde recibe información la matriz de probabilidad e impacto?", "espera": [["evaluacion", "assessment", "registro de riesgos", "risk register"]], "fuente": "input-Cynthia", "pagina": 129}
+  ],
+  "fuera": [
+    {"id": "fuera-mongolia", "pregunta": "¿Cuál es la capital de Mongolia?"},
+    {"id": "fuera-paella", "pregunta": "¿Cómo se prepara una paella valenciana?"},
+    {"id": "fuera-mundial", "pregunta": "¿Quién ganó la final del mundial de fútbol de 2022?"},
+    {"id": "fuera-presupuesto", "pregunta": "¿Cuál es el presupuesto aprobado del proyecto App de citas de Talleres Norte?"}
+  ]
+}

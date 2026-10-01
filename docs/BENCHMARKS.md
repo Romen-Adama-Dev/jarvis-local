@@ -1,4 +1,4 @@
-# Benchmarks — Selección de modelo Ollama
+# Benchmarks — modelo de Ollama y sistema completo
 
 ## Objetivo y metodología
 
@@ -142,6 +142,76 @@ scripts/benchmark-models --models "llama3.1:8b-instruct-q4_K_M,qwen2.5:7b-instru
 
 Guarda un JSON con timestamp en `docs/benchmarks/`. Añadir o quitar modelos
 candidatos con `--models "modelo1,modelo2,..."`.
+
+## Benchmarks de Jarvis (sistema completo)
+
+`scripts/benchmark-jarvis` mide el sistema en marcha tal como lo usa una persona, no solo
+el modelo: la API, el RAG con su reranker, la traducción de la consulta, el worker de
+actas con faster-whisper y la generación de documentos. Los casos están versionados en
+`docs/benchmarks/casos/` y cada ejecución deja un JSON en `docs/benchmarks/`. No crea nada
+en OpenProject, el vault ni el RAG. Las personas reales se miden aparte, con el protocolo de
+[UAT.md](UAT.md).
+
+```bash
+scripts/benchmark-jarvis                         # todo, ~10 min en la L4
+scripts/benchmark-jarvis --solo rag,traduccion   # solo algunos bloques
+scripts/benchmark-jarvis --con-respuestas        # guarda también el texto de cada respuesta
+```
+
+Por defecto no guarda el texto de las respuestas del RAG, porque citan la documentación
+indexada (con derechos de autor) y los resultados se suben al repo público.
+
+| Bloque | Qué mide | Casos |
+|---|---|---|
+| `rag` | Respuesta correcta **y** con su documento entre las fuentes; abstención cuando la documentación no lo dice; latencia | 18 preguntas comprobadas en el texto indexado (14 del PMBOK en español, 4 del libro de Snyder en inglés preguntadas en español) y 4 fuera de dominio |
+| `traduccion` | Términos técnicos correctos en la traducción de la consulta al inglés, con el mismo prompt y modelo que el RAG | 20 consultas de gestión de proyectos, 39 términos esperados |
+| `actas` | Una reunión de 2 min sintetizada con la voz de Jarvis (Piper): tiempo total, error de transcripción (WER frente al guion) y los 15 elementos del acta | El guion de `casos/reunion.json` |
+| `documentos` | Un resumen generado desde el RAG: tiempo y secciones con evidencia | "Los dominios de desempeño del proyecto" |
+
+### Resultados del 01-10-2026
+
+NVIDIA L4, `gemma4:26b-a4b-it-qat`, `main` en `41bf5c5`
+(`docs/benchmarks/jarvis-2026-10-01T11-13-03.json`).
+
+| Bloque | Resultado |
+|---|---|
+| RAG · preguntas con respuesta | **14/18** correctas con su fuente (16/18 citan el documento correcto) |
+| RAG · fuera de dominio | **4/4** abstenciones; ninguna respuesta inventada |
+| RAG · latencia | mediana **14,2 s**, p95 19,7 s |
+| Traducción de la consulta | **35/39** términos, mediana 0,23 s |
+| Actas | reunión de 2:06 en **28 s** (4,5 veces más rápido que el tiempo real), WER **9,1 %**, **15/15** elementos (fecha, 4 asistentes, 3 decisiones, 4 acciones con responsable y fecha, 2 riesgos, próxima reunión) |
+| Documento generado | resumen de 4 secciones en **54 s**, 4/4 con evidencia |
+
+Los cuatro fallos del RAG, revisados uno a uno:
+
+* **MoSCoW** (PMBOK p. 276): el fragmento existe, pero no llega a los candidatos y Jarvis
+  se abstiene. Un acrónimo en una lista de métodos: la búsqueda no lo encuentra.
+* **Modelos de complejidad**: cita Cynefin, pero no la matriz de Stacey.
+* **Evaluación del desempeño del equipo** (Snyder p. 173): describe qué se valora
+  (alcance, calidad, cronograma, costo), no la escala (*Exceeds / Meets / Needs
+  improvement*), que está en otro fragmento.
+* **Lecciones aprendidas** (Snyder): varía entre ejecuciones. En una dio los apartados de
+  la tabla de la p. 223, que son válidos; en otra respondió a medias y lo marcó como sin
+  evidencia suficiente.
+
+Dos de los cuatro son preguntas en español sobre el libro en inglés (2/4 en ese
+documento, frente a 12/14 en el PMBOK): ahí está el margen de mejora.
+
+### Traducción de la consulta: comparación de traductores
+
+La consulta se traduce al inglés para encontrar también la documentación en inglés
+(PR #18). Se midió el 01-10-2026 con las 20 consultas de `casos/traduccion.json`, contando
+los términos técnicos esperados en la traducción:
+
+| Traductor | Términos | Mediana | Ejemplo de fallo |
+|---|---|---|---|
+| **Gemma 4 26B** (el propio modelo de Jarvis, el que se usa) | **35/39** | 0,24 s | *total slack* por *float* (sinónimo válido) |
+| TranslateGemma 4B (Ollama) | 27/39 | 0,17 s | *acta de constitución* → *incorporation certificate* |
+| Opus-MT es-en (CTranslate2, int8, CPU) | 25/39 | 0,03 s | *ruta crítica* → *critical route* |
+
+Un prompt que pedía "la terminología técnica del ámbito" no mejoró a Gemma (35/39). Con
+eso se descartaron tanto un traductor dedicado como el reranker multilingüe jina: la
+traducción actual ya conserva la terminología y tarda una fracción de segundo.
 
 ## AirLLM: evaluado y descartado
 
