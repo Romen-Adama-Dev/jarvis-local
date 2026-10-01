@@ -16,7 +16,7 @@ y solo enlaza con ella y con sus hijas. Desde el núcleo, `🧭 Mapa de Jarvis`:
     │           └── 🏁 Hitos · ⚠️ Riesgos · 📅 Reuniones (→ 📝 su acta) · ✅ Tareas · 🗃 Documentos
     ├── 📚 Conocimiento        concepts/Conocimiento/
     │   ├── 🗂 Metodologías  → 📐 cada una, con sus documentos de referencia
-    │   ├── 🗃 Documentación general · 🗂 Temas · 🧠 Directivas de Jarvis
+    │   ├── 🗃 Documentación general · 🗂 Temas · 📖 Glosario · 🧠 Directivas de Jarvis
     ├── 🕸 Nexos               entities/Nexos/  → 🔗 personas que trabajan con varias empresas
     ├── 👥 Contactos           personas que aún no están en ninguna empresa
     └── 📅 Agenda              reuniones sin proyecto
@@ -68,6 +68,7 @@ KNOWLEDGE_DIR = "concepts/Conocimiento"
 METHODOLOGIES_DIR = f"{KNOWLEDGE_DIR}/Metodologías"
 GENERAL_DOCS_DIR = f"{KNOWLEDGE_DIR}/Documentación general"
 TOPICS_DIR = f"{KNOWLEDGE_DIR}/Temas"
+GLOSSARY_DIR = f"{KNOWLEDGE_DIR}/Glosario"
 DIRECTIVES_NOTE = f"{KNOWLEDGE_DIR}/🧠 Directivas de Jarvis"
 # Dónde está cada empresa y proyecto, para openproject-wiki-sync y las actas.
 TREE_INDEX = ".jarvis/arbol.json"
@@ -81,6 +82,7 @@ BRANCHES = {
     "metodologias": (f"{METHODOLOGIES_DIR}/🗂 Metodologías", "Metodologías"),
     "documentacion": (f"{GENERAL_DOCS_DIR}/🗃 Documentación general", "Documentación general"),
     "temas": (f"{TOPICS_DIR}/🗂 Temas", "Temas"),
+    "glosario": (f"{GLOSSARY_DIR}/📖 Glosario", "Glosario"),
 }
 # Ramas de cada proyecto: tipo -> (icono, carpeta y título del grupo, singular).
 PROJECT_GROUPS = {
@@ -150,6 +152,7 @@ class Snapshot:
     project_methods: dict[str, list[str]] = field(default_factory=dict)
     topics: list[str] = field(default_factory=list)
     has_directives: bool = False
+    glossary: tuple = ()  # packages.glossary.Term, por ámbito
 
 
 # --- Utilidades --------------------------------------------------------------------------
@@ -458,6 +461,9 @@ def _read_knowledge(snap: Snapshot, vault: Path, memory: str) -> None:
         if ids:
             snap.project_methods[project] = [names.get(i, i) for i in ids]
     snap.topics = _existing_names(vault, f"{TOPICS_DIR}/💡 *.md", "💡")
+    from packages.glossary import load
+
+    snap.glossary = load()
 
 
 def _near(a: str, b: str) -> bool:
@@ -1126,11 +1132,53 @@ def build_pages(snap: Snapshot) -> list[Page]:
         )
         branch_lines.setdefault("temas", []).append(f"- {link(path)}")
 
+    # Glosario: una nota por ámbito con su tabla (packages/glossary/glosario.md).
+    areas = list(dict.fromkeys(term.area for term in snap.glossary))
+    for area in areas:
+        terms = [term for term in snap.glossary if term.area == area]
+        path = f"{GLOSSARY_DIR}/📖 Glosario · {note_name(area)}"
+        rows = ["| Español | English | Siglas | Definición |", "|---|---|---|---|"]
+        rows += [
+            f"| {'; '.join(t.es)} | {'; '.join(t.en)} | {', '.join(t.acronyms)} | {t.definition} |"
+            for t in sorted(terms, key=lambda t: _key(t.name))
+        ]
+        front = {
+            "pageType": "concept",
+            "id": f"concept.glosario.{_slug(area)}",
+            "title": f"Glosario · {area}",
+            "tags": ["glosario"],
+        }
+        pages.append(
+            _note(
+                path,
+                front,
+                [
+                    f"# {_label(path)}",
+                    "",
+                    f"Glosario de {link(BRANCHES['glosario'][0])} · "
+                    f"{_plural(len(terms), 'término')}. Se genera desde "
+                    "`packages/glossary/glosario.md`, con la fuente de cada término.",
+                    "",
+                    *rows,
+                ],
+            )
+        )
+        branch_lines.setdefault(
+            "glosario",
+            [
+                "Vocabulario de gestión de proyectos español ↔ inglés con su fuente oficial. "
+                "Jarvis lo usa para traducir las consultas con la terminología correcta y "
+                "responde con `jarvis_glosario`.",
+                "",
+            ],
+        ).append(f"- {link(path)} — {_plural(len(terms), 'término')}")
+
     kedges, klines = [], []
     for key, count, unit in (
         ("metodologias", len(snap.methods), ("metodología", "metodologías")),
         ("documentacion", len(loose), ("documento", "")),
         ("temas", len(snap.topics), ("tema", "")),
+        ("glosario", len(snap.glossary), ("término", "")),
     ):
         if key in branch_lines:
             pages.append(_branch(key, knowledge, branch_lines[key]))

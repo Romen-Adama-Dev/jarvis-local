@@ -103,8 +103,10 @@ def test_merge_without_reranker_keeps_best_hybrid_score():
 class _FakeInference:
     def __init__(self, reply: str | Exception) -> None:
         self._reply = reply
+        self.messages: list = []
 
     async def chat(self, mode, messages, **kwargs):
+        self.messages = messages
         if isinstance(self._reply, Exception):
             raise self._reply
         return type("R", (), {"text": self._reply})()
@@ -133,3 +135,15 @@ def _orchestrator(reply: str | Exception) -> HybridRagOrchestrator:
 )
 async def test_translate_query(reply, expected):
     assert await _orchestrator(reply)._translate("¿Qué lleva el acta?") == expected
+
+
+@pytest.mark.asyncio
+async def test_translation_uses_the_glossary_terms():
+    orchestrator = _orchestrator("Open issue log")
+    await orchestrator._translate("registro de incidentes abiertos")
+    system = orchestrator._inference.messages[0].content  # type: ignore[attr-defined]
+    assert "Registro de incidentes = Issue log" in system
+
+    orchestrator = _orchestrator("What does it include?")
+    await orchestrator._translate("¿Qué incluye?")
+    assert "equivalencias" not in orchestrator._inference.messages[0].content  # type: ignore[attr-defined]

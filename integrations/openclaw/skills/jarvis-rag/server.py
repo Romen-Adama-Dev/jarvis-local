@@ -586,6 +586,24 @@ def _resolve_audio(file_path: str) -> Path | None:
 
 
 @mcp.tool()
+def jarvis_glosario(termino: str) -> str:
+    """Definición y equivalencia español ↔ inglés de un término de gestión de proyectos
+    (PMBOK, APM, Scrum, Kanban, Lean, cascada, PRINCE2) con su fuente oficial. Es inmediato:
+    úsalo antes que jarvis_ask para "¿qué es…?", "¿cómo se dice en inglés…?" o siglas
+    (WBS, SPI, WIP…). `termino` en español, en inglés o en siglas."""
+    sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
+    from packages.glossary import describe, lookup
+
+    found = lookup(termino)
+    if not found:
+        return (
+            f"«{termino}» no está en el glosario. Si es un concepto de la documentación "
+            "indexada, búscalo con jarvis_ask."
+        )
+    return "\n\n".join(describe(term) for term in found)
+
+
+@mcp.tool()
 def jarvis_remember(about: str, text: str, new: str = "") -> str:
     """Guarda algo que Jarvis debe recordar sobre un proyecto, una empresa, una persona o un
     tema general ("recuerda que el cliente prefiere reuniones por la mañana"). Va a la nota
