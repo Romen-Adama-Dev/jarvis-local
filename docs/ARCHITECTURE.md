@@ -104,7 +104,7 @@ Ver README.md: `apps/`, `packages/`, `integrations/`, `infra/`, `scripts/`, `tes
 * `packages/inference`: abstracción `InferenceProvider`, `OllamaProvider`, router.
 * `packages/meetings` y `packages/docgen`: transcripción y actas de reunión, y generación de documentos fundamentados en el RAG.
 * `packages/office`: Excel, Word, PowerPoint y OpenDocument a medida.
-* `packages/openproject` y `packages/knowledge`: gestión de proyectos y red de conocimiento del vault.
+* `packages/openproject` y `packages/knowledge`: gestión de proyectos y árbol de conocimiento del vault.
 * `packages/imapsmtp`, `packages/caldavcal`, `packages/msgraph`: correo y calendario con backends intercambiables.
 * `apps/api`: FastAPI, únicamente orquesta los paquetes anteriores. No contiene lógica de infraestructura de Ollama más allá de llamadas HTTP a través de `packages/inference`.
 * `apps/worker`: cola `arq` sobre Redis para ingestión y tareas largas.

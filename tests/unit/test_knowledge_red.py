@@ -1,4 +1,6 @@
 import datetime
+import json
+import re
 from pathlib import Path
 
 import pytest
@@ -27,6 +29,27 @@ date: 2026-03-02
 | 2 | Hosting | Alexx Gil | 2026-03-05 |
 """
 
+MEMORY = """# MEMORY.md
+
+## General
+
+## Metodologías
+
+### Scrum
+- Sprints de dos semanas.
+#### Ceremonias
+- Daily de 15 minutos.
+
+## Proyectos
+
+- Ficticia SL › Tienda online: Scrum
+"""
+
+EMPRESAS = "entities/Empresas"
+FICTICIA = f"{EMPRESAS}/Ficticia SL"
+TIENDA = f"{FICTICIA}/Tienda online"
+OTRA = f"{EMPRESAS}/Otra SA"
+
 
 @pytest.fixture
 def vault(tmp_path: Path) -> Path:
@@ -38,13 +61,14 @@ def vault(tmp_path: Path) -> Path:
 
 def _snapshot(vault: Path) -> Snapshot:
     snap = Snapshot(
-        companies={"Ficticia SL": "https://op.example/projects/ficticia"},
+        companies={"Ficticia SL": "https://op.example/projects/ficticia", "Otra SA": ""},
         projects={
             "Tienda online": {
                 "company": "Ficticia SL",
                 "url": "https://op.example/projects/tienda",
                 "gantt": "https://op.example/projects/tienda/gantt",
-            }
+            },
+            "Intranet": {"company": "Otra SA", "url": "", "gantt": ""},
         },
         milestones=[
             Item("7", "Lanzamiento", "Tienda online", "Ficticia SL", "2026-04-01", "Nuevo")
@@ -60,21 +84,44 @@ def _snapshot(vault: Path) -> Snapshot:
                 ["Eva Ruiz"],
                 "Probabilidad: media.",
             ),
-        ],  # fmt: skip
+        ],
         tasks=[
             Item(
                 "9", "Maquetas", "Tienda online", "Ficticia SL", "2026-03-10", "Nuevo", ["Eva Ruiz"]
             ),
             Item("10", "Vieja", "Tienda online", "Ficticia SL", "", "Cerrado", ["Eva Ruiz"]),
+            # Carmen trabaja con las dos empresas: es un nexo.
+            Item("11", "Auditoría", "Tienda online", "Ficticia SL", "", "Nuevo", ["Carmen"]),
+            Item("12", "Migrar correo", "Intranet", "Otra SA", "", "En espera", ["Carmen"]),
         ],
-        documents=[Item("uuid-1", "brief-tienda", "Tienda online", "Ficticia SL", "2026-03-01")],
+        meetings=[
+            Item("3", "Kick-off", "Tienda online", "Ficticia SL", "2026-03-02", "celebrada"),
+            Item("4", "Café con Leo", "", "", "2026-03-05", "convocada", ["Leo"]),
+        ],
+        documents=[
+            Item("uuid-1", "Brief tienda", "Tienda online", "Ficticia SL", "2026-03-01"),
+            Item("uuid-2", "Guía Scrum", date="2026-01-01", methodology="Scrum"),
+            Item("uuid-3", "Manual de estilo", date="2026-01-02"),
+        ],
+        owner="Alex Gil",
     )
     snap.actas = red.read_actas(vault)
-    for person, role in __import__("json").loads(snap.actas[0].detail).items():
+    snap.actas[0].company = "Ficticia SL"
+    for person, role in json.loads(snap.actas[0].detail).items():
         if role:
             snap.roles[person].add(role)
     red._merge_owner(snap, "Alex Gil")
+    red._read_knowledge(snap, vault, MEMORY)
+    snap.has_directives = True
     return snap
+
+
+def _pages(vault: Path) -> dict[str, red.Page]:
+    return {p.path: p for p in red.build_pages(_snapshot(vault))}
+
+
+def _links(body: str) -> set[str]:
+    return set(re.findall(r"\[\[([^\]|]+)", body))
 
 
 def test_read_actas_takes_attendees_roles_and_owners(vault):
@@ -91,94 +138,139 @@ def test_owner_variants_are_merged(vault):
     assert snap.actas[0].people == ["Alex Gil", "Eva Ruiz"]
 
 
-PROJECT = "entities/empresas/Ficticia SL/Tienda online"
-
-
-def test_pages_link_the_network(vault):
-    pages = {p.path: p for p in red.build_pages(_snapshot(vault))}
-    project = pages[PROJECT]
-    assert "Proyecto de [[Ficticia SL]]" in project.body
-    assert "[[Lanzamiento (OP-7)|Lanzamiento]]" in project.body
-    assert "[[2026-03-02-kick-off|Acta: Kick-off Tienda online]]" in project.body
-    assert "[[Eva Ruiz]] — Diseñadora" in project.body
-    assert "Tareas abiertas (1)" in project.body  # la cerrada no cuenta
+def test_the_tree_hangs_from_the_core(vault):
+    pages = _pages(vault)
+    core = pages[red.CORE]
+    assert f"{EMPRESAS}/🗂 Empresas" in _links(core.body)
+    assert "concepts/Conocimiento/📚 Conocimiento" in _links(core.body)
+    assert "```mermaid" in core.body and "Propietario: Alex Gil" in core.body
+    company = pages[f"{FICTICIA}/🏢 Ficticia SL"]
+    assert company.front["relationships"] == []  # la relación la declara el hijo
+    assert f"{TIENDA}/📁 Tienda online" in _links(company.body)
+    project = pages[f"{TIENDA}/📁 Tienda online"]
     assert project.front["relationships"][0]["targetId"] == "entity.empresa.ficticia-sl"
-    person = pages["entities/personas/Eva Ruiz"]
-    assert person.front["privacyTier"] == "private"
-    assert "[[Tienda online]]" in person.body
-    assert "entities/empresas/Ficticia SL" in pages
-    assert "[[Ficticia SL]]" in pages[red.ROOT_NOTE].body
+    assert "Metodología: Scrum" in project.body
+    assert f"{TIENDA}/Riesgos/⚠️ Riesgos de Tienda online" in _links(project.body)
 
 
-def test_tree_hangs_from_the_project_and_only_the_child_declares_it(vault):
-    pages = {p.path: p for p in red.build_pages(_snapshot(vault))}
-    # Los ":" no valen en un nombre de archivo.
-    risk = pages[f"{PROJECT}/riesgos/Retraso del proveedor pagos (OP-8)"]
-    assert "Riesgo de [[Tienda online]]" in risk.body and "[[Eva Ruiz]]" in risk.body
-    assert risk.front["relationships"][0] == {
-        "targetId": "entity.proyecto.tienda-online",
-        "targetTitle": "Tienda online",
-        "kind": "pertenece-a",
-    }
-    assert f"{PROJECT}/hitos/Lanzamiento (OP-7)" in pages
-    # La empresa no repite la relación: la declara el proyecto con «pertenece-a».
-    assert pages["entities/empresas/Ficticia SL"].front["relationships"] == []
-    # Los documentos son de la red, no del árbol: los cruza el RAG entre proyectos.
-    assert "entities/documentos/brief-tienda" in pages
+def test_leaves_only_link_their_parent(vault):
+    pages = _pages(vault)
+    # Los ":" no valen en un nombre de archivo; la hoja cuelga del grupo de su proyecto.
+    risk = pages[f"{TIENDA}/Riesgos/⚠️ Retraso del proveedor pagos"]
+    assert _links(risk.body) == {f"{TIENDA}/Riesgos/⚠️ Riesgos de Tienda online"}
+    assert "- **Responsable:** Eva Ruiz" in risk.body  # la persona va en texto
+    assert risk.front["id"] == "entity.riesgo.op-8"
+    assert {
+        "targetId": "entity.persona.eva-ruiz",
+        "targetTitle": "Eva Ruiz",
+        "kind": "responsable",
+    } in risk.front["relationships"]
+    assert f"{TIENDA}/Hitos/🏁 Lanzamiento" in pages
+    assert f"{TIENDA}/Reuniones/📅 2026-03-02 · Kick-off" in pages
 
 
 def test_tasks_become_notes_only_when_they_weigh(vault):
-    pages = {p.path: p for p in red.build_pages(_snapshot(vault))}
-    # «Maquetas» la nombra el acta; «Vieja» no, así que se queda como línea del proyecto.
-    assert f"{PROJECT}/tareas/Maquetas (OP-9)" in pages
-    assert not any(path.endswith("/tareas/Vieja (OP-10)") for path in pages)
-    assert "[[Maquetas (OP-9)|Maquetas]]" in pages[PROJECT].body
+    pages = _pages(vault)
+    group = pages[f"{TIENDA}/Tareas/✅ Tareas de Tienda online"]
+    # «Maquetas» la nombra el acta; «Vieja» está cerrada y no la nombra nadie.
+    assert f"{TIENDA}/Tareas/✅ Maquetas" in pages
+    assert not any(path.endswith("✅ Vieja") for path in pages)
+    assert "2 abiertas" in group.body and "Vieja" not in group.body
+    assert f"{OTRA}/Intranet/Tareas/✅ Migrar correo" in pages  # en espera: pesa
 
 
-def test_concepts_index_projects_instead_of_every_item(vault):
-    pages = {p.path: p for p in red.build_pages(_snapshot(vault))}
-    risks = pages["concepts/Gestión de riesgos"]
-    assert "[[Tienda online]] — 1 riesgo" in risks.body
-    # Ningún ítem enlaza al concepto: era la arista que enmarañaba el grafo.
-    risk = pages[f"{PROJECT}/riesgos/Retraso del proveedor pagos (OP-8)"]
-    assert "[[Gestión de riesgos]]" not in risk.body
+def test_people_live_in_their_company_team(vault):
+    pages = _pages(vault)
+    eva = pages[f"{FICTICIA}/Equipo/👤 Eva Ruiz"]
+    assert _links(eva.body) == {f"{FICTICIA}/Equipo/👥 Equipo de Ficticia SL"}
+    assert "Rol: Diseñadora" in eva.body and "⚠️ Retraso del proveedor: pagos" in eva.body
+    assert eva.front["privacyTier"] == "private"
+    team = pages[f"{FICTICIA}/Equipo/👥 Equipo de Ficticia SL"]
+    assert f"{FICTICIA}/Equipo/👤 Eva Ruiz" in _links(team.body)
+    # El propietario es el núcleo: no tiene nota de persona.
+    assert not any(path.endswith("Alex Gil") for path in pages)
 
 
-def test_write_keeps_human_notes_and_links_actas(vault):
+def test_a_person_in_two_companies_is_a_nexus(vault):
+    pages = _pages(vault)
+    carmen = pages["entities/Nexos/🔗 Carmen"]
+    assert _links(carmen.body) == {
+        "entities/Nexos/🕸 Nexos",
+        f"{FICTICIA}/Equipo/👥 Equipo de Ficticia SL",
+        f"{OTRA}/Equipo/👥 Equipo de Otra SA",
+    }
+    assert "en Intranet · 1 tarea" in carmen.body  # el motivo de la unión
+    assert carmen.front["tags"] == ["persona", "nexo"]
+    assert not any(path.endswith("👤 Carmen") for path in pages)
+    team = pages[f"{OTRA}/Equipo/👥 Equipo de Otra SA"]
+    assert "también con Ficticia SL" in team.body
+    assert "entities/Nexos/🔗 Carmen" in _links(pages["entities/Nexos/🕸 Nexos"].body)
+
+
+def test_people_without_company_are_contacts_and_loose_meetings_go_to_agenda(vault):
+    pages = _pages(vault)
+    assert "entities/Contactos/👤 Leo" in pages
+    meeting = pages["entities/Agenda/📅 2026-03-05 · Café con Leo"]
+    assert _links(meeting.body) == {"entities/Agenda/📅 Agenda"}
+
+
+def test_knowledge_is_a_tree_and_methodologies_are_nexus(vault):
+    pages = _pages(vault)
+    scrum = pages["concepts/Conocimiento/Metodologías/Scrum/📐 Scrum"]
+    assert "- Sprints de dos semanas." in scrum.body
+    assert "#### Ceremonias" in scrum.body  # los títulos de MEMORY.md bajan de nivel
+    assert "concepts/Conocimiento/Metodologías/Scrum/📄 Guía Scrum" in _links(scrum.body)
+    assert f"{TIENDA}/📁 Tienda online" in _links(scrum.body)  # el nexo con el proyecto
+    assert "concepts/Conocimiento/Documentación general/📄 Manual de estilo" in pages
+    assert f"{TIENDA}/Documentos/📄 Brief tienda" in pages
+    knowledge = pages["concepts/Conocimiento/📚 Conocimiento"]
+    assert red.DIRECTIVES_NOTE in _links(knowledge.body)
+
+
+def test_acta_moves_under_its_meeting_with_human_notes(vault):
     snap = _snapshot(vault)
     pages = red.build_pages(snap)
     assert red.write_pages(vault, pages, snap) > 0
-    note = vault / f"{PROJECT}.md"
+    acta = vault / f"{TIENDA}/Reuniones/2026-03-02-kick-off.md"
+    assert acta.exists() and not (vault / "sources/proyectos").exists()
+    text = acta.read_text()
+    assert f"Acta de [[{TIENDA}/Reuniones/📅 2026-03-02 · Kick-off|" in text
+    assert text.count(red.START) == 1 and "# Acta: Kick-off Tienda online" in text
+    meeting = (vault / f"{TIENDA}/Reuniones/📅 2026-03-02 · Kick-off.md").read_text()
+    assert f"[[{TIENDA}/Reuniones/2026-03-02-kick-off|" in meeting
+    # La siguiente pasada encuentra el acta ya en su sitio y no la toca.
+    snap = _snapshot(vault)
+    assert red.write_pages(vault, red.build_pages(snap), snap) == 0
+
+
+def test_write_keeps_human_notes(vault):
+    snap = _snapshot(vault)
+    pages = red.build_pages(snap)
+    red.write_pages(vault, pages, snap)
+    note = vault / f"{TIENDA}/📁 Tienda online.md"
     note.write_text(note.read_text() + "\nMi nota a mano.\n", encoding="utf-8")
     red.write_pages(vault, pages, snap)
     assert note.read_text().endswith("Mi nota a mano.\n")
-    assert red.write_pages(vault, pages, snap) == 0  # sin cambios, no reescribe
-    acta = (vault / f"{snap.actas[0].id}.md").read_text()
-    assert "Proyecto: [[Tienda online]]" in acta and "[[Alex Gil]]" in acta
-    assert acta.count(red.START) == 1
+    index = json.loads((vault / red.TREE_INDEX).read_text())
+    assert index["projects"]["Tienda online"]["note"] == f"{TIENDA}/📁 Tienda online"
 
 
-def test_flat_notes_are_moved_into_the_tree(vault):
-    """Migración de la estructura plana anterior, con lo que hubieras escrito tú."""
+def test_a_note_that_changes_branch_takes_its_notes_along(vault):
+    """Eva pasa a trabajar también con Otra SA: su nota se va a Nexos con lo anotado."""
     snap = _snapshot(vault)
-    old = vault / "entities/proyectos/Tienda online.md"
-    old.parent.mkdir(parents=True)
-    old.write_text(
-        f'---\ngeneratedBy: "jarvis-red"\n---\n\n{red.START}\nviejo\n{red.END}\n\n'
-        "## Notas\n- 2026-03-03: ojo con el proveedor.\n",
-        encoding="utf-8",
-    )
     red.write_pages(vault, red.build_pages(snap), snap)
-
-    moved = (vault / f"{PROJECT}.md").read_text()
-    assert "- 2026-03-03: ojo con el proveedor." in moved
-    assert "Proyecto de [[Ficticia SL]]" in moved and "viejo" not in moved
-    assert not old.exists() and not old.parent.exists()  # la carpeta plana vacía se retira
+    red.remember(vault, "Eva Ruiz", "Prefiere correo", datetime.date(2026, 3, 3))
+    snap = _snapshot(vault)
+    snap.tasks.append(Item("13", "Logo", "Intranet", "Otra SA", "", "Nuevo", ["Eva Ruiz"]))
+    red.write_pages(vault, red.build_pages(snap), snap)
+    moved = vault / "entities/Nexos/🔗 Eva Ruiz.md"
+    assert "- 2026-03-03: Prefiere correo" in moved.read_text()
+    assert not (vault / f"{FICTICIA}/Equipo/👤 Eva Ruiz.md").exists()
 
 
 def test_human_note_with_same_name_is_not_touched(vault):
     snap = _snapshot(vault)
-    human = vault / "entities/empresas/Ficticia SL.md"
+    human = vault / f"{FICTICIA}/🏢 Ficticia SL.md"
     human.parent.mkdir(parents=True)
     human.write_text("# Mía\n", encoding="utf-8")
     red.write_pages(vault, red.build_pages(snap), snap)
@@ -191,11 +283,13 @@ def test_remember_appends_outside_generated_block(vault):
     day = datetime.date(2026, 3, 3)
     note = red.remember(vault, "tienda ONLINE", "Prefiere  reuniones\npor la mañana", day)
     red.remember(vault, "Tienda online", "Pago con Bizum", day)
+    assert note == vault / f"{TIENDA}/📁 Tienda online.md"
     text = note.read_text()
     assert text.index(red.END) < text.index("## Notas")
     assert "- 2026-03-03: Prefiere reuniones por la mañana\n- 2026-03-03: Pago con Bizum" in text
     red.write_pages(vault, red.build_pages(snap), snap)  # regenerar no la borra
     assert "Pago con Bizum" in note.read_text()
+    assert red.remember(vault, "Carmen", "Le gusta Marvel", day).parent.name == "Nexos"
     with pytest.raises(LookupError, match="Hay:"):
         red.remember(vault, "Otra cosa", "x")
 
@@ -203,25 +297,43 @@ def test_remember_appends_outside_generated_block(vault):
 def test_remember_creates_person_or_topic_only_when_asked(vault):
     day = datetime.date(2026, 3, 3)
     with pytest.raises(LookupError, match="new='persona'"):
-        red.remember(vault, "Carmen", "Le gusta Marvel", day)
-    person = red.remember(vault, "Carmen", "Le gusta Marvel", day, new="persona")
-    assert person == vault / "entities/personas/Carmen.md"
-    topic = red.remember(vault, "Metodología de trabajo", "Sprints de dos semanas", day, new="tema")
-    assert topic == vault / "memoria/Metodología de trabajo.md"
-    red.remember(vault, "metodologia", "Daily de 15 minutos", day)  # ya existe: la encuentra
+        red.remember(vault, "Marta", "Le gusta Marvel", day)
+    person = red.remember(vault, "Marta", "Le gusta Marvel", day, new="persona")
+    assert person == vault / "entities/Contactos/👤 Marta.md"
+    topic = red.remember(vault, "Forma de trabajo", "Sprints de dos semanas", day, new="tema")
+    assert topic == vault / "concepts/Conocimiento/Temas/💡 Forma de trabajo.md"
+    red.remember(vault, "forma de", "Daily de 15 minutos", day)  # ya existe: la encuentra
     assert topic.read_text().count("- 2026-03-03:") == 2
     with pytest.raises(LookupError, match="'persona', 'tema' o 'metodologia'"):
         red.remember(vault, "Otra", "x", day, new="empresa")
 
 
-def test_generated_person_keeps_notes_written_by_remember(vault):
-    """Si la red genera después a esa persona, rellena el bloque y respeta las notas."""
+def test_a_contact_moves_into_the_company_that_starts_working_with_them(vault):
+    """Leo se anotó como contacto; al tener trabajo en Ficticia SL, pasa a su equipo."""
+    day = datetime.date(2026, 3, 3)
+    red.remember(vault, "Rosa Díaz", "Prefiere llamadas", day, new="persona")
     snap = _snapshot(vault)
-    red.remember(vault, "Alex Gil", "Prefiere correo", datetime.date(2026, 3, 3), new="persona")
+    snap.tasks.append(
+        Item("14", "Fotos", "Tienda online", "Ficticia SL", "", "Nuevo", ["Rosa Díaz"])
+    )
     red.write_pages(vault, red.build_pages(snap), snap)
-    text = (vault / "entities/personas/Alex Gil.md").read_text()
-    assert "generatedBy" in text and "[[Tienda online]]" in text
-    assert text.index(red.END) < text.index("- 2026-03-03: Prefiere correo")
+    text = (vault / f"{FICTICIA}/Equipo/👤 Rosa Díaz.md").read_text()
+    assert "generatedBy" in text and "✅ Fotos" in text
+    assert text.index(red.END) < text.index("- 2026-03-03: Prefiere llamadas")
+    assert not (vault / "entities/Contactos/👤 Rosa Díaz.md").exists()
+
+
+def test_topics_and_methodologies_written_by_remember_join_the_tree(vault):
+    day = datetime.date(2026, 3, 3)
+    red.remember(vault, "Kanban", "Límite WIP de 3", day, new="metodologia")
+    red.remember(vault, "Viajes", "Hotel cerca de la oficina", day, new="tema")
+    snap = _snapshot(vault)
+    assert "Kanban" in snap.methods and snap.topics == ["Viajes"]
+    red.write_pages(vault, red.build_pages(snap), snap)
+    kanban = (vault / "concepts/Conocimiento/Metodologías/Kanban/📐 Kanban.md").read_text()
+    assert "Metodología de [[concepts/Conocimiento/Metodologías/🗂 Metodologías|" in kanban
+    assert "- 2026-03-03: Límite WIP de 3" in kanban
+    assert red.remember(vault, "scrum", "La retro va antes", day).parent.name == "Scrum"
 
 
 def test_directives_are_mirrored_and_not_rememberable(vault, tmp_path):
@@ -231,24 +343,37 @@ def test_directives_are_mirrored_and_not_rememberable(vault, tmp_path):
     (workspace / "MEMORY.md").write_text("# Directivas\n\n- Trabajar con Scrum\n")
     assert red.mirror_directives(workspace, vault)
     assert not red.mirror_directives(workspace, vault)  # sin cambios no reescribe
-    note = vault / f"{red.DIRECTIVES_NOTE}.md"
-    assert "- Trabajar con Scrum" in note.read_text()
+    text = (vault / f"{red.DIRECTIVES_NOTE}.md").read_text()
+    assert "- Trabajar con Scrum" in text and "Rama de [[concepts/Conocimiento/" in text
     with pytest.raises(LookupError):
         red.remember(vault, "Directivas de Jarvis", "x")
     with pytest.raises(LookupError, match="MEMORY.md"):
         red.remember(vault, "Directivas de Jarvis", "x", new="tema")
 
 
-def test_note_name_is_safe():
+def test_acta_folder_follows_the_tree_index(vault):
+    assert red.acta_folder(vault, "Tienda online", "tienda-online") == (
+        vault / "sources/proyectos/tienda-online/actas"
+    )
+    snap = _snapshot(vault)
+    red.write_pages(vault, red.build_pages(snap), snap)
+    assert red.acta_folder(vault, "Tienda online", "x") == vault / TIENDA / "Reuniones"
+    assert red.acta_file_name("2026-03-02", "Acta: Kick-off") == "📝 2026-03-02 · Kick-off"
+
+
+def test_note_name_and_document_names_are_readable():
     assert red.note_name('Riesgo: "pagos" #1 / [x]') == "Riesgo pagos 1 x"
     assert red.note_name("a" * 100) == "a" * 80
+    pmbok = "input-PMBOK-7Ed---9379f549-d3db-4515-9a44-78b47cb38468.pdf"
+    assert red.pretty_document_name(pmbok) == "PMBOK 7Ed"
+    snyder = "input-Snyder_A_Project_Manager_s_Book_of_Forms---" + pmbok.split("---", 1)[1]
+    assert red.pretty_document_name(snyder) == "Snyder A Project Manager's Book of Forms"
+    assert red.pretty_document_name("brief-app-reservas.md") == "Brief app reservas"
 
 
-def test_each_methodology_has_its_own_note(vault):
-    day = datetime.date(2026, 3, 3)
-    scrum = red.remember(vault, "Scrum", "La retro va antes de la planning", day, new="metodologia")
-    pmi = red.remember(vault, "PMI", "Línea base aprobada", day, new="metodologia")
-    assert scrum == vault / "memoria/metodologias/Scrum.md"
-    assert pmi == vault / "memoria/metodologias/PMI.md"
-    assert red.remember(vault, "scrum", "Daily de 15 minutos", day) == scrum
-    assert "Línea base" not in scrum.read_text()
+def test_same_title_twice_in_a_folder_gets_its_id(vault):
+    snap = _snapshot(vault)
+    snap.risks.append(Item("15", "Retraso del proveedor: pagos", "Tienda online", "Ficticia SL"))
+    pages = {p.path for p in red.build_pages(snap)}
+    assert f"{TIENDA}/Riesgos/⚠️ Retraso del proveedor pagos" in pages
+    assert f"{TIENDA}/Riesgos/⚠️ Retraso del proveedor pagos (OP-15)" in pages
