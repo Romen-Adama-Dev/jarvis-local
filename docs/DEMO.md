@@ -16,7 +16,7 @@ Jarvis hace solo:
    RAG del proyecto.
 4. Te pregunta si la pasa a OpenProject. Si dices que **sí**: tareas, riesgos y la reunión
    cerrada con el acta.
-5. En los 10 minutos siguientes la red de conocimiento de Obsidian y la página *Memoria de
+5. En los 10 minutos siguientes el árbol de Jarvis en Obsidian y la página *Memoria de
    Jarvis* de la wiki de OpenProject se actualizan con todo lo anterior.
 
 Lo que **no** hace solo con el audio (hay que pedírselo, como en el guion de abajo):
@@ -153,7 +153,7 @@ Entre corchetes, lo que debería pasar.
 | Dónde | Qué debería verse |
 |---|---|
 | OpenProject (`https://<servidor>.<tailnet>.ts.net:8445`) | Talleres Norte › App de citas con tareas, riesgos e hito en el Gantt; en *Reuniones*, la reunión de arranque (cerrada, con el acta) y la convocada; en la *Wiki*, *Memoria de Jarvis* |
-| Obsidian (móvil o portátil con LiveSync) | Nota *Red de conocimiento*; en la vista de grafo, Talleres Norte enlazada con el proyecto, las personas, riesgos, hito, reuniones, el acta y el brief (tarda hasta 10 min) |
+| Obsidian (móvil o portátil con LiveSync) | Nota *🧭 Mapa de Jarvis* con el diagrama del árbol; en `entities/Empresas/Talleres Norte`, el equipo, App de citas con sus hitos, riesgos, reuniones (el acta cuelga de la de arranque), tareas y el brief (tarda hasta 10 min). En la vista de grafo, con el filtro de [OBSIDIAN.md](OBSIDIAN.md), un árbol sin cruces |
 | Correo de prueba | Invitación a la reunión con archivo .ics y el correo con el resumen en PDF |
 | Servidor | `scripts/check-integrations` sigue sin fallos |
 
@@ -168,6 +168,6 @@ Entre corchetes, lo que debería pasar.
 ## Limpiar después de la demo
 
 En OpenProject, *Talleres Norte → Configuración → Borrar* (borra también App de citas).
-En Obsidian, borra las notas de Talleres Norte, App de citas, sus personas y el acta
-(`sources/proyectos/app-de-citas/`). El brief y el acta indexados se quitan del RAG
+En Obsidian, borra la carpeta `entities/Empresas/Talleres Norte` (con el proyecto, el
+equipo y el acta dentro). El brief y el acta indexados se quitan del RAG
 desde la API (`DELETE /v1/documents/{id}`).

@@ -45,9 +45,12 @@ Perfiles opcionales en `COMPOSE_PROFILES` (`.env`):
 * **Correo** por IMAP/SMTP (Gmail u otro con contraseña de aplicación) o Microsoft 365:
   leer, redactar y enviar con confirmación, adjuntar documentos, pasar un correo a
   tarea (`docs/EMAIL.md`). OpenProject envía por la misma cuenta.
-* **Una sola memoria** en Obsidian: red de conocimiento con empresas, proyectos,
-  personas, hitos, riesgos, reuniones y documentos enlazados (vista de grafo), compartida
-  con la wiki de OpenProject; "recuerda que…" por Telegram la amplía (`docs/OBSIDIAN.md`).
+* **Una sola memoria** en Obsidian: un árbol que sale de *🧭 Mapa de Jarvis* con las
+  empresas (su equipo y sus proyectos, con hitos, riesgos, reuniones y actas, tareas y
+  documentos) y el conocimiento (metodologías, documentación, temas), unido solo por
+  nexos (personas de varias empresas, metodologías que usan varios proyectos). Diagramas
+  en cada nota, compartido con la wiki de OpenProject; "recuerda que…" por Telegram lo
+  amplía (`docs/OBSIDIAN.md`).
 * **Coaching ágil** (retros, planificación de sprint, historias de usuario, métricas y
   salud del equipo) con la skill de ClawHub `agile-toolkit`, revisada y copiada en el repo
   (`integrations/openclaw/skills-terceros/README.md`).

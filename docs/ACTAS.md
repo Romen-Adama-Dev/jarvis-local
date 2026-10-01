@@ -14,7 +14,7 @@ audio (Telegram, Obsidian o ~/jarvis-inbox)
         2. Gemma extrae el acta en JSON por bloques de ~5.000 palabras y los une
         3. acta en Markdown (con la transcripción como anexo) → PDF / Word con pandoc
   ◄── acta adjunta en el chat
-      + nota en Obsidian: sources/proyectos/<proyecto>/actas/<fecha>-<título>.md
+      + nota en Obsidian: «📝 <fecha> · <título>», colgada de su reunión en el árbol
       + indexada en el RAG del proyecto ("¿qué se decidió sobre X en la reunión?")
   └─► "¿las creo en OpenProject?" → pm_import_minutes → Tareas, Riesgos y la reunión
 ```
@@ -66,7 +66,7 @@ libera la VRAM al terminar de transcribir, antes de que Gemma redacte el acta.
 | Qué | Dónde |
 |---|---|
 | Audio, transcripción, acta (md y pdf/docx) | `/srv/jarvis/data/meetings/<trabajo>/` (volumen `jarvis_srv`) |
-| Acta en la memoria | vault: `sources/proyectos/<proyecto>/actas/` |
-| Acta en el RAG | documento `<fecha>-<título>.md` del proyecto |
+| Acta en la memoria | vault: `entities/Empresas/<empresa>/<proyecto>/Reuniones/📝 <fecha> · <título>.md`, colgada de la reunión de ese día (o de las reuniones del proyecto). Si el proyecto aún no está en el árbol, en `sources/proyectos/<proyecto>/actas/` hasta que la red la mueva ([OBSIDIAN.md](OBSIDIAN.md)) |
+| Acta en el RAG | documento `<fecha>-<título>.md` del proyecto (la red sabe que es la misma acta y no la duplica) |
 | Tareas y riesgos | OpenProject, con "Origen: acta «título» (fecha)" en la descripción |
 | La reunión | Módulo Reuniones del proyecto en OpenProject, cerrada: acta (resumen, asistentes, temas) como punto del orden del día y decisiones y tareas como resultados. Sale en el calendario (`CALENDAR_PROVIDER=openproject`) a las 9:00 del día del acta, con la duración de la grabación |

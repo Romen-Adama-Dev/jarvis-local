@@ -818,13 +818,17 @@ def jarvis_web_read(approved: str) -> str:
 
 def _save_minutes_in_vault(job_id: str, result: dict) -> str:
     """Acta en el vault (memoria del proyecto, visible en Obsidian) e indexada en el RAG."""
+    sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
+    from packages.knowledge.red import acta_file_name, acta_folder
+
     minutes = result["minutes"]
     project = result.get("project") or ""
-    project_dir = _slug(project) if project else "reuniones"
-    folder = JARVIS_VAULT_DIR / "sources" / "proyectos" / project_dir / "actas"
-    target = folder / f"{minutes['fecha']}-{_slug(minutes['titulo'])}.md"
+    # En las reuniones de su proyecto si el árbol ya lo tiene; si no, la red la moverá.
+    folder = acta_folder(JARVIS_VAULT_DIR, project, _slug(project) if project else "")
+    target = folder / f"{acta_file_name(minutes['fecha'], minutes['titulo'])}.md"
     notes = []
-    if not target.exists():
+    # La red puede haberla movido a otra rama: se busca por nombre en todo el vault.
+    if not any(JARVIS_VAULT_DIR.rglob(target.name)):
         response = _client.get(f"/v1/meetings/{job_id}/markdown")
         response.raise_for_status()
         folder.mkdir(parents=True, exist_ok=True)
@@ -837,7 +841,10 @@ def _save_minutes_in_vault(job_id: str, result: dict) -> str:
         params = {k: v for k, v in _scope(result.get("company") or "", project).items() if v}
         with target.open("rb") as fh:
             upload = _client.post(
-                "/v1/documents", params=params, files={"file": (target.name, fh, "text/markdown")}
+                # Nombre ASCII en el RAG; la red lo reconoce como esta acta y no la duplica.
+                "/v1/documents",
+                params=params,
+                files={"file": (f"{_slug(target.stem, 80)}.md", fh, "text/markdown")},
             )
         if upload.status_code >= 400:
             notes.append(f"No se indexó en el RAG: {_api_message(upload) or upload.status_code}")

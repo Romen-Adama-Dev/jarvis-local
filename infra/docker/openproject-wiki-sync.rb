@@ -7,12 +7,15 @@
 #   packages/knowledge/red.py más lo que escribas en ella en Obsidian) se publica como la
 #   página "Memoria de Jarvis" de la wiki del proyecto. Se edita en Obsidian.
 # * OpenProject → vault: el resto de páginas de la wiki de cada proyecto se copian al
-#   vault (sources/openproject/<proyecto>/wiki/), enlazadas a la nota del proyecto, para
+#   vault, en la carpeta Wiki/ del proyecto dentro del árbol y enlazadas a su nota, para
 #   que Obsidian las muestre y Jarvis las encuentre en su memoria.
+#
+# Dónde está cada nota lo dice el índice que escribe la red (.jarvis/arbol.json).
 #
 # Solo escribe lo que cambia (sin versiones vacías en el historial de la wiki).
 
 require "fileutils"
+require "json"
 
 $stdout.sync = true
 
@@ -22,7 +25,9 @@ MIRROR_TITLE = ENV.fetch("WIKI_MIRROR_TITLE", "Memoria de Jarvis")
 START = "<!-- jarvis:red:start -->"
 FINISH = "<!-- jarvis:red:end -->"
 
-# Igual que note_name() en packages/knowledge/red.py: nombre de la nota en el vault.
+TREE_INDEX = VAULT.join(".jarvis", "arbol.json")
+
+# Igual que note_name() en packages/knowledge/red.py: nombre de un archivo del vault.
 def note_name(text, limit = 80)
   name = text.gsub(/[\\\/:*?"<>|#^\[\]]+/, " ").gsub(/\s+/, " ").strip.gsub(/\A[ .]+|[ .]+\z/, "")
   name = name[0, limit].sub(/[ .]+\z/, "")
@@ -39,23 +44,19 @@ def to_openproject(markdown, source)
     "Edítala en Obsidian: los cambios hechos aquí se sobrescriben.\n\n#{body.strip}\n"
 end
 
-# La nota de una empresa es entities/empresas/<Empresa>.md y la de un proyecto cuelga de
-# ella: entities/empresas/<Empresa>/<Proyecto>.md (el árbol de packages/knowledge/red.py).
-def vault_note(project)
-  base = VAULT.join("entities", "empresas")
-  company = project.parent&.name
-  path =
-    if project.parent_id
-      company ? base.join(note_name(company), "#{note_name(project.name)}.md") : nil
-    else
-      base.join("#{note_name(project.name)}.md")
-    end
-  return path if path&.file?
+# Nota y carpeta de una empresa o proyecto en el árbol (packages/knowledge/red.py), o nil
+# si la red aún no ha hecho su primera pasada.
+def tree_entry(project)
+  index = JSON.parse(TREE_INDEX.read)
+  index.dig(project.parent_id ? "projects" : "companies", project.name)
+rescue Errno::ENOENT, JSON::ParserError
+  nil
+end
 
-  # Estructura plana anterior, mientras la red no haya hecho una pasada y movido la nota.
-  legacy = VAULT.join("entities", project.parent_id ? "proyectos" : "empresas",
-                      "#{note_name(project.name)}.md")
-  legacy.file? ? legacy : nil
+def vault_note(project)
+  entry = tree_entry(project)
+  path = entry && VAULT.join("#{entry["note"]}.md")
+  path&.file? ? path : nil
 end
 
 def ensure_wiki(project)
@@ -89,7 +90,11 @@ def publish(project, jarvis)
 end
 
 def export(project)
-  folder = VAULT.join("sources", "openproject", project.identifier, "wiki")
+  entry = tree_entry(project)
+  return unless entry
+
+  folder = VAULT.join(entry["dir"], "Wiki")
+  parent = "[[#{entry["note"]}|#{project.name}]]"
   pages = project.wiki ? project.wiki.pages.reject { |p| p.title == MIRROR_TITLE } : []
   wanted = {}
   pages.each do |page|
@@ -104,12 +109,12 @@ def export(project)
 
       # #{page.title}
 
-      Página de la wiki de OpenProject del proyecto [[#{note_name(project.name)}]]. Se edita en
-      OpenProject; aquí es una copia.
+      Página de la wiki de OpenProject de #{parent}. Se edita en OpenProject; aquí es
+      una copia.
 
       #{page.text}
     MD
-    target = folder.join("#{note_name(page.title)}.md")
+    target = folder.join("📖 #{note_name(page.title)}.md")
     wanted[target.to_s] = true
     next if target.file? && target.read == content
 
