@@ -51,6 +51,9 @@ Perfiles opcionales en `COMPOSE_PROFILES` (`.env`):
   nexos (personas de varias empresas, metodologías que usan varios proyectos). Diagramas
   en cada nota, compartido con la wiki de OpenProject; "recuerda que…" por Telegram lo
   amplía (`docs/OBSIDIAN.md`).
+* **Glosario** de ~450 términos de gestión de proyectos español ↔ inglés (PMBOK, APM,
+  Scrum, Kanban, Lean, PRINCE2) con su fuente oficial: traduce las consultas al RAG con la
+  terminología correcta y responde al momento con `jarvis_glosario` (`docs/GLOSARIO.md`).
 * **Coaching ágil** (retros, planificación de sprint, historias de usuario, métricas y
   salud del equipo) con la skill de ClawHub `agile-toolkit`, revisada y copiada en el repo
   (`integrations/openclaw/skills-terceros/README.md`).
