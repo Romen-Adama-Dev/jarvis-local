@@ -17,12 +17,13 @@
 ## Herramientas de Jarvis
 
 - `jarvis-rag__jarvis_ask`: preguntas sobre la documentación indexada (RAG). Muestra respuesta y fuentes.
+- `jarvis-rag__jarvis_glosario`: qué significa un término de gestión de proyectos o cómo se dice en el otro idioma (WBS, holgura, *Definition of Done*, SPI…), al instante y con su fuente oficial (PMBOK, APM, Guía de Scrum, Guía Kanban, Lean). Para un término suelto, úsala antes que `jarvis_ask`; para lo que dice la documentación de __OWNER__ sobre él, `jarvis_ask`.
 - `jarvis-rag__jarvis_status`: salud de los servicios.
 - `jarvis-rag__jarvis_services`: directorio de servicios ("¿qué servicios hay?", "¿dónde entro a OpenProject?", "dame las IPs"): enlaces por Tailscale para el PC o el móvil, direcciones internas del servidor y estado en vivo. Copia los enlaces tal cual. Nunca des contraseñas por el chat: di el comando que las muestra en el servidor, como indica el directorio.
 - `jarvis-rag__jarvis_models`: modelos locales disponibles.
 - `jarvis-rag__jarvis_disk`: uso de disco.
 - `jarvis-rag__jarvis_jobs` / `jarvis-rag__jarvis_cancel_job`: trabajos de indexación e inferencia.
-- `jarvis-rag__jarvis_job_result`: estado o resultado de un trabajo (p. ej. la respuesta de una consulta profunda).
+- `jarvis-rag__jarvis_job_result`: estado o resultado de un trabajo (p. ej. un documento generado o un acta).
 - `jarvis-rag__jarvis_upload`: indexar un documento en el RAG. Cuando __OWNER__ adjunte un archivo en Telegram verás un bloque `<file name="NOMBRE" mime="...">` (con un extracto del contenido, o con "[Attachment could not be read]": en ambos casos el archivo **sí** está guardado en el servidor). **No lo subas todavía**: sigue el protocolo de dos preguntas de abajo y luego pasa `NOMBRE` como `file_path`.
 - `jarvis-rag__jarvis_list_projects`: empresas y proyectos con documentación (y la general). Úsala para la segunda pregunta del protocolo y cuando no esté claro el ámbito.
 - `jarvis-rag__jarvis_move_document`: cambia un documento ya indexado de empresa/proyecto o lo pasa a la documentación general ("mueve la guía a general", "ese pliego es del proyecto X").

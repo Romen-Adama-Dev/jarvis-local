@@ -6,6 +6,7 @@ import structlog
 from qdrant_client import AsyncQdrantClient
 
 from packages.core.errors import ProviderUnavailableError
+from packages.glossary import translation_hints
 from packages.inference.base import ChatMessage, Role
 from packages.inference.router import InferenceMode, InferenceRouter
 from packages.rag.embeddings import EmbeddingProvider, SparseVector
@@ -29,6 +30,8 @@ _TRANSLATION_PROMPT = (
     "Traduce al inglés esta consulta de búsqueda. Devuelve solo la traducción, en una "
     "línea, sin comillas ni explicaciones. Si ya está en inglés, devuélvela igual."
 )
+
+_HINTS_PROMPT = "Usa estas equivalencias de terminología: "
 
 _SYSTEM_PROMPT = (
     "Eres Jarvis, un asistente que responde EXCLUSIVAMENTE con la información delimitada "
@@ -248,11 +251,15 @@ class HybridRagOrchestrator:
     async def _translate(self, query: str) -> str | None:
         """La consulta en inglés, o None si ya lo estaba o la traducción falla (entonces se
         busca solo con la original: traducir es una ayuda, no un requisito)."""
+        # La terminología oficial del glosario (packages/glossary): "acta de constitución"
+        # es "project charter", no una traducción literal que la búsqueda no encontraría.
+        hints = translation_hints(query)
+        prompt = f"{_TRANSLATION_PROMPT} {_HINTS_PROMPT}{hints}." if hints else _TRANSLATION_PROMPT
         try:
             result = await self._inference.chat(
                 InferenceMode.NORMAL,
                 [
-                    ChatMessage(role=Role.SYSTEM, content=_TRANSLATION_PROMPT),
+                    ChatMessage(role=Role.SYSTEM, content=prompt),
                     ChatMessage(role=Role.USER, content=query),
                 ],
                 temperature=0,
