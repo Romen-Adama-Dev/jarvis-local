@@ -48,9 +48,11 @@ ejemplo `restic` o `age`).
 | `BACKUP_PATH` | `./backups` | Carpeta de destino en el host (mejor en otro disco) |
 | `BACKUP_TIME` | `03:30` | Hora de la copia diaria, en `JARVIS_OWNER_TIMEZONE` (o `CALENDAR_TIMEZONE`, o UTC) |
 | `BACKUP_KEEP` | `7` | Copias que se conservan |
+| `BACKUP_WAIT_SECONDS` | `600` | Cuánto espera cada copia a que PostgreSQL y Qdrant respondan (al encender el servidor arrancan a la vez que el servicio de copias) |
 
 Si el servidor está apagado a `BACKUP_TIME` (una VM que se para por la noche), el servicio
-hace la copia al arrancar cuando la última tiene más de un día. Con el perfil `monitoring`,
+hace la copia al arrancar cuando la última tiene más de un día, en cuanto PostgreSQL y
+Qdrant responden. Con el perfil `monitoring`,
 la alerta `CopiaAtrasada` avisa por Telegram si pasan más de 26 h sin una copia correcta
 (`docs/MONITORING.md`).
 
