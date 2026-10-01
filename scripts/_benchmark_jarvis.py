@@ -136,7 +136,7 @@ def bench_rag(api: Api) -> dict:
 
 def bench_translation() -> dict:
     sys.path.insert(0, str(ROOT))
-    from packages.rag.orchestrator import _TRANSLATION_PROMPT
+    from packages.rag.orchestrator import translation_prompt
 
     model = primary_model()
     cases = json.loads((CASES / "traduccion.json").read_text(encoding="utf-8"))
@@ -151,7 +151,7 @@ def bench_translation() -> dict:
                 "think": False,
                 "options": {"temperature": 0},
                 "messages": [
-                    {"role": "system", "content": _TRANSLATION_PROMPT},
+                    {"role": "system", "content": translation_prompt(text)},
                     {"role": "user", "content": text},
                 ],
             },

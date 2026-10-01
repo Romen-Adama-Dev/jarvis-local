@@ -197,6 +197,27 @@ Los cuatro fallos del RAG, revisados uno a uno:
 Dos de los cuatro son preguntas en español sobre el libro en inglés (2/4 en ese
 documento, frente a 12/14 en el PMBOK): ahí está el margen de mejora.
 
+### Con el glosario (01-10-2026)
+
+`main` en `60426c0` (PR #30, glosario), `docs/benchmarks/jarvis-2026-10-01T12-08-20.json`; la
+traducción se repitió con las pistas del glosario en `jarvis-2026-10-01T12-15-55.json` (en
+la primera pasada el benchmark aún traducía sin ellas).
+
+| Bloque | Antes | Con el glosario |
+|---|---|---|
+| RAG · preguntas con respuesta | 14/18 (16/18 con fuente) | **15/18** (17/18 con fuente) |
+| RAG · libro en inglés (Snyder) | 2/4 | **3/4** |
+| RAG · fuera de dominio | 4/4 | 4/4 |
+| RAG · latencia | mediana 14,2 s | mediana 14,6 s, p95 18,9 s |
+| Traducción de la consulta | 35/39 | **39/39**, mediana 0,26 s |
+| Actas | 28 s, WER 9,1 %, 15/15 | 28 s, WER 7,6 %, 15/15 |
+| Documento generado | 54 s, 4/4 | 44 s, 4/4 |
+
+Siguen fallando MoSCoW, la matriz de Stacey y la escala de evaluación del equipo (ver
+arriba); lecciones aprendidas acertó esta vez, pero ya se vio que varía entre ejecuciones.
+Las diferencias de WER y de tiempo del documento son variación entre ejecuciones, no efecto
+del glosario.
+
 ### Traducción de la consulta: comparación de traductores
 
 La consulta se traduce al inglés para encontrar también la documentación en inglés
@@ -205,9 +226,10 @@ los términos técnicos esperados en la traducción:
 
 | Traductor | Términos | Mediana | Ejemplo de fallo |
 |---|---|---|---|
-| **Gemma 4 26B** (el propio modelo de Jarvis, el que se usa) | **35/39** | 0,24 s | *total slack* por *float* (sinónimo válido) |
+| Gemma 4 26B (el propio modelo de Jarvis) sin glosario | 35/39 | 0,24 s | *total slack* por *float* (sinónimo válido) |
 | TranslateGemma 4B (Ollama) | 27/39 | 0,17 s | *acta de constitución* → *incorporation certificate* |
 | Opus-MT es-en (CTranslate2, int8, CPU) | 25/39 | 0,03 s | *ruta crítica* → *critical route* |
+| **Gemma 4 26B + glosario** (PR #30, el actual) | **39/39** | 0,26 s | — |
 
 Un prompt que pedía "la terminología técnica del ámbito" no mejoró a Gemma (35/39). Con
 eso se descartaron tanto un traductor dedicado como el reranker multilingüe jina: la

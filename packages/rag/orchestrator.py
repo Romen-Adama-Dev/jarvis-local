@@ -222,6 +222,14 @@ def select_normal_model(
     return None
 
 
+def translation_prompt(query: str) -> str:
+    """Instrucción de sistema para traducir la consulta al inglés. Lleva la terminología
+    oficial del glosario (packages/glossary): "acta de constitución" es "project charter",
+    no una traducción literal que la búsqueda no encontraría."""
+    hints = translation_hints(query)
+    return f"{_TRANSLATION_PROMPT} {_HINTS_PROMPT}{hints}." if hints else _TRANSLATION_PROMPT
+
+
 class HybridRagOrchestrator:
     def __init__(
         self,
@@ -251,10 +259,7 @@ class HybridRagOrchestrator:
     async def _translate(self, query: str) -> str | None:
         """La consulta en inglés, o None si ya lo estaba o la traducción falla (entonces se
         busca solo con la original: traducir es una ayuda, no un requisito)."""
-        # La terminología oficial del glosario (packages/glossary): "acta de constitución"
-        # es "project charter", no una traducción literal que la búsqueda no encontraría.
-        hints = translation_hints(query)
-        prompt = f"{_TRANSLATION_PROMPT} {_HINTS_PROMPT}{hints}." if hints else _TRANSLATION_PROMPT
+        prompt = translation_prompt(query)
         try:
             result = await self._inference.chat(
                 InferenceMode.NORMAL,

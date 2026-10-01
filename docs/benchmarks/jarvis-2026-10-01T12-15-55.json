@@ -1,0 +1,114 @@
+{
+ "fecha": "2026-10-01T12:15:55+00:00",
+ "modelo": "gemma4:26b-a4b-it-qat",
+ "gpu": "NVIDIA L4",
+ "commit": "60426c0",
+ "traduccion": {
+  "modelo": "gemma4:26b-a4b-it-qat",
+  "terminos": "39/39",
+  "mediana_s": 0.26,
+  "p95_s": 0.33,
+  "casos": [
+   {
+    "es": "¿Qué formulario uso para el acta de constitución del proyecto?",
+    "en": "Which form do I use for the project charter?",
+    "terminos": "1/1"
+   },
+   {
+    "es": "registro de interesados y matriz de poder e interés",
+    "en": "Stakeholder register and power-interest matrix",
+    "terminos": "3/3"
+   },
+   {
+    "es": "¿cómo calculo el valor ganado y el índice de desempeño del cronograma?",
+    "en": "how do I calculate earned value and schedule performance index?",
+    "terminos": "2/2"
+   },
+   {
+    "es": "lecciones aprendidas al cerrar una fase",
+    "en": "Lessons learned when closing a phase",
+    "terminos": "2/2"
+   },
+   {
+    "es": "plantilla de registro de riesgos con probabilidad e impacto",
+    "en": "Risk register template with probability and impact",
+    "terminos": "3/3"
+   },
+   {
+    "es": "estructura de desglose del trabajo y diccionario de la EDT",
+    "en": "Work breakdown structure and WBS dictionary",
+    "terminos": "2/2"
+   },
+   {
+    "es": "solicitud de cambio y control integrado de cambios",
+    "en": "Change request and integrated change control",
+    "terminos": "2/2"
+   },
+   {
+    "es": "matriz de asignación de responsabilidades RACI",
+    "en": "RACI chart responsibility assignment matrix",
+    "terminos": "2/2"
+   },
+   {
+    "es": "plan de gestión de las comunicaciones",
+    "en": "Communications management plan",
+    "terminos": "1/1"
+   },
+   {
+    "es": "registro de supuestos y restricciones del proyecto",
+    "en": "Project assumption log and constraints",
+    "terminos": "2/2"
+   },
+   {
+    "es": "línea base del alcance y enunciado del alcance",
+    "en": "Scope baseline and scope statement",
+    "terminos": "2/2"
+   },
+   {
+    "es": "estimación por tres valores y análisis PERT",
+    "en": "Three-point estimating and PERT analysis",
+    "terminos": "2/2"
+   },
+   {
+    "es": "ruta crítica y holgura total de las actividades",
+    "en": "critical path and total float of the activities",
+    "terminos": "2/2"
+   },
+   {
+    "es": "registro de incidentes abiertos",
+    "en": "Open issue log",
+    "terminos": "1/1"
+   },
+   {
+    "es": "acta de reunión de seguimiento con decisiones y acciones",
+    "en": "follow-up meeting minutes with decisions and actions",
+    "terminos": "3/3"
+   },
+   {
+    "es": "criterios de aceptación de los entregables",
+    "en": "Acceptance criteria for deliverables",
+    "terminos": "2/2"
+   },
+   {
+    "es": "evaluación del desempeño del equipo del proyecto",
+    "en": "Project team performance assessment",
+    "terminos": "1/1"
+   },
+   {
+    "es": "plan de respuesta a los riesgos y reservas para contingencias",
+    "en": "risk response and contingency reserve plan",
+    "terminos": "2/2"
+   },
+   {
+    "es": "informe de estado del proyecto para el patrocinador",
+    "en": "Project status report for the sponsor",
+    "terminos": "2/2"
+   },
+   {
+    "es": "auditoría de calidad y métricas de calidad",
+    "en": "quality audit and quality metrics",
+    "terminos": "2/2"
+   }
+  ]
+ }
+}
