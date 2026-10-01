@@ -63,7 +63,9 @@ Cada proyecto puede seguir su metodología (Scrum, PMI, cascada…) sin que se m
   solo si no la hay, pregunta si busca en internet (SearXNG), propone una lista de
   fuentes y responde únicamente con las que se aprueben, indicando que vienen de fuera.
 * **Lo aprendido** con cada método (retrospectivas, lecciones) va a su nota del vault,
-  `memoria/metodologias/<Nombre>.md` (`jarvis_remember(..., new="metodologia")`).
+  `📐 <Nombre>` en la rama Conocimiento › Metodologías, junto a sus reglas, sus documentos
+  de referencia y los proyectos que la usan (`jarvis_remember(..., new="metodologia")`;
+  ver "Un solo árbol, unido por nexos" en [OBSIDIAN.md](OBSIDIAN.md)).
 
 ## Desde Telegram
 

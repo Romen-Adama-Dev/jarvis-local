@@ -96,21 +96,15 @@ reescriba. `entities/`, `concepts/` y `syntheses/` son la capa sintetizada
 que el propio plugin construye a partir de `sources/` y de lo importado en
 modo `bridge`.
 
-### Convención de proyectos (Jarvis debe seguirla, ver `AGENTS.md`)
+### Cómo se organiza lo de Jarvis
 
-```
-sources/proyectos/<slug>/
-├── resumen.md
-├── decisiones.md
-├── riesgos.md
-└── reuniones/YYYY-MM-DD.md
-```
-
-Cada nota empieza con `<!-- openclaw:wiki:raw-source -->` y usa
-`[[wikilinks]]` para relacionar notas entre sí (p. ej. una entrada de
-`decisiones.md` enlaza a la reunión donde se tomó). El resto de contenido
-(memoria de usuario, resúmenes de sesión) ya llega solo por el `bridge` desde
-`memory-core` — no hace falta replicarlo a mano.
+Lo que Jarvis sabe de empresas, proyectos, personas y metodologías no lo escribe el
+compilador del plugin: lo genera el servicio `knowledge` como **un solo árbol** dentro de
+`entities/` (empresas, nexos, contactos, agenda) y `concepts/` (conocimiento), carpetas que
+`wiki_search` consulta. Estructura, reglas y cómo verlo en [OBSIDIAN.md](OBSIDIAN.md)
+("Un solo árbol, unido por nexos"). En `sources/` quedan solo las fuentes en bruto (con
+`<!-- openclaw:wiki:raw-source -->`) y los puentes de `memory-core` (memoria de usuario,
+resúmenes de sesión), que llegan solos por el `bridge`.
 
 ## Auditabilidad de lo que Jarvis escribe sin confirmación
 
@@ -168,6 +162,5 @@ exportar.
 
 ## Pendiente
 
-* Primera nota de proyecto real (`sources/proyectos/<slug>/resumen.md`) para
-  validar que el flujo completo (escritura → `wiki lint`/compilación →
-  `wiki_search`) funciona de punta a punta.
+* Primer proyecto real en el árbol nuevo para validar que el flujo completo (OpenProject →
+  `knowledge` → `wiki_search` y Obsidian) funciona de punta a punta.
