@@ -48,6 +48,7 @@ Perfiles opcionales (`COMPOSE_PROFILES` en `.env`, separados por comas):
 | `backup` | Copia de seguridad diaria de bases de datos, Qdrant, secretos, OpenClaw (vault incluido), CouchDB y adjuntos; `scripts/backup`, `scripts/restore`, `scripts/test-restore` (`docs/BACKUP.md`) |
 | `livesync` | `couchdb`, `livesync-init` y `livesync-bridge`: Obsidian en el móvil y el portátil en tiempo real, por Tailscale (`docs/OBSIDIAN.md`) |
 | `pm` | OpenProject (`openproject`, `openproject-worker`, `openproject-setup`, `openproject-db-init`, `openproject-cache`): tableros, tickets, Gantt, hitos y riesgos manejados desde Telegram con la skill `jarvis-pm`; con `tailscale`, en `https://<nombre>.ts.net:8445` (`docs/OPENPROJECT.md`) |
+| `admin` | Servicio `admin` (único con el socket de Docker): Jarvis ve el estado y los registros de los servicios, los reinicia y propone cambios al repo como pull request con `jarvis-admin`, siempre con el botón de aprobación (`docs/ADMIN.md`) |
 | `monitoring` | Prometheus, Alertmanager, Grafana y exportadores (sondas, servidor, GPU): panel y alertas por Telegram (`docs/MONITORING.md`) |
 | `assistant` | changedetection |
 | `automation` | n8n |
