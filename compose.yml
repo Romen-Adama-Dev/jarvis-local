@@ -9,7 +9,7 @@
 #
 # ollama, openclaw, api y worker usan network_mode: host y se hablan por 127.0.0.1; el
 # resto publica sus puertos solo en 127.0.0.1. Perfiles opcionales (COMPOSE_PROFILES):
-# tailscale, livesync, pm, vault, backup, assistant, automation, webui, monitoring.
+# tailscale, livesync, pm, vault, backup, admin, assistant, automation, webui, monitoring.
 name: jarvis-local
 
 x-logging: &logging
@@ -278,6 +278,42 @@ services:
       retries: 5
       start_period: 180s
     stop_grace_period: 60s
+    logging: *logging
+
+  # Administración desde Telegram (docs/ADMIN.md): estado, registros y reinicio de
+  # servicios, y cambios al repo como pull request. Es el único contenedor con el socket de
+  # Docker; Jarvis llega con `jarvis-admin`, que siempre pide el botón de aprobación.
+  # Solo escucha en 127.0.0.1 y exige el token que genera init. COMPOSE_PROFILES=admin.
+  admin:
+    build:
+      context: infra/docker/admin
+    image: jarvis-admin:latest
+    restart: unless-stopped
+    profiles: ["admin"]
+    network_mode: host
+    environment:
+      JARVIS_ADMIN_PORT: "8096"
+      JARVIS_ADMIN_REPO: ${JARVIS_ADMIN_REPO:-}
+      JARVIS_ADMIN_GITHUB_TOKEN: ${JARVIS_ADMIN_GITHUB_TOKEN:-}
+      JARVIS_COMPOSE_PROJECT: jarvis-local
+      JARVIS_UID: ${JARVIS_UID:-1000}
+      JARVIS_GID: ${JARVIS_GID:-1000}
+      HOME: /tmp
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      # compose.yml y .env para `docker compose ps/logs/restart`; solo lectura.
+      - .:/repo:ro
+      - jarvis_runtime:/run/jarvis:ro
+      # La copia del repo vive en el workspace de Jarvis (workspace-jarvis/repo).
+      - ${OPENCLAW_STATE_PATH:-openclaw_state}:/state
+    depends_on:
+      init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import socket; socket.create_connection(('127.0.0.1', 8096), 5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     logging: *logging
 
   # --- Datos ----------------------------------------------------------------------------
