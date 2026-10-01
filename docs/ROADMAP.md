@@ -7,7 +7,7 @@ description: Resumen del TFM (memoria), estado real del repo frente a esa memori
 
 > Documento de trabajo. Une tres cosas: qué dice la memoria (TFM), qué tiene ya el
 > repositorio `jarvis-local`, y qué queremos añadir (agente: correo, reuniones,
-> generación de documentos, Telegram/Teams). Fecha: septiembre 2026 (actualizado el 18 por la noche).
+> generación de documentos, Telegram/Teams). Fecha: septiembre 2026 (actualizado el 1 de octubre).
 
 ---
 
@@ -47,29 +47,32 @@ Leyenda: ✅ hecho · 🟡 parcial · ⬜ por hacer
 | Capacidad / pieza | Memoria (TFM) describe | Repo `jarvis-local` tiene | Queremos añadir |
 |---|---|---|---|
 | **Ingesta + RAG** (PDF → chunks → embeddings → Qdrant → respuesta con fuente) | ✅ núcleo del proyecto | ✅ `packages/rag`, `packages/documents`, Qdrant | 🟡 mejor ingesta (Docling: escaneados/tablas) |
-| **Multiempresa: documentación aislada por empresa y proyecto** | 🟡 (propuesta: colecciones separadas por cliente) | ✅ general / empresa / proyecto en el payload de Qdrant con `company` como tenant (`is_tenant`); la API impone el filtro en RAG, modo profundo y documentos generados; nombres tolerantes, reasignación sin reindexar y sitio reservado en el contexto para lo propio (`docs/EMPRESAS.md`); validado: sin fugas entre dos empresas | ⬜ permisos por usuario con varios usuarios |
+| **Multiempresa: documentación aislada por empresa y proyecto** | 🟡 (propuesta: colecciones separadas por cliente) | ✅ general / empresa / proyecto en el payload de Qdrant con `company` como tenant (`is_tenant`); la API impone el filtro en RAG y documentos generados; nombres tolerantes, reasignación sin reindexar y sitio reservado en el contexto para lo propio (`docs/EMPRESAS.md`); validado: sin fugas entre dos empresas | ⬜ permisos por usuario con varios usuarios |
 | **Inferencia local** | ✅ | ✅ Ollama en contenedor con GPU (versión fijada); **auto-selección de modelo por VRAM** (`scripts/select-models`, la aplica `init`); `gemma4:26b-a4b-it-qat` en GPUs de 21-38 GB; limpieza opcional de modelos sin usar (`OLLAMA_PRUNE_UNUSED`). El modo profundo con AirLLM se evaluó y se retiró el 23-09 (`docs/BENCHMARKS.md`) | — |
-| **Abstención sin evidencia** | ✅ | ✅ `packages/rag/orchestrator.py` | — |
+| **Abstención sin evidencia** | ✅ | ✅ `packages/rag/orchestrator.py`; marca `insufficient_evidence` también cuando el modelo se abstiene con evidencia débil (criterio 14, 01-10) | — |
 | **API + worker** | ✅ | ✅ FastAPI (`apps/api`) + arq (`apps/worker`) | — |
-| **Infra reproducible** (Postgres/Redis/Qdrant, Docker) | ✅ | ✅ **todo Jarvis con `docker compose up`** (`docs/DOCKER.md`): `init` genera secretos y elige modelo, OpenClaw con voz y skills MCP en imagen propia, perfiles opcionales; `compose.cpu.yml` sin GPU | 🟡 CI que construya las imágenes y pruebe el arranque |
-| **Embeddings** | ✅ | ✅ FastEmbed (denso + disperso) | 🟡 reranker local (mejora recuperación) |
-| **Transporte Telegram** | 🟡 capa opcional | ✅ `integrations/openclaw`, config Telegram; indexación de PDFs recibidos con confirmación; entrega de documentos generados | — |
-| **Agente / orquestación** | 🟡 OpenClaw mencionado | ✅ OpenClaw + skills MCP (`jarvis-rag`, `jarvis-email`, `jarvis-calendar`, vía `FastMCP`) | — |
-| **Búsqueda web** | — | ✅ SearXNG, arranca por defecto (`web_search` de OpenClaw) | — |
+| **Infra reproducible** (Postgres/Redis/Qdrant, Docker) | ✅ | ✅ **todo Jarvis con `docker compose up`** (`docs/DOCKER.md`): `init` genera secretos y elige modelo, OpenClaw con voz y skills MCP en imagen propia, perfiles opcionales; `compose.cpu.yml` sin GPU; CI en cada PR (ruff, pyright, pytest, plugins, shellcheck y `compose config`) y construcción de las imágenes al publicar versión (`.github/workflows/ci.yml`) | — |
+| **Embeddings** | ✅ | ✅ FastEmbed (denso + disperso) + reranker local (`RAG_RERANKER_MODEL`, `BAAI/bge-reranker-base`); la consulta se traduce también al inglés para encontrar documentación en inglés (23-09) | 🟡 reranker multilingüe (jina: mejor en español, licencia no comercial) |
+| **Transporte Telegram** | 🟡 capa opcional | ✅ `integrations/openclaw`, config Telegram; indexación de PDFs recibidos con confirmación; entrega de documentos generados; menú de botones `/menu` (plugin `jarvis-menu`) y aprobación del envío de correo con botones (plugin `jarvis-aprobaciones`) | — |
+| **Agente / orquestación** | 🟡 OpenClaw mencionado | ✅ OpenClaw + skills MCP (`jarvis-rag`, `jarvis-email`, `jarvis-calendar`, `jarvis-pm`, `jarvis-office`, vía `FastMCP`), plugins propios (`jarvis-menu`, `jarvis-aprobaciones`) y la skill de terceros revisada `agile-toolkit` | — |
+| **Búsqueda web** | — | ✅ SearXNG **solo con permiso**: `web_search` está denegado; Jarvis busca primero en lo interno, sugiere aportar la documentación y, si se le autoriza, propone fuentes (`jarvis_web_sources`) y solo lee las aprobadas (`jarvis_web_read`, 23-09) | — |
 | **Automatización** | — | ✅ n8n (perfil automation) | 🟡 flujos de correo/calendario |
-| **Observabilidad** | ✅ supervisión | ✅ perfil `monitoring`: Prometheus, Grafana, sondas de cada servicio, GPU (DCGM), servidor y métricas HTTP de la API; alertas por Telegram (`docs/MONITORING.md`, 21-09) | 🟡 alerta de copia de seguridad atrasada |
+| **Observabilidad** | ✅ supervisión | ✅ perfil `monitoring`: Prometheus, Grafana, sondas de cada servicio, GPU (DCGM), servidor y métricas HTTP de la API; alertas por Telegram (`docs/MONITORING.md`, 21-09), también `CopiaAtrasada` si pasan más de 26 h sin copia | — |
 | **Voz local (STT/TTS)** | ✅ | ✅ whisper.cpp (AVX2) + Piper es_ES dentro de la imagen de OpenClaw | — |
-| **Contestar correos** | ⬜ (roadmap) | ✅ MCP correo con backend IMAP/SMTP para cualquier proveedor (`packages/imapsmtp`) o Graph (`packages/msgraph/mail.py`); skill `jarvis-email`, borrador→confirmación, adjuntos de doc-gen; cuenta Gmail de Jarvis configurada ; OpenProject envía sus avisos e invitaciones por la misma cuenta; correo → tarea (`pm_task_from_email`); validado el 18-09 con correos reales (invitaciones con .ics recibidas en Gmail) | ⬜ recibir en OpenProject respuestas por correo (IMAP entrante) |
+| **Contestar correos** | ⬜ (roadmap) | ✅ MCP correo con backend IMAP/SMTP para cualquier proveedor (`packages/imapsmtp`) o Graph (`packages/msgraph/mail.py`); skill `jarvis-email`, borrador y envío aprobado con un botón de Telegram, fuera del modelo (`jarvis-aprobaciones`), adjuntos de doc-gen; cuenta Gmail de Jarvis configurada ; OpenProject envía sus avisos e invitaciones por la misma cuenta; correo → tarea (`pm_task_from_email`); validado el 18-09 con correos reales (invitaciones con .ics recibidas en Gmail) | ⬜ recibir en OpenProject respuestas por correo (IMAP entrante) |
 | **Agendar / planificar reuniones** | ⬜ (roadmap) | ✅ MCP calendario con backend **OpenProject** (por defecto en la VM: la agenda son las reuniones de OpenProject y los vencimientos de tareas e hitos, `packages/openproject/calendar.py`), CalDAV o Graph; skill `jarvis-calendar`, propuesta→confirmación; invitaciones por OpenProject a sus usuarios y con .ics por el correo de Jarvis al resto; validado desde Telegram el 18-09 | ⬜ reuniones recurrentes, mover/cancelar reuniones, recordatorios proactivos por Telegram |
-| **Generar documentos desde cero** | ⬜ (roadmap) | ✅ `packages/docgen` (resúmenes/DAFO/planes desde el RAG, docx/pptx/pdf/md, secciones en paralelo, entregados por Telegram con `MEDIA:`, `docs/DOCGEN.md`) | — |
+| **Generar documentos desde cero** | ⬜ (roadmap) | ✅ `packages/docgen` (resúmenes/DAFO/planes desde el RAG, docx/pptx/pdf/md, secciones en paralelo, entregados por Telegram con `MEDIA:`, `docs/DOCGEN.md`) y documentos Excel, Word, PowerPoint y OpenDocument a medida (`jarvis-office`, 21-09) | — |
 | **Microsoft Teams** | ⬜ | 🟡 canal `msteams` soportado en OpenClaw (`scripts/configure-teams`, `docs/TEAMS.md`) | ⬜ **túnel público (Cloudflare Tunnel) + manifiesto de la app**, sin versionar todavía |
 | **Licencia + gobernanza** | ⬜ declarado pendiente | ✅ `LICENSE` (MIT) + `CONTRIBUTING.md` | — |
-| **Memoria evolutiva** | — | ✅ `memory-core` + `memory-wiki` de OpenClaw, vault Obsidian versionado en git privado (`vault-sync`), búsqueda semántica con `embeddinggemma` (`docs/MEMORY.md`) | 🟡 primera nota de proyecto real de punta a punta |
+| **Memoria evolutiva** | — | ✅ `memory-core` + `memory-wiki` de OpenClaw, vault Obsidian versionado en git privado (`vault-sync`), búsqueda semántica con `embeddinggemma` (`docs/MEMORY.md`) | 🟡 validar el árbol nuevo con un proyecto de punta a punta (guion de prueba preparado) |
 | **Red de conocimiento / memoria única** | — | ✅ **un solo árbol** desde *🧭 Mapa de Jarvis*: empresas › {equipo, documentos, proyectos › {hitos, riesgos, reuniones › actas, tareas que pesan, documentos}} y conocimiento › {metodologías › documentos, documentación general, temas, directivas}; lo que cruza ramas son **nexos** (personas de varias empresas, metodologías por proyecto); nombres con icono por tipo y diagramas Mermaid; las notas se mueven con lo escrito a mano si cambian de rama (01-10); wiki de OpenProject sincronizada en ambos sentidos; `jarvis_remember` (`docs/OBSIDIAN.md`) | ⬜ personas deduplicadas con alias, relaciones entre riesgos y tareas, síntesis semanales automáticas |
-| **Obsidian en móvil y portátil** | — | ✅ Self-hosted LiveSync: CouchDB por Tailscale + `livesync-bridge` con el vault, cifrado E2E (perfil `livesync`, `docs/OBSIDIAN.md`); iPhone configurado el 18-09 | 🟡 comprobar que iPhone→vault llega sin reiniciar el puente |
+| **Obsidian en móvil y portátil** | — | ✅ Self-hosted LiveSync: CouchDB por Tailscale + `livesync-bridge` con el vault, cifrado E2E (perfil `livesync`, `docs/OBSIDIAN.md`); iPhone configurado el 18-09; iPhone → vault sin reiniciar el puente y borrados propagados, validado el 21-09 | — |
 | **Seguimiento y control de proyectos** | 🟡 (gestión del conocimiento; el seguimiento lo hace el PM a mano) | ✅ OpenProject 17.8 (perfil `pm`, `docs/OPENPROJECT.md`): empresas → proyectos, tareas, hitos, **riesgos**, Gantt y tableros por Tailscale; skill MCP `jarvis-pm` (9 herramientas) validada con Gemma: alta de riesgos, cambios de estado, informe de seguimiento, reuniones y correo → tarea desde el chat; simulación completa de un proyecto (Panadería La Espiga › Web corporativa) el 18-09 | ⬜ plantillas de proyecto (Water-Scrum-Fall), presupuesto y horas |
 | **Actas de reunión automáticas** | 🟡 (STT local para notas de voz) | ✅ grabación → faster-whisper large-v3-turbo en GPU (1 h ≈ 2 min) → acta estructurada con Gemma (resumen, decisiones, acciones con responsable y fecha, riesgos) → PDF/Word, nota en Obsidian, RAG del proyecto y, con confirmación, tareas, riesgos y la **reunión cerrada con su acta** (decisiones y tareas como resultados) en OpenProject (`docs/ACTAS.md`); validado de punta a punta desde el agente | ⬜ separación de hablantes (diarización local) |
 | **Acceso remoto al panel** | — | ✅ Tailscale en compose; panel de OpenClaw en `https://<host>.<tailnet>.ts.net` sin puertos abiertos, gateway solo en loopback (`docs/ACCESO-REMOTO.md`) | — |
+| **Directivas y metodologías** | — | ✅ `MEMORY.md` de Jarvis por zonas (General, Metodologías, Proyectos) que él mismo mantiene (`jarvis_set_directive`, `jarvis_set_methodology`, `jarvis_set_project_methodology`); cada proyecto ve solo la documentación de su metodología; plantilla neutra, sin método impuesto (`docs/EMPRESAS.md`, 23-09) | — |
+| **Administración del servidor** | — | ✅ servicio `admin` (perfil `admin`): reiniciar servicios y administrar OpenProject con aprobación, y cambios al repo como PR que fusiona el propietario (`docs/ADMIN.md`, 01-10) | 🟡 token de GitHub y `JARVIS_ADMIN_REPO` para probar `repo pr` |
+| **Seguridad** | ✅ control de acceso | ✅ auditoría del 22-09 corregida: herramientas de archivos limitadas al workspace, `web_fetch` denegado, secretos fuera del entorno del agente, pandoc sin TeX en bruto, confirmaciones atómicas (`docs/SECURITY.md`) | — |
 | **Directorio de servicios** | — | ✅ `jarvis_services` (Telegram/panel) y nota `SERVICIOS.md` en Obsidian: enlaces por Tailscale, IP del tailnet, direcciones internas con túnel SSH y estado en vivo, sin secretos (`packages/core/services.py`) | — |
 
 ---
@@ -139,7 +142,7 @@ asíncrono (`POST /v1/documents/generate`) y como
 herramienta MCP `jarvis_generate_doc` en la skill `jarvis-rag`. El archivo
 generado se entrega por Telegram (ver `docs/DOCGEN.md`).
 
-**Fase 3 — Correo (borrador + aprobación) (✅ implementada; IMAP/SMTP añadido el 15-09 para usarlo sin Azure; falta validación con correo real).**
+**Fase 3 — Correo (borrador + aprobación) (✅ cerrada; IMAP/SMTP añadido el 15-09 para usarlo sin Azure; validada con correo real el 18-09; desde el 01-10 el envío se aprueba con un botón de Telegram).**
 MCP de correo local. Flujo: leer → resumir → **redactar borrador** → confirmación
 por Telegram → enviar. Reutiliza tu patrón de confirmación/TTL.
 La base de autenticación OAuth2 compartida con Graph (Fase 3 y Fase 4) está
@@ -156,7 +159,7 @@ reutiliza el `payload` genérico de `ConfirmationService` (añadido en
 `feature/mcp-msgraph-base`) en vez de un mecanismo nuevo; scopes de Graph
 necesarios: `Mail.Read`, `Mail.Send`.
 
-**Fase 4 — Calendario / reuniones (✅ implementada, CalDAV añadido el 15-09; sin calendario configurado todavía).** Nació en `feature/mcp-calendar`
+**Fase 4 — Calendario / reuniones (✅ cerrada; CalDAV añadido el 15-09 y, desde el 18-09, OpenProject como calendario).** Nació en `feature/mcp-calendar`
 (ver `docs/CALENDAR.md`). Sobre la base de `feature/mcp-msgraph-base`
 (`packages/msgraph/calendar.py`: `get_calendar_view`/`create_event` vía Graph,
 scopes `Calendars.Read`/`Calendars.ReadWrite`), expone `/v1/calendar/events`
@@ -207,7 +210,7 @@ publica la nota de cada proyecto en la wiki de OpenProject y trae al vault sus p
 `jarvis_remember` escribe lo que el usuario pide recordar en esa misma red. Obsidian,
 Jarvis y OpenProject comparten una memoria.
 
-**Fase 6 — Endurecer y medir.**
+**Fase 6 — Endurecer y medir (✅ operación cerrada el 21-09; quedan la UAT y la medición).**
 UAT con estos flujos, métricas de ahorro de tiempo (cierra el otro pendiente del
 TFM), y decisión OpenClaw vs. cliente MCP ligero (Hermes/ZeroClaw). Tareas concretas:
 
@@ -221,8 +224,8 @@ TFM), y decisión OpenClaw vs. cliente MCP ligero (Hermes/ZeroClaw). Tareas conc
   calendario (OpenProject) validados el 18-09.
 * **CI de integraciones**: ejecutar `scripts/check-integrations` tras cada despliegue.
 * **`docs/ACCEPTANCE.md`** actualizado el 21-09.
-* Limpieza: rama remota `fix/openclaw-2026.9-deploy`, imagen `alpine/git` sin versión
-  fijada en `vault-sync`.
+* Limpieza: rama remota `fix/openclaw-2026.9-deploy` borrada; imagen de `vault-sync`
+  fijada en `alpine/git:v2.54.0` (01-10).
 
 ### 4.0 Estado al cierre del 18-09-2026
 
@@ -251,23 +254,46 @@ Web corporativa (etiqueta `v0.6-simulacion` para el estado anterior).
   Markdown, red de conocimiento con el árbol nuevo, *Memoria de Jarvis* publicada en la
   wiki de los dos proyectos y `scripts/check-integrations` en **37/37**.
 
-### 4.1 Qué queda por implementar (a 21-09-2026)
+### 4.0.2 Estado al 01-10-2026
+
+Entre el 21-09 y el 01-10 se fusionaron las PR #10 a #24:
+
+* **Fuera**: AirLLM y el modo profundo (~37 s por token en la L4; criterios 5 y 16 retirados).
+* **Agente**: menú de botones en Telegram, skill de terceros `agile-toolkit`, documentos
+  Office a medida, directivas y metodologías por proyecto en `MEMORY.md`, búsqueda en
+  internet solo con fuentes aprobadas, administración del servidor con aprobación y el
+  envío de correo aprobado con un botón.
+* **RAG**: la consulta también se traduce al inglés (el libro de Snyder aparece al preguntar
+  en español) y la abstención queda marcada como `insufficient_evidence` (criterio 14).
+* **Seguridad y documentación**: auditoría del 22-09 corregida e informe de coherencia de
+  la documentación cerrado, salvo el caso G (si Teams sigue en el alcance).
+* **Operación**: la copia perdida con la VM apagada se recupera al arrancar, con alerta
+  `CopiaAtrasada`.
+* **Memoria**: el vault pasa a ser **un solo árbol** unido por nexos (`docs/OBSIDIAN.md`).
+* **Datos de prueba retirados** el 01-10 (Estudio Delta, Lab Métodos y 11LabsDLK en
+  OpenProject, el RAG y el vault). Quedan el PMBOK y el libro de Snyder (metodología
+  PMI) y las metodologías PMI y Scrum en `MEMORY.md`. `scripts/check-integrations`: **45/45**.
+
+### 4.1 Qué queda (a 01-10-2026)
 
 | Área | Pendiente | Prioridad |
 |---|---|---|
-| ~~Privacidad (antes de publicar el repo)~~ ✅ 20-09 | Workspace de OpenClaw convertido en plantillas (`__OWNER__`, `__OWNER_FULL__`, `__OWNER_TZ__`, `__SERVER_HW__`) que el arranque rellena desde `.env` y del hardware detectado (`docs/OPENCLAW.md`). Reescribir el historial **no hace falta**: no hay correos, tailnet, IPs ni rutas personales en ningún commit; el único nombre propio del repo es el titular del copyright en `LICENSE`, que debe estar | — |
-| ~~Operación (Fase 6)~~ ✅ 21-09 | Monitorización con alertas por Telegram (`docs/MONITORING.md`), copias diarias con restauración probada (`docs/BACKUP.md`), CI (`.github/workflows/ci.yml`; `check-integrations` sigue en el servidor porque necesita GPU y cuentas reales). Queda: alerta si la última copia tiene más de 26 h (`backups/.ultima-copia` → textfile de node-exporter) | Media |
-| ~~Documentación~~ ✅ 21-09 | `docs/ACCEPTANCE.md` al día: 26 de 27 criterios verificados (el 14, abstención, cerrado el 23-09) | Media |
-| Validaciones (21-09) | ✅ Obsidian móvil → vault sin reiniciar el puente, y los borrados hechos con el puente parado ya llegan al móvil (`infra/livesync-bridge`); ✅ sin Internet, `scripts/test-offline` 7/7. AirLLM `/deep` se descartó el 23-09: ~37 s/token en la L4, ninguna consulta terminaba (`docs/BENCHMARKS.md`) | Media |
+| TFM | UAT con usuarios representativos y medición del ahorro de tiempo (el pendiente declarado en la memoria); decidir si hace falta la web de demo (Fase 5.1) o basta la demo en vivo por Telegram y Tailscale | Alta, según fecha de defensa |
+| Validación | Proyecto de prueba de punta a punta con el árbol nuevo: audio → acta → OpenProject → árbol, nexos y wiki (guion preparado; base para la demo) | Alta |
+| Operación | La copia al arrancar fallaba porque PostgreSQL aún no estaba listo: espera a PostgreSQL y Qdrant (`BACKUP_WAIT_SECONDS`, PR #25) | Alta |
+| Admin | Token de GitHub de grano fino y `JARVIS_ADMIN_REPO` en `.env` para probar `repo pr` | Baja |
 | Calendario | Mover y cancelar reuniones; reuniones recurrentes; recordatorio diario por Telegram ("qué tengo hoy", vencidos) con el cron de OpenClaw; huecos comunes | Media |
 | Correo | Correo entrante en OpenProject (respuestas a avisos como comentarios) con un buzón aparte para no chocar con Jarvis; clasificación automática de la bandeja | Media |
 | Proyectos | Plantillas Water-Scrum-Fall en OpenProject; horas y presupuesto; informe semanal automático | Media |
 | Actas | Diarización (quién habla) local | Media |
-| Memoria | Alias de personas (hoy solo se unen las variantes del propietario); síntesis semanal por proyecto en el vault; que las notas de persona también vayan a OpenProject; relaciones riesgo–tarea y decisión dentro de la capa de red | Media |
+| Memoria | Alias de personas (hoy solo se unen las variantes del propietario); síntesis semanal por proyecto; que las notas de persona también vayan a OpenProject; relaciones riesgo–tarea y decisiones en el frontmatter | Media |
 | Multiusuario | Varias personas en Telegram con permisos por empresa/proyecto (RAG y OpenProject) | Media |
 | Teams | Bloqueado por el registro de Azure Bot | Baja |
-| TFM | UAT con usuarios, medición del ahorro de tiempo, web de demo para la defensa (Fase 5.1) | Según fecha de defensa |
-| Decisiones de Romen | Reranker multilingüe jina (mejor en español, licencia no comercial); publicar más servicios por Tailscale | — |
+| Decisiones de Romen | Si Teams sigue en el alcance del TFM (caso G de `docs/DOC-COHERENCE-REPORT.md`); reranker multilingüe jina (mejor en español, licencia no comercial); publicar más servicios por Tailscale; rotar el token de Telegram y la contraseña de Gmail tras el TFM | — |
+
+Cerrado desde la versión del 21-09: privacidad (20-09), operación de la Fase 6 (21-09),
+`docs/ACCEPTANCE.md` (25 criterios ✅ y 2 retirados), validaciones de Obsidian móvil y sin
+Internet (21-09), alerta de copia atrasada y abstención (01-10).
 
 ---
 
@@ -275,17 +301,16 @@ Web corporativa (etiqueta `v0.6-simulacion` para el estado anterior).
 
 Priorizadas por relación valor/esfuerzo para JARVIS-PMI:
 
-1. **doc-gen** — generar documentos (.docx/.pptx/.md/.pdf) desde el corpus, con cita,
-   reutilizando `HybridRagOrchestrator` sección a sección (en marcha en
-   `feature/doc-generation`, ver `docs/DOCGEN.md`). *Alta / media.*
-2. **mcp-host** — capa MCP en el worker (habilita todo lo demás). *Alta / media.*
-3. **rag-as-mcp** — exponer tu propio RAG como servidor MCP (reutilizable por cualquier agente). *Alta / baja.*
-4. **email-draft** — MCP de correo con borrador+aprobación. *Alta / media.*
-5. **calendar** — MCP de calendario (CalDAV/Graph) para reuniones. *Media / media.*
-6. **teams-transport** — segundo canal Teams. *Media / media.*
-7. **reranker** — reranker local para subir precisión de recuperación. *Media / baja.*
-8. **docling-ingest** — ingesta de PDFs escaneados/tablas con Docling. *Media / baja.*
-9. **web-brief** — usar tu SearXNG para informes con fuentes. *Baja / baja.*
+1. ✅ **doc-gen** — generar documentos (.docx/.pptx/.md/.pdf) desde el corpus, con cita,
+   reutilizando `HybridRagOrchestrator` sección a sección (ver `docs/DOCGEN.md`). *Alta / media.*
+2. ✅ **mcp-host** — capa MCP en el worker (habilita todo lo demás). *Alta / media.*
+3. ✅ **rag-as-mcp** — exponer tu propio RAG como servidor MCP (reutilizable por cualquier agente). *Alta / baja.*
+4. ✅ **email-draft** — MCP de correo con borrador+aprobación. *Alta / media.*
+5. ✅ **calendar** — MCP de calendario (CalDAV/Graph) para reuniones. *Media / media.*
+6. 🟡 **teams-transport** (bloqueado por Azure Bot) — segundo canal Teams. *Media / media.*
+7. ✅ **reranker** (`bge-reranker-base`; multilingüe pendiente) — reranker local para subir precisión de recuperación. *Media / baja.*
+8. ⬜ **docling-ingest** — ingesta de PDFs escaneados/tablas con Docling. *Media / baja.*
+9. ✅ **web-brief**, como fuentes aprobadas por el usuario (`jarvis_web_sources`) — usar tu SearXNG para informes con fuentes. *Baja / baja.*
 
 > Nota: aquí "skills" son **capacidades del agente** (OpenClaw skills / servidores MCP),
 > distintas de la *skill de Claude* para desarrollar el repo.
