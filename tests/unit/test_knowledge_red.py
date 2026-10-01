@@ -377,3 +377,16 @@ def test_same_title_twice_in_a_folder_gets_its_id(vault):
     pages = {p.path for p in red.build_pages(snap)}
     assert f"{TIENDA}/Riesgos/⚠️ Retraso del proveedor pagos" in pages
     assert f"{TIENDA}/Riesgos/⚠️ Retraso del proveedor pagos (OP-15)" in pages
+
+
+def test_glossary_hangs_from_knowledge_with_one_note_per_area(vault):
+    from packages.glossary import load
+
+    snap = _snapshot(vault)
+    snap.glossary = load()
+    pages = {p.path: p for p in red.build_pages(snap)}
+    knowledge = pages["concepts/Conocimiento/📚 Conocimiento"]
+    assert "concepts/Conocimiento/Glosario/📖 Glosario" in _links(knowledge.body)
+    scrum = pages["concepts/Conocimiento/Glosario/📖 Glosario · Scrum"]
+    assert _links(scrum.body) == {"concepts/Conocimiento/Glosario/📖 Glosario"}
+    assert "| Pila del producto | Product Backlog |" in scrum.body
