@@ -428,7 +428,7 @@ services:
   # Vault de Obsidian en un repo git privado (docs/MEMORY.md): VAULT_GIT_URL y
   # VAULT_SSH_KEY_PATH en .env, y COMPOSE_PROFILES=vault.
   vault-sync:
-    image: alpine/git:latest
+    image: alpine/git:v2.54.0
     restart: unless-stopped
     profiles: ["vault"]
     user: "${JARVIS_UID:-1000}:${JARVIS_GID:-1000}"
