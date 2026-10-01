@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+# Benchmarks de Jarvis contra el sistema en marcha (docs/BENCHMARKS.md, "Benchmarks de
+# Jarvis"): RAG, traducción de la consulta, actas y documentos generados.
+#
+#   scripts/benchmark-jarvis                        # todo (~15 min en una L4)
+#   scripts/benchmark-jarvis --solo rag,traduccion  # solo algunos
+#
+# Necesita los servicios arriba (api, worker, ollama, qdrant y, para las actas, openclaw).
+# Guarda el resultado en docs/benchmarks/jarvis-<fecha>.json. No crea nada en
+# OpenProject, el vault ni el RAG.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+solo="rag,traduccion,actas,documentos"
+args=("$@")
+for ((i = 0; i < ${#args[@]}; i++)); do
+  [[ "${args[i]}" == "--solo" ]] && solo="${args[i + 1]:-}"
+done
+
+tmp="$(mktemp -d)"
+trap 'rm -rf "$tmp"' EXIT
+chmod 755 "$tmp"
+extra=()
+if [[ ",$solo," == *",actas,"* ]]; then
+  echo "Sintetizando la reunión de prueba con la voz de Jarvis (Piper)..."
+  guion="$(python3 -c 'import json; print(json.load(open("docs/benchmarks/casos/reunion.json"))["guion"])')"
+  docker compose exec -T openclaw /opt/piper/bin/jarvis-tts /tmp/reunion-benchmark.wav "$guion" >/dev/null
+  docker compose cp openclaw:/tmp/reunion-benchmark.wav "$tmp/reunion.wav" >/dev/null
+  docker compose exec -T openclaw rm -f /tmp/reunion-benchmark.wav
+  extra=(--audio /bench/reunion.wav)
+fi
+
+gpu="$(nvidia-smi --query-gpu=name --format=csv,noheader 2>/dev/null | head -1 || true)"
+docker compose run --rm --no-deps -T --user "$(id -u):$(id -g)" \
+  -v "$PWD:/repo" -v "$tmp:/bench" -w /repo \
+  -e BENCH_GPU="${gpu:-sin GPU}" -e BENCH_COMMIT="$(git rev-parse --short HEAD)" \
+  --entrypoint python api scripts/_benchmark_jarvis.py "${extra[@]}" "$@"
