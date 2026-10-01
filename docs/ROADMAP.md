@@ -150,7 +150,8 @@ Las herramientas MCP de correo propiamente dichas están **en marcha en
 `feature/mcp-email`** (ver `docs/EMAIL.md`): `packages/msgraph/mail.py`
 (`list_inbox`/`get_message`/`send_mail`), API interna `/v1/email` y el servidor
 MCP `jarvis-email` (`jarvis_email_inbox`, `jarvis_email_read`,
-`jarvis_email_draft`, `jarvis_email_confirm_send`). El borrador+confirmación
+`jarvis_email_draft`; desde el 23-09 el envío se aprueba con un botón de Telegram,
+fuera del modelo). El borrador+confirmación
 reutiliza el `payload` genérico de `ConfirmationService` (añadido en
 `feature/mcp-msgraph-base`) en vez de un mecanismo nuevo; scopes de Graph
 necesarios: `Mail.Read`, `Mail.Send`.

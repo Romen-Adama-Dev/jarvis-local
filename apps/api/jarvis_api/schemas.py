@@ -207,7 +207,7 @@ class EmailDraftRequest(BaseModel):
 
 
 class EmailDraftResponse(BaseModel):
-    token: str
+    # Sin token: la aprobación va por un botón de Telegram, no por el agente.
     summary: str
     expires_at: float
 
