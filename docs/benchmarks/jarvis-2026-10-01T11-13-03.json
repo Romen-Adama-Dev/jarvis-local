@@ -1,0 +1,584 @@
+{
+ "fecha": "2026-10-01T11:13:03+00:00",
+ "modelo": "gemma4:26b-a4b-it-qat",
+ "gpu": "NVIDIA L4",
+ "commit": "41bf5c5",
+ "rag": {
+  "preguntas": 22,
+  "aciertos_dentro": "14/18",
+  "fuente_citada": "16/18",
+  "documento_en_ingles": "2/4",
+  "abstenciones_correctas": "4/4",
+  "abstenciones_indebidas": 2,
+  "mediana_s": 14.16,
+  "p95_s": 19.71,
+  "casos": [
+   {
+    "id": "pmbok-dominios",
+    "segundos": 13.01,
+    "abstencion": false,
+    "confianza": 1.0,
+    "fuente": true,
+    "respuesta": true,
+    "correcta": true,
+    "fuentes": [
+     "input-PMBOK-7Ed p.101",
+     "input-PMBOK-7Ed p.98",
+     "input-PMBOK-7Ed p.276",
+     "input-PMBOK-7Ed p.99",
+     "input-PMBOK-7Ed p.359",
+     "input-PMBOK-7Ed p.162",
+     "input-PMBOK-7Ed p.188",
+     "input-PMBOK-7Ed p.13"
+    ]
+   },
+   {
+    "id": "pmbok-principios",
+    "segundos": 12.59,
+    "abstencion": false,
+    "confianza": 1.0,
+    "fuente": true,
+    "respuesta": true,
+    "correcta": true,
+    "fuentes": [
+     "input-PMBOK-7Ed p.226",
+     "input-PMBOK-7Ed p.30",
+     "input-PMBOK-7Ed p.48",
+     "input-PMBOK-7Ed p.99",
+     "input-PMBOK-7Ed p.48",
+     "input-PMBOK-7Ed p.323",
+     "input-PMBOK-7Ed p.27",
+     "input-PMBOK-7Ed p.31"
+    ]
+   },
+   {
+    "id": "pmbok-radiador",
+    "segundos": 18.02,
+    "abstencion": false,
+    "confianza": 1.0,
+    "fuente": true,
+    "respuesta": true,
+    "correcta": true,
+    "fuentes": [
+     "input-PMBOK-7Ed p.346",
+     "input-PMBOK-7Ed p.201",
+     "input-PMBOK-7Ed p.284",
+     "input-PMBOK-7Ed p.203",
+     "input-PMBOK-7Ed p.172",
+     "input-PMBOK-7Ed p.252",
+     "input-PMBOK-7Ed p.201",
+     "input-PMBOK-7Ed p.283"
+    ]
+   },
+   {
+    "id": "pmbok-velocidad",
+    "segundos": 11.55,
+    "abstencion": false,
+    "confianza": 1.0,
+    "fuente": true,
+    "respuesta": true,
+    "correcta": true,
+    "fuentes": [
+     "input-PMBOK-7Ed p.154",
+     "input-PMBOK-7Ed p.147",
+     "input-PMBOK-7Ed p.204",
+     "input-PMBOK-7Ed p.337",
+     "input-PMBOK-7Ed p.337",
+     "input-PMBOK-7Ed p.284",
+     "input-Cynthia_Stackpole_Snyder_A_Project_Manager_s_Book_of_Forms_A p.172",
+     "input-Cynthia_Stackpole_Snyder_A_Project_Manager_s_Book_of_Forms_A p.177"
+    ]
+   },
+   {
+    "id": "pmbok-sv",
+    "segundos": 14.23,
+    "abstencion": false,
+    "confianza": 1.0,
+    "fuente": true,
+    "respuesta": true,
+    "correcta": true,
+    "fuentes": [
+     "input-PMBOK-7Ed p.195",
+     "input-PMBOK-7Ed p.349",
+     "input-PMBOK-7Ed p.329",
+     "input-Cynthia_Stackpole_Snyder_A_Project_Manager_s_Book_of_Forms_A p.29",
+     "input-Cynthia_Stackpole_Snyder_A_Project_Manager_s_Book_of_Forms_A p.199",
+     "input-Cynthia_Stackpole_Snyder_A_Project_Manager_s_Book_of_Forms_A p.197",
+     "input-Cynthia_Stackpole_Snyder_A_Project_Manager_s_Book_of_Forms_A p.193",
+     "input-Cynthia_Stackpole_Snyder_A_Project_Manager_s_Book_of_Forms_A p.197"
+    ]
+   },
+   {
+    "id": "pmbok-cv",
+    "segundos": 20.96,
+    "abstencion": false,
+    "confianza": 1.0,
+    "fuente": true,
+    "respuesta": true,
+    "correcta": true,
+    "fuentes": [
+     "input-PMBOK-7Ed p.195",
+     "input-PMBOK-7Ed p.349",
+     "input-Cynthia_Stackpole_Snyder_A_Project_Manager_s_Book_of_Forms_A p.197",
+     "input-Cynthia_Stackpole_Snyder_A_Project_Manager_s_Book_of_Forms_A p.29",
+     "input-Cynthia_Stackpole_Snyder_A_Project_Manager_s_Book_of_Forms_A p.199",
+     "input-Cynthia_Stackpole_Snyder_A_Project_Manager_s_Book_of_Forms_A p.230",
+     "input-Cynthia_Stackpole_Snyder_A_Project_Manager_s_Book_of_Forms_A p.193",
+     "input-Cynthia_Stackpole_Snyder_A_Project_Manager_s_Book_of_Forms_A p.193"
+    ]
+   },
+   {
+    "id": "pmbok-intensificacion",
+    "segundos": 12.38,
+    "abstencion": false,
+    "confianza": 1.0,
+    "fuente": true,
+    "respuesta": true,
+    "correcta": true,
+    "fuentes": [
+     "input-PMBOK-7Ed p.153",
+     "input-PMBOK-7Ed p.147",
+     "input-PMBOK-7Ed p.154",
+     "input-PMBOK-7Ed p.332",
+     "input-PMBOK-7Ed p.336",
+     "input-PMBOK-7Ed p.157",
+     "input-PMBOK-7Ed p.153",
+     "input-PMBOK-7Ed p.86"
+    ]
+   },
+   {
+    "id": "pmbok-ejecucion-rapida",
+    "segundos": 15.8,
+    "abstencion": false,
+    "confianza": 1.0,
+    "fuente": true,
+    "respuesta": true,
+    "correcta": true,
+    "fuentes": [
+     "input-PMBOK-7Ed p.154",
+     "input-PMBOK-7Ed p.147",
+     "input-PMBOK-7Ed p.336",
+     "input-PMBOK-7Ed p.154",
+     "input-PMBOK-7Ed p.153",
+     "input-PMBOK-7Ed p.157",
+     "input-PMBOK-7Ed p.140",
+     "input-PMBOK-7Ed p.204"
+    ]
+   },
+   {
+    "id": "pmbok-planificacion-gradual",
+    "segundos": 11.07,
+    "abstencion": false,
+    "confianza": 1.0,
+    "fuente": true,
+    "respuesta": true,
+    "correcta": true,
+    "fuentes": [
+     "input-PMBOK-7Ed p.345",
+     "input-PMBOK-7Ed p.162",
+     "input-PMBOK-7Ed p.153",
+     "input-PMBOK-7Ed p.345",
+     "input-PMBOK-7Ed p.131",
+     "input-PMBOK-7Ed p.148",
+     "input-PMBOK-7Ed p.147",
+     "input-PMBOK-7Ed p.147"
+    ]
+   },
+   {
+    "id": "pmbok-moscow",
+    "segundos": 12.72,
+    "abstencion": true,
+    "confianza": 0.0,
+    "fuente": false,
+    "respuesta": false,
+    "correcta": false,
+    "fuentes": []
+   },
+   {
+    "id": "pmbok-tiempo-ciclo",
+    "segundos": 12.52,
+    "abstencion": false,
+    "confianza": 1.0,
+    "fuente": true,
+    "respuesta": true,
+    "correcta": true,
+    "fuentes": [
+     "input-PMBOK-7Ed p.152",
+     "input-PMBOK-7Ed p.348",
+     "input-PMBOK-7Ed p.194",
+     "input-PMBOK-7Ed p.284",
+     "input-PMBOK-7Ed p.335",
+     "input-PMBOK-7Ed p.313",
+     "input-Cynthia_Stackpole_Snyder_A_Project_Manager_s_Book_of_Forms_A p.29",
+     "input-Cynthia_Stackpole_Snyder_A_Project_Manager_s_Book_of_Forms_A p.73"
+    ]
+   },
+   {
+    "id": "pmbok-dod",
+    "segundos": 12.29,
+    "abstencion": false,
+    "confianza": 1.0,
+    "fuente": true,
+    "respuesta": true,
+    "correcta": true,
+    "fuentes": [
+     "input-PMBOK-7Ed p.180",
+     "input-PMBOK-7Ed p.176",
+     "input-PMBOK-7Ed p.334",
+     "input-PMBOK-7Ed p.182",
+     "input-PMBOK-7Ed p.179",
+     "input-PMBOK-7Ed p.356",
+     "input-PMBOK-7Ed p.329",
+     "input-PMBOK-7Ed p.337"
+    ]
+   },
+   {
+    "id": "pmbok-cronograma-hitos",
+    "segundos": 15.02,
+    "abstencion": false,
+    "confianza": 1.0,
+    "fuente": true,
+    "respuesta": true,
+    "correcta": true,
+    "fuentes": [
+     "input-PMBOK-7Ed p.283",
+     "input-PMBOK-7Ed p.334",
+     "input-Cynthia_Stackpole_Snyder_A_Project_Manager_s_Book_of_Forms_A p.15",
+     "input-Cynthia_Stackpole_Snyder_A_Project_Manager_s_Book_of_Forms_A p.220",
+     "input-Cynthia_Stackpole_Snyder_A_Project_Manager_s_Book_of_Forms_A p.64",
+     "input-Cynthia_Stackpole_Snyder_A_Project_Manager_s_Book_of_Forms_A p.54",
+     "input-PMBOK-7Ed p.347",
+     "input-Cynthia_Stackpole_Snyder_A_Project_Manager_s_Book_of_Forms_A p.77"
+    ]
+   },
+   {
+    "id": "pmbok-complejidad",
+    "segundos": 15.22,
+    "abstencion": false,
+    "confianza": 1.0,
+    "fuente": true,
+    "respuesta": false,
+    "correcta": false,
+    "fuentes": [
+     "input-PMBOK-7Ed p.215",
+     "input-PMBOK-7Ed p.259",
+     "input-PMBOK-7Ed p.78",
+     "input-PMBOK-7Ed p.260",
+     "input-PMBOK-7Ed p.77",
+     "input-PMBOK-7Ed p.77",
+     "input-PMBOK-7Ed p.71",
+     "input-PMBOK-7Ed p.216"
+    ]
+   },
+   {
+    "id": "snyder-supuestos",
+    "segundos": 15.29,
+    "abstencion": false,
+    "confianza": 1.0,
+    "fuente": true,
+    "respuesta": true,
+    "correcta": true,
+    "fuentes": [
+     "input-Cynthia_Stackpole_Snyder_A_Project_Manager_s_Book_of_Forms_A p.48",
+     "input-PMBOK-7Ed p.279",
+     "input-PMBOK-7Ed p.367",
+     "input-Cynthia_Stackpole_Snyder_A_Project_Manager_s_Book_of_Forms_A p.39",
+     "input-Cynthia_Stackpole_Snyder_A_Project_Manager_s_Book_of_Forms_A p.67",
+     "input-Cynthia_Stackpole_Snyder_A_Project_Manager_s_Book_of_Forms_A p.149",
+     "input-PMBOK-7Ed p.280",
+     "input-PMBOK-7Ed p.364"
+    ]
+   },
+   {
+    "id": "snyder-lecciones",
+    "segundos": 18.23,
+    "abstencion": true,
+    "confianza": 0.0,
+    "fuente": false,
+    "respuesta": true,
+    "correcta": false,
+    "fuentes": []
+   },
+   {
+    "id": "snyder-equipo",
+    "segundos": 19.71,
+    "abstencion": false,
+    "confianza": 1.0,
+    "fuente": true,
+    "respuesta": false,
+    "correcta": false,
+    "fuentes": [
+     "input-Cynthia_Stackpole_Snyder_A_Project_Manager_s_Book_of_Forms_A p.172",
+     "input-Cynthia_Stackpole_Snyder_A_Project_Manager_s_Book_of_Forms_A p.177",
+     "input-Cynthia_Stackpole_Snyder_A_Project_Manager_s_Book_of_Forms_A p.172",
+     "input-Cynthia_Stackpole_Snyder_A_Project_Manager_s_Book_of_Forms_A p.176",
+     "input-PMBOK-7Ed p.276",
+     "input-Cynthia_Stackpole_Snyder_A_Project_Manager_s_Book_of_Forms_A p.177",
+     "input-Cynthia_Stackpole_Snyder_A_Project_Manager_s_Book_of_Forms_A p.173",
+     "input-PMBOK-7Ed p.287"
+    ]
+   },
+   {
+    "id": "snyder-probabilidad",
+    "segundos": 14.28,
+    "abstencion": false,
+    "confianza": 1.0,
+    "fuente": true,
+    "respuesta": true,
+    "correcta": true,
+    "fuentes": [
+     "input-Cynthia_Stackpole_Snyder_A_Project_Manager_s_Book_of_Forms_A p.129",
+     "input-Cynthia_Stackpole_Snyder_A_Project_Manager_s_Book_of_Forms_A p.126",
+     "input-Cynthia_Stackpole_Snyder_A_Project_Manager_s_Book_of_Forms_A p.114",
+     "input-Cynthia_Stackpole_Snyder_A_Project_Manager_s_Book_of_Forms_A p.129",
+     "input-Cynthia_Stackpole_Snyder_A_Project_Manager_s_Book_of_Forms_A p.119",
+     "input-Cynthia_Stackpole_Snyder_A_Project_Manager_s_Book_of_Forms_A p.124",
+     "input-Cynthia_Stackpole_Snyder_A_Project_Manager_s_Book_of_Forms_A p.27",
+     "input-Cynthia_Stackpole_Snyder_A_Project_Manager_s_Book_of_Forms_A p.26"
+    ]
+   },
+   {
+    "id": "fuera-mongolia",
+    "segundos": 12.55,
+    "abstencion": true,
+    "confianza": 0.0,
+    "correcta": true,
+    "fuentes": []
+   },
+   {
+    "id": "fuera-paella",
+    "segundos": 14.33,
+    "abstencion": true,
+    "confianza": 0.0,
+    "correcta": true,
+    "fuentes": []
+   },
+   {
+    "id": "fuera-mundial",
+    "segundos": 14.09,
+    "abstencion": true,
+    "confianza": 0.0,
+    "correcta": true,
+    "fuentes": []
+   },
+   {
+    "id": "fuera-presupuesto",
+    "segundos": 13.45,
+    "abstencion": true,
+    "confianza": 0.0,
+    "correcta": true,
+    "fuentes": []
+   }
+  ]
+ },
+ "traduccion": {
+  "modelo": "gemma4:26b-a4b-it-qat",
+  "terminos": "35/39",
+  "mediana_s": 0.24,
+  "p95_s": 0.3,
+  "casos": [
+   {
+    "es": "¿Qué formulario uso para el acta de constitución del proyecto?",
+    "en": "Which form do I use for the project charter?",
+    "terminos": "1/1"
+   },
+   {
+    "es": "registro de interesados y matriz de poder e interés",
+    "en": "stakeholder register and power-interest matrix",
+    "terminos": "3/3"
+   },
+   {
+    "es": "¿cómo calculo el valor ganado y el índice de desempeño del cronograma?",
+    "en": "how to calculate earned value and schedule performance index",
+    "terminos": "2/2"
+   },
+   {
+    "es": "lecciones aprendidas al cerrar una fase",
+    "en": "lessons learned when closing a phase",
+    "terminos": "2/2"
+   },
+   {
+    "es": "plantilla de registro de riesgos con probabilidad e impacto",
+    "en": "risk register template with probability and impact",
+    "terminos": "3/3"
+   },
+   {
+    "es": "estructura de desglose del trabajo y diccionario de la EDT",
+    "en": "Work Breakdown Structure and WBS Dictionary",
+    "terminos": "2/2"
+   },
+   {
+    "es": "solicitud de cambio y control integrado de cambios",
+    "en": "change request and integrated change control",
+    "terminos": "2/2"
+   },
+   {
+    "es": "matriz de asignación de responsabilidades RACI",
+    "en": "RACI responsibility assignment matrix",
+    "terminos": "2/2"
+   },
+   {
+    "es": "plan de gestión de las comunicaciones",
+    "en": "communication management plan",
+    "terminos": "0/1"
+   },
+   {
+    "es": "registro de supuestos y restricciones del proyecto",
+    "en": "project assumptions and constraints log",
+    "terminos": "2/2"
+   },
+   {
+    "es": "línea base del alcance y enunciado del alcance",
+    "en": "scope baseline and scope statement",
+    "terminos": "2/2"
+   },
+   {
+    "es": "estimación por tres valores y análisis PERT",
+    "en": "three-point estimation and PERT analysis",
+    "terminos": "2/2"
+   },
+   {
+    "es": "ruta crítica y holgura total de las actividades",
+    "en": "critical path and total slack of activities",
+    "terminos": "1/2"
+   },
+   {
+    "es": "registro de incidentes abiertos",
+    "en": "open incident log",
+    "terminos": "0/1"
+   },
+   {
+    "es": "acta de reunión de seguimiento con decisiones y acciones",
+    "en": "follow-up meeting minutes with decisions and actions",
+    "terminos": "3/3"
+   },
+   {
+    "es": "criterios de aceptación de los entregables",
+    "en": "acceptance criteria for deliverables",
+    "terminos": "2/2"
+   },
+   {
+    "es": "evaluación del desempeño del equipo del proyecto",
+    "en": "project team performance evaluation",
+    "terminos": "0/1"
+   },
+   {
+    "es": "plan de respuesta a los riesgos y reservas para contingencias",
+    "en": "risk response and contingency reserve plan",
+    "terminos": "2/2"
+   },
+   {
+    "es": "informe de estado del proyecto para el patrocinador",
+    "en": "project status report for the sponsor",
+    "terminos": "2/2"
+   },
+   {
+    "es": "auditoría de calidad y métricas de calidad",
+    "en": "quality audit and quality metrics",
+    "terminos": "2/2"
+   }
+  ]
+ },
+ "actas": {
+  "segundos": 28.1,
+  "duracion_audio": "00:02:06",
+  "wer": 0.091,
+  "elementos": "15/15",
+  "detalle": {
+   "fecha": "1/1",
+   "asistentes": "4/4",
+   "decisiones": "3/3",
+   "acciones": "4/4",
+   "riesgos": "2/2",
+   "proxima_reunion": "1/1"
+  },
+  "acta": {
+   "fecha": "2026-10-01",
+   "temas": [
+    "Definición del objetivo del proyecto y fecha de lanzamiento.",
+    "Propuesta de flujo de diseño para la reserva de citas.",
+    "Integración técnica del calendario con el programa de gestión del taller.",
+    "Plan de pruebas con clientes reales.",
+    "Identificación de riesgos y medidas de mitigación."
+   ],
+   "titulo": "Arranque del proyecto Aplecitas de Talleres Norte",
+   "resumen": "Se ha dado inicio al proyecto para permitir que los clientes de Talleres Norte reserven citas desde el móvil sin necesidad de llamar. El objetivo es lanzar una primera versión en producción antes del 15 de diciembre. La aplicación será una web adaptada al móvil y no requerirá registro obligatorio en esta fase inicial. Se han definido los flujos de diseño, la integración de datos del calendario y el plan de pruebas con clientes reales.",
+   "riesgos": [
+    {
+     "riesgo": "Retraso en el acceso a la base de datos del taller que afecte la integración del calendario y el proyecto.",
+     "impacto": "alto",
+     "mitigacion": "Pedir el acceso esta misma semana; si no llega, Diego empezará trabajando con datos de ejemplo.",
+     "responsable": "Romen",
+     "probabilidad": "media"
+    },
+    {
+     "riesgo": "Frustración de los clientes si no encuentran huecos libres los sábados.",
+     "impacto": "medio",
+     "mitigacion": "Mostrar el primer hueco disponible en la primera pantalla.",
+     "responsable": "Lucía Martín",
+     "probabilidad": "alta"
+    }
+   ],
+   "acciones": [
+    {
+     "tarea": "Pedir al taller el acceso a la base de datos",
+     "detalle": "Es necesario para que Diego pueda empezar la integración.",
+     "responsable": "Romen",
+     "fecha_limite": "2026-10-05"
+    },
+    {
+     "tarea": "Realizar los diseños de las tres pantallas de reserva",
+     "detalle": "Las pantallas deben incluir: elegir servicio, elegir hueco y confirmación.",
+     "responsable": "Lucía Martín",
+     "fecha_limite": "2026-10-10"
+    },
+    {
+     "tarea": "Conectar el calendario de huecos con el programa del taller",
+     "detalle": "Requiere acceso a la base de datos del taller.",
+     "responsable": "Diego Sanz",
+     "fecha_limite": "2026-10-20"
+    },
+    {
+     "tarea": "Preparar el plan de pruebas con clientes",
+     "detalle": "Se realizarán pruebas con cinco clientes reales antes del lanzamiento.",
+     "responsable": "Marta Ruiz",
+     "fecha_limite": "2026-10-30"
+    }
+   ],
+   "asistentes": [
+    "Romen (Jefe de proyecto)",
+    "Lucía Martín (Diseñadora de experiencia de usuario de Talleres Norte)",
+    "Diego Sanz (Desarrollador)",
+    "Marta Ruiz (Consultora de calidad)"
+   ],
+   "decisiones": [
+    "La aplicación será una web adaptada al móvil, no una aplicación nativa.",
+    "El registro de usuario no será obligatorio en la primera versión.",
+    "La confirmación de la cita se enviará por correo electrónico."
+   ],
+   "proxima_reunion": "2026-10-08 10:00"
+  }
+ },
+ "documentos": {
+  "segundos": 54.3,
+  "secciones_con_evidencia": "4/4",
+  "secciones": [
+   {
+    "title": "Visión general",
+    "insufficient_evidence": false
+   },
+   {
+    "title": "Conceptos y principios clave",
+    "insufficient_evidence": false
+   },
+   {
+    "title": "Estructura y contenidos principales",
+    "insufficient_evidence": false
+   },
+   {
+    "title": "Aplicación práctica",
+    "insufficient_evidence": false
+   }
+  ]
+ }
+}

@@ -1,0 +1,22 @@
+[
+  {"es": "¿Qué formulario uso para el acta de constitución del proyecto?", "terms": ["project charter"]},
+  {"es": "registro de interesados y matriz de poder e interés", "terms": ["stakeholder register", "power", "interest"]},
+  {"es": "¿cómo calculo el valor ganado y el índice de desempeño del cronograma?", "terms": ["earned value", "schedule performance index"]},
+  {"es": "lecciones aprendidas al cerrar una fase", "terms": ["lessons learned", "phase"]},
+  {"es": "plantilla de registro de riesgos con probabilidad e impacto", "terms": ["risk register", "probability", "impact"]},
+  {"es": "estructura de desglose del trabajo y diccionario de la EDT", "terms": ["work breakdown structure", "dictionary"]},
+  {"es": "solicitud de cambio y control integrado de cambios", "terms": ["change request", "integrated change control"]},
+  {"es": "matriz de asignación de responsabilidades RACI", "terms": ["responsibility assignment matrix", "raci"]},
+  {"es": "plan de gestión de las comunicaciones", "terms": ["communications management plan"]},
+  {"es": "registro de supuestos y restricciones del proyecto", "terms": ["assumption", "constraint"]},
+  {"es": "línea base del alcance y enunciado del alcance", "terms": ["scope baseline", "scope statement"]},
+  {"es": "estimación por tres valores y análisis PERT", "terms": ["three-point estimat", "pert"]},
+  {"es": "ruta crítica y holgura total de las actividades", "terms": ["critical path", "float"]},
+  {"es": "registro de incidentes abiertos", "terms": ["issue log"]},
+  {"es": "acta de reunión de seguimiento con decisiones y acciones", "terms": ["meeting minutes", "decisions", "action"]},
+  {"es": "criterios de aceptación de los entregables", "terms": ["acceptance criteria", "deliverables"]},
+  {"es": "evaluación del desempeño del equipo del proyecto", "terms": ["team performance assessment"]},
+  {"es": "plan de respuesta a los riesgos y reservas para contingencias", "terms": ["risk response", "contingency reserve"]},
+  {"es": "informe de estado del proyecto para el patrocinador", "terms": ["status report", "sponsor"]},
+  {"es": "auditoría de calidad y métricas de calidad", "terms": ["quality audit", "quality metrics"]}
+]

@@ -1,0 +1,18 @@
+{
+  "_doc": "Reunión ficticia para medir las actas: el guion se sintetiza con la voz de Jarvis (Piper) y se manda a /v1/meetings. Lo esperado es lo que el guion dice explícitamente. Es el mismo guion de la prueba por Telegram de docs/UAT.md.",
+  "fecha": "2026-10-01",
+  "guion": "Reunión de arranque del proyecto App de citas, de Talleres Norte. Hoy es uno de octubre de dos mil veintiséis.\n\nAsistentes: Romen, jefe de proyecto; Lucía Martín, diseñadora de experiencia de usuario de Talleres Norte; Diego Sanz, desarrollador; y Marta Ruiz, consultora de calidad.\n\nRomen: El objetivo del proyecto es que los clientes de Talleres Norte pidan cita para revisar el coche desde el móvil, sin llamar por teléfono. Queremos una primera versión en producción antes del quince de diciembre.\n\nLucía: Para la reserva propongo tres pantallas: elegir el servicio, elegir el hueco en el calendario y confirmar con un mensaje. Nada de registro obligatorio al principio.\n\nDiego: El calendario de huecos lo saco del programa de gestión del taller. Necesito acceso a su base de datos; sin eso no puedo empezar la integración.\n\nMarta: Yo me encargo del plan de pruebas. Quiero probar la aplicación con cinco clientes reales antes del lanzamiento.\n\nRomen: Bien. Decisiones de hoy. Primera: la aplicación será web adaptada al móvil, no una aplicación nativa, para llegar antes. Segunda: el registro de usuario no será obligatorio en la primera versión. Tercera: la confirmación de la cita se enviará por correo electrónico.\n\nRomen: Acciones. Lucía Martín hará los diseños de las tres pantallas de reserva antes del diez de octubre. Diego Sanz conectará el calendario de huecos con el programa del taller antes del veinte de octubre. Marta Ruiz preparará el plan de pruebas con clientes antes del treinta de octubre. Y yo pediré al taller el acceso a la base de datos antes del cinco de octubre.\n\nDiego: Un riesgo importante: si el taller tarda en darnos acceso a la base de datos, la integración del calendario se retrasa y con ella todo el proyecto. Probabilidad media, impacto alto.\n\nRomen: Mitigación: lo pido esta misma semana y, si no llega, Diego empieza con datos de ejemplo. El responsable de ese riesgo soy yo.\n\nMarta: Otro riesgo: que los clientes no encuentren huecos libres los sábados y se frustren. Probabilidad alta, impacto medio. Mitigación: mostrar el primer hueco disponible en la primera pantalla. Responsable, Lucía Martín.\n\nRomen: Próxima reunión: seguimiento el ocho de octubre a las diez. Gracias a todos.",
+  "asistentes": ["romen", "lucia martin", "diego sanz", "marta ruiz"],
+  "decisiones": [["web"], ["registro"], ["correo"]],
+  "acciones": [
+    {"responsable": "lucia", "fecha": "2026-10-10", "tarea": ["diseno", "pantallas"]},
+    {"responsable": "diego", "fecha": "2026-10-20", "tarea": ["calendario", "huecos"]},
+    {"responsable": "marta", "fecha": "2026-10-30", "tarea": ["pruebas"]},
+    {"responsable": "romen", "fecha": "2026-10-05", "tarea": ["acceso", "base de datos"]}
+  ],
+  "riesgos": [
+    {"riesgo": ["base de datos", "acceso"], "responsable": "romen"},
+    {"riesgo": ["sabado", "huecos"], "responsable": "lucia"}
+  ],
+  "proxima_reunion": [["8", "ocho", "2026-10-08"], ["octubre", "10-08", "/10"]]
+}
