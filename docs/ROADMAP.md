@@ -1,13 +1,13 @@
 ---
 name: jarvis-pmi-roadmap
-description: Resumen del TFM (memoria), estado real del repo frente a esa memoria, y plan de evolución (capa MCP, correo, calendario, generación de documentos, Teams)
+description: Resumen del TFM (memoria), estado real del repo frente a esa memoria, y plan de evolución (capa MCP, correo, calendario, generación de documentos)
 ---
 
 # JARVIS-PMI · Resumen, estado y plan de evolución
 
 > Documento de trabajo. Une tres cosas: qué dice la memoria (TFM), qué tiene ya el
 > repositorio `jarvis-local`, y qué queremos añadir (agente: correo, reuniones,
-> generación de documentos, Telegram/Teams). Fecha: septiembre 2026 (actualizado el 1 de octubre).
+> generación de documentos, Telegram). Fecha: septiembre 2026 (actualizado el 1 de octubre).
 
 ---
 
@@ -52,7 +52,7 @@ Leyenda: ✅ hecho · 🟡 parcial · ⬜ por hacer
 | **Abstención sin evidencia** | ✅ | ✅ `packages/rag/orchestrator.py`; marca `insufficient_evidence` también cuando el modelo se abstiene con evidencia débil (criterio 14, 01-10) | — |
 | **API + worker** | ✅ | ✅ FastAPI (`apps/api`) + arq (`apps/worker`) | — |
 | **Infra reproducible** (Postgres/Redis/Qdrant, Docker) | ✅ | ✅ **todo Jarvis con `docker compose up`** (`docs/DOCKER.md`): `init` genera secretos y elige modelo, OpenClaw con voz y skills MCP en imagen propia, perfiles opcionales; `compose.cpu.yml` sin GPU; CI en cada PR (ruff, pyright, pytest, plugins, shellcheck y `compose config`) y construcción de las imágenes al publicar versión (`.github/workflows/ci.yml`) | — |
-| **Embeddings** | ✅ | ✅ FastEmbed (denso + disperso) + reranker local (`RAG_RERANKER_MODEL`, `BAAI/bge-reranker-base`); la consulta se traduce también al inglés para encontrar documentación en inglés (23-09) | 🟡 reranker multilingüe (jina: mejor en español, licencia no comercial) |
+| **Embeddings** | ✅ | ✅ FastEmbed (denso + disperso) + reranker local (`RAG_RERANKER_MODEL`, `BAAI/bge-reranker-base`); la consulta se traduce también al inglés con el propio Gemma para encontrar documentación en inglés (23-09). Medido el 01-10 frente a TranslateGemma 4B y Opus-MT: es la que mejor conserva la terminología (35 de 39 términos en 20 consultas, frente a 27 y 25; ~0,25 s), así que no hace falta un reranker multilingüe | — |
 | **Transporte Telegram** | 🟡 capa opcional | ✅ `integrations/openclaw`, config Telegram; indexación de PDFs recibidos con confirmación; entrega de documentos generados; menú de botones `/menu` (plugin `jarvis-menu`) y aprobación del envío de correo con botones (plugin `jarvis-aprobaciones`) | — |
 | **Agente / orquestación** | 🟡 OpenClaw mencionado | ✅ OpenClaw + skills MCP (`jarvis-rag`, `jarvis-email`, `jarvis-calendar`, `jarvis-pm`, `jarvis-office`, vía `FastMCP`), plugins propios (`jarvis-menu`, `jarvis-aprobaciones`) y la skill de terceros revisada `agile-toolkit` | — |
 | **Búsqueda web** | — | ✅ SearXNG **solo con permiso**: `web_search` está denegado; Jarvis busca primero en lo interno, sugiere aportar la documentación y, si se le autoriza, propone fuentes (`jarvis_web_sources`) y solo lee las aprobadas (`jarvis_web_read`, 23-09) | — |
@@ -62,7 +62,6 @@ Leyenda: ✅ hecho · 🟡 parcial · ⬜ por hacer
 | **Contestar correos** | ⬜ (roadmap) | ✅ MCP correo con backend IMAP/SMTP para cualquier proveedor (`packages/imapsmtp`) o Graph (`packages/msgraph/mail.py`); skill `jarvis-email`, borrador y envío aprobado con un botón de Telegram, fuera del modelo (`jarvis-aprobaciones`), adjuntos de doc-gen; cuenta Gmail de Jarvis configurada ; OpenProject envía sus avisos e invitaciones por la misma cuenta; correo → tarea (`pm_task_from_email`); validado el 18-09 con correos reales (invitaciones con .ics recibidas en Gmail) | ⬜ recibir en OpenProject respuestas por correo (IMAP entrante) |
 | **Agendar / planificar reuniones** | ⬜ (roadmap) | ✅ MCP calendario con backend **OpenProject** (por defecto en la VM: la agenda son las reuniones de OpenProject y los vencimientos de tareas e hitos, `packages/openproject/calendar.py`), CalDAV o Graph; skill `jarvis-calendar`, propuesta→confirmación; invitaciones por OpenProject a sus usuarios y con .ics por el correo de Jarvis al resto; validado desde Telegram el 18-09 | ⬜ reuniones recurrentes, mover/cancelar reuniones, recordatorios proactivos por Telegram |
 | **Generar documentos desde cero** | ⬜ (roadmap) | ✅ `packages/docgen` (resúmenes/DAFO/planes desde el RAG, docx/pptx/pdf/md, secciones en paralelo, entregados por Telegram con `MEDIA:`, `docs/DOCGEN.md`) y documentos Excel, Word, PowerPoint y OpenDocument a medida (`jarvis-office`, 21-09) | — |
-| **Microsoft Teams** | ⬜ | 🟡 canal `msteams` soportado en OpenClaw (`scripts/configure-teams`, `docs/TEAMS.md`) | ⬜ **túnel público (Cloudflare Tunnel) + manifiesto de la app**, sin versionar todavía |
 | **Licencia + gobernanza** | ⬜ declarado pendiente | ✅ `LICENSE` (MIT) + `CONTRIBUTING.md` | — |
 | **Memoria evolutiva** | — | ✅ `memory-core` + `memory-wiki` de OpenClaw, vault Obsidian versionado en git privado (`vault-sync`), búsqueda semántica con `embeddinggemma` (`docs/MEMORY.md`) | 🟡 validar el árbol nuevo con un proyecto de punta a punta (guion de prueba preparado) |
 | **Red de conocimiento / memoria única** | — | ✅ **un solo árbol** desde *🧭 Mapa de Jarvis*: empresas › {equipo, documentos, proyectos › {hitos, riesgos, reuniones › actas, tareas que pesan, documentos}} y conocimiento › {metodologías › documentos, documentación general, temas, directivas}; lo que cruza ramas son **nexos** (personas de varias empresas, metodologías por proyecto); nombres con icono por tipo y diagramas Mermaid; las notas se mueven con lo escrito a mano si cambian de rama (01-10); wiki de OpenProject sincronizada en ambos sentidos; `jarvis_remember` (`docs/OBSIDIAN.md`) | ⬜ personas deduplicadas con alias, relaciones entre riesgos y tareas, síntesis semanales automáticas |
@@ -106,9 +105,9 @@ MCP (Hermes/ZeroClaw) es sencillo precisamente porque las capacidades ya serán 
 | Capacidad | Cómo (2026) | Nota de seguridad |
 |---|---|---|
 | **Contestar correos** | Servidor **MCP de correo** (IMAP/SMTP local, o `microsoft/local-email-agent`: Foundry Local + MCP + LangChain, 100% local) | **Nunca envío autónomo**: el modelo redacta borrador → confirmación humana (tu repo ya tiene `CONFIRMATION_TTL_SECONDS` y rate-limit) |
-| **Planificar reuniones** | Servidor **MCP de calendario** (CalDAV para privado; Microsoft Graph si usas Outlook/Teams) para leer huecos y crear eventos | Solo crear/proponer; confirmación antes de invitar a terceros |
+| **Planificar reuniones** | Servidor **MCP de calendario** (CalDAV para privado; Microsoft Graph si usas Outlook) para leer huecos y crear eventos | Solo crear/proponer; confirmación antes de invitar a terceros |
 | **Generar documentos desde 0** | *Skill* de generación: el modelo produce contenido y lo materializa en **.docx/.pptx/.md** con plantillas (mismo enfoque que usas para el TFM) | Local; la fuente de datos es tu corpus RAG (con cita) |
-| **Todo desde Telegram / Teams** | Telegram ya es MCP-nativo vía la skill `jarvis-rag`. Para Teams, **no hace falta un servidor MCP nuevo**: OpenClaw tiene canal oficial `@openclaw/msteams` (plugin de primera parte desde 2026.1.15) que da conversación de bot igual que Telegram — la misma skill `jarvis-rag` sirve a ambos canales sin cambios. Ver `docs/TEAMS.md`. | Lista blanca de usuarios (Telegram: `TELEGRAM_AUTHORIZED_USER_IDS`; Teams: `allowFrom` por AAD object ID). **Importante**: a diferencia de Telegram (long polling, sin exposición), Teams exige un *messaging endpoint* HTTPS alcanzable por el conector Bot Framework de Microsoft — requiere un túnel saliente (no abrir UFW), detallado en `docs/TEAMS.md`. |
+| **Todo desde Telegram** | Telegram ya es MCP-nativo vía la skill `jarvis-rag`. Teams se evaluó (canal `@openclaw/msteams`) y quedó fuera del alcance el 01-10: exige registrar un Azure Bot y abrir un *messaging endpoint* público | Lista blanca de usuarios (`TELEGRAM_AUTHORIZED_USER_IDS`); long polling, sin puertos expuestos |
 
 **Idea de producto fuerte para el TFM/demo:** encadenar las cuatro en un flujo real de
 PM — *"resume las actas del proyecto X, redacta el correo de seguimiento, propón hueco
@@ -172,20 +171,14 @@ propuesto hasta la confirmación. Nuevo servidor MCP `jarvis-calendar`
 un evento nunca invita a terceros de forma autónoma**, solo tras confirmación
 explícita del propietario cuando la propuesta incluye invitados.
 
-**Fase 5 — Segundo canal: Teams** (🟡 soportado en configuración; bloqueado por el registro de Azure Bot, que no se puede usar).
-Canal oficial `@openclaw/msteams` (no un servidor MCP nuevo: la skill
-`jarvis-rag` ya sirve a cualquier canal). Mismo backend, otro transporte.
-Requiere registro de Azure Bot (paso único del propietario) y un túnel
-saliente hacia el *messaging endpoint*, ya que a diferencia de Telegram este
-canal necesita recibir llamadas entrantes. Detalle completo en
-`docs/TEAMS.md`.
+**Fase 5 — Segundo canal: Teams (⛔ fuera del alcance, 01-10).**
+Se preparó la configuración del canal oficial `@openclaw/msteams`, pero exige registrar
+un Azure Bot (no disponible) y un *messaging endpoint* público. Se retiran la plantilla,
+`scripts/configure-teams` y `docs/TEAMS.md`; Telegram es el canal del proyecto.
 
-**Fase 5.1 — Web pública de demo para la defensa del TFM (aparcada).**
-Chat en vivo contra el RAG, con login privado (solo para la presentación),
-frontend estático en Vercel. Backend aún sin decidir (túnel temporal a la VM,
-endpoint permanente, o instancia separada) y corpus de demo pendiente de
-definir. Retomar cuando se acerque la fecha de defensa; no bloquea las fases
-1-5 de capacidades del agente.
+**Fase 5.1 — Web pública de demo para la defensa (⛔ descartada, 01-10).**
+La demo de la defensa se hace en vivo por Telegram, con el panel y OpenProject por
+Tailscale; no hace falta una web pública ni exponer el servidor.
 
 **Fase 5.2 — Despliegue reproducible y acceso (✅ cerrada, 15-17 septiembre).**
 Todo con `docker compose up` (`docs/DOCKER.md`); acceso remoto al panel por Tailscale
@@ -266,7 +259,7 @@ Entre el 21-09 y el 01-10 se fusionaron las PR #10 a #24:
 * **RAG**: la consulta también se traduce al inglés (el libro de Snyder aparece al preguntar
   en español) y la abstención queda marcada como `insufficient_evidence` (criterio 14).
 * **Seguridad y documentación**: auditoría del 22-09 corregida e informe de coherencia de
-  la documentación cerrado, salvo el caso G (si Teams sigue en el alcance).
+  la documentación cerrado (el caso G, Teams, se resolvió sacándolo del alcance).
 * **Operación**: la copia perdida con la VM apagada se recupera al arrancar, con alerta
   `CopiaAtrasada`.
 * **Memoria**: el vault pasa a ser **un solo árbol** unido por nexos (`docs/OBSIDIAN.md`).
@@ -278,7 +271,7 @@ Entre el 21-09 y el 01-10 se fusionaron las PR #10 a #24:
 
 | Área | Pendiente | Prioridad |
 |---|---|---|
-| TFM | UAT con usuarios representativos y medición del ahorro de tiempo (el pendiente declarado en la memoria); decidir si hace falta la web de demo (Fase 5.1) o basta la demo en vivo por Telegram y Tailscale | Alta, según fecha de defensa |
+| TFM | UAT con usuarios representativos y medición del ahorro de tiempo (el pendiente declarado en la memoria); demo en vivo por Telegram y Tailscale | Alta, según fecha de defensa |
 | Validación | Proyecto de prueba de punta a punta con el árbol nuevo: audio → acta → OpenProject → árbol, nexos y wiki (guion preparado; base para la demo) | Alta |
 | Operación | La copia al arrancar fallaba porque PostgreSQL aún no estaba listo: espera a PostgreSQL y Qdrant (`BACKUP_WAIT_SECONDS`, PR #25) | Alta |
 | Admin | Token de GitHub de grano fino y `JARVIS_ADMIN_REPO` en `.env` para probar `repo pr` | Baja |
@@ -288,8 +281,9 @@ Entre el 21-09 y el 01-10 se fusionaron las PR #10 a #24:
 | Actas | Diarización (quién habla) local | Media |
 | Memoria | Alias de personas (hoy solo se unen las variantes del propietario); síntesis semanal por proyecto; que las notas de persona también vayan a OpenProject; relaciones riesgo–tarea y decisiones en el frontmatter | Media |
 | Multiusuario | Varias personas en Telegram con permisos por empresa/proyecto (RAG y OpenProject) | Media |
-| Teams | Bloqueado por el registro de Azure Bot | Baja |
-| Decisiones de Romen | Si Teams sigue en el alcance del TFM (caso G de `docs/DOC-COHERENCE-REPORT.md`); reranker multilingüe jina (mejor en español, licencia no comercial); publicar más servicios por Tailscale; rotar el token de Telegram y la contraseña de Gmail tras el TFM | — |
+| Decisiones de Romen | Publicar más servicios por Tailscale; rotar el token de Telegram y la contraseña de Gmail tras el TFM | — |
+
+Fuera del alcance desde el 01-10: Teams, la web pública de demo y el reranker multilingüe.
 
 Cerrado desde la versión del 21-09: privacidad (20-09), operación de la Fase 6 (21-09),
 `docs/ACCEPTANCE.md` (25 criterios ✅ y 2 retirados), validaciones de Obsidian móvil y sin
@@ -307,8 +301,8 @@ Priorizadas por relación valor/esfuerzo para JARVIS-PMI:
 3. ✅ **rag-as-mcp** — exponer tu propio RAG como servidor MCP (reutilizable por cualquier agente). *Alta / baja.*
 4. ✅ **email-draft** — MCP de correo con borrador+aprobación. *Alta / media.*
 5. ✅ **calendar** — MCP de calendario (CalDAV/Graph) para reuniones. *Media / media.*
-6. 🟡 **teams-transport** (bloqueado por Azure Bot) — segundo canal Teams. *Media / media.*
-7. ✅ **reranker** (`bge-reranker-base`; multilingüe pendiente) — reranker local para subir precisión de recuperación. *Media / baja.*
+6. ⛔ **teams-transport** — fuera del alcance (01-10).
+7. ✅ **reranker** (`bge-reranker-base`, con la consulta traducida al inglés) — reranker local para subir precisión de recuperación. *Media / baja.*
 8. ⬜ **docling-ingest** — ingesta de PDFs escaneados/tablas con Docling. *Media / baja.*
 9. ✅ **web-brief**, como fuentes aprobadas por el usuario (`jarvis_web_sources`) — usar tu SearXNG para informes con fuentes. *Baja / baja.*
 
@@ -320,5 +314,5 @@ Priorizadas por relación valor/esfuerzo para JARVIS-PMI:
 ## 6. Fuentes (septiembre 2026)
 
 - OpenClaw y alternativas locales/MCP: Composio, BuildBetter, Vellum.
-- Estándar MCP y servidores (correo/calendario/Telegram/Teams): mcpservers.org, Composio, PulseMCP.
+- Estándar MCP y servidores (correo/calendario/Telegram): mcpservers.org, Composio, PulseMCP.
 - Agente de correo 100% local: `microsoft/local-email-agent` (Foundry Local + MCP + LangChain).

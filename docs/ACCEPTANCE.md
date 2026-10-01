@@ -36,4 +36,4 @@ implementado · ⛔ criterio retirado del alcance.
 
 ## Pendiente
 
-* UAT con usuarios y medición del ahorro de tiempo (Fase 5.1 del TFM, `docs/ROADMAP.md`).
+* UAT con usuarios y medición del ahorro de tiempo (Fase 6 del TFM, `docs/ROADMAP.md`).
