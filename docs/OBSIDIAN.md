@@ -111,43 +111,46 @@ En el portátil, si antes usabas el plugin Obsidian Git con `jarvis-vault`, pás
 LiveSync en un vault nuevo y deja ese clon de git sin plugin: git queda solo para el
 servidor.
 
-## Una sola memoria: red de conocimiento, Jarvis y OpenProject
+## Una sola memoria: el árbol de Jarvis, Obsidian y OpenProject
 
-El vault es **la** memoria de Jarvis. Lo que sabe de tus proyectos está en él como una red
-de notas enlazadas, y OpenProject y Jarvis leen y escriben esa misma red:
+El vault es **la** memoria de Jarvis. Lo que sabe de tus proyectos está en él como un árbol
+de notas enlazadas, y OpenProject y Jarvis leen y escriben ese mismo árbol:
 
 ```
 OpenProject (proyectos, tareas, hitos, riesgos, reuniones, wiki) ─┐
 Actas del vault · documentos del RAG ─────────────────────────────┤
                                                                   ▼
-                         vault de Obsidian: red de conocimiento ── LiveSync ─► iPhone, portátil
+                         vault de Obsidian: árbol de Jarvis ─── LiveSync ─► iPhone, portátil
                            │            ▲                     └── git ─► jarvis-vault (historial)
     wiki de OpenProject ◄──┘            └── Jarvis: "recuerda que…" (jarvis_remember)
     ("Memoria de Jarvis")                   y memory_search sobre todo el vault
 ```
 
 * **`knowledge`** (perfiles `vault` o `livesync`, `packages/knowledge/red.py`) regenera
-  cada `KNOWLEDGE_REFRESH_SECONDS` (10 min) las notas, en **dos capas** (ver más abajo):
-  el árbol de empresas y proyectos, y la red de personas, documentos, actas y conceptos.
-  Las actas reciben un bloque "Red" con enlaces a su proyecto y a los asistentes. Todas
-  llevan el frontmatter del wiki de OpenClaw (`pageType`, `entityType`, `relationships`),
-  así que Jarvis las usa como memoria estructurada.
+  cada `KNOWLEDGE_REFRESH_SECONDS` (10 min) **un solo árbol** con todo lo que Jarvis sabe
+  (ver más abajo): empresas, proyectos y sus personas; conocimiento (metodologías,
+  documentación, temas y directivas), y los nexos que unen ramas. Las actas se mueven a
+  su reunión dentro del árbol. Todas las notas llevan el frontmatter del wiki de OpenClaw
+  (`pageType`, `entityType`, `relationships`), así que Jarvis las usa como memoria
+  estructurada.
 * **`openproject-wiki-sync`** (perfil `pm`) publica la nota de cada empresa y proyecto en
-  la wiki de OpenProject (página **Memoria de Jarvis**) y copia al vault las demás páginas
-  de la wiki de OpenProject (`sources/openproject/<proyecto>/wiki/`).
+  la wiki de OpenProject (página **Memoria de Jarvis**, con el diagrama del árbol) y copia
+  al vault las demás páginas de su wiki, en la carpeta `Wiki/` del proyecto (`📖 <página>`).
+  Encuentra las notas por el índice que deja la red en `.jarvis/arbol.json`.
 * **Jarvis**: "recuerda que en Web corporativa el cliente prefiere los viernes" →
   `jarvis_remember` lo añade a la sección **Notas** de esa nota; sale en Obsidian, en la
   wiki del proyecto y en `memory_search`. Si es alguien o algo que aún no tiene nota,
-  la crea: una persona en `entities/personas/`, una metodología en
-  `memoria/metodologias/` (cada método en su nota, sin mezclarse) o un tema general (una
-  preferencia) en `memoria/`.
+  la crea: una persona en `👥 Contactos` (pasa sola al equipo de su empresa cuando
+  aparece trabajando con ella), una metodología en `🗂 Metodologías` (cada método en su
+  nota, sin mezclarse) o un tema general en `🗂 Temas`.
 * **Directivas de Jarvis**: lo que le pides que sea parte de su forma de trabajar ("a
   partir de ahora…") lo escribe él en el `MEMORY.md` de su workspace, que OpenClaw le
   carga en cada conversación y que un reinicio no pisa; si cambias de criterio, lo
   sobrescribe dentro de su zona (**General**, **Metodologías** con una zona por método,
   **Proyectos** con el método de cada uno; ver "Metodologías por proyecto" en
-  [EMPRESAS.md](EMPRESAS.md)). `knowledge` copia ese archivo al vault como `memoria/Directivas de
-  Jarvis.md`, de solo lectura: para cambiar una directiva, pídesela a Jarvis. El
+  [EMPRESAS.md](EMPRESAS.md)). `knowledge` copia ese archivo al vault como
+  `🧠 Directivas de Jarvis` (rama Conocimiento), de solo lectura, y las reglas de cada
+  metodología salen también en su nota `📐`: para cambiarlas, pídeselo a Jarvis. El
   *dreaming* de OpenClaw está desactivado para que nada reescriba ese archivo por su
   cuenta. La plantilla (`integrations/openclaw/workspace/MEMORY.md`) no trae ninguna
   directiva ni método de trabajo: cada usuario le dicta los suyos. Ejemplos para trabajo
@@ -157,56 +160,95 @@ Dónde escribir cada cosa:
 
 | Quieres... | Escríbelo en |
 |---|---|
-| Notas tuyas sobre un proyecto, empresa o persona | Su nota en Obsidian, **fuera** del bloque `jarvis:red` (p. ej. en `## Notas`). Se conserva al regenerar y se publica en OpenProject |
+| Notas tuyas sobre un proyecto, empresa, persona, metodología o tema | Su nota en Obsidian, **fuera** del bloque `jarvis:red` (p. ej. en `## Notas`). Se conserva al regenerar, viaja con la nota si cambia de rama y, si es de empresa o proyecto, se publica en OpenProject |
 | Documentación de proyecto para el equipo | La wiki de OpenProject (cualquier página salvo *Memoria de Jarvis*): llega al vault |
-| Tareas, fechas, riesgos | OpenProject (o por Telegram); la red se actualiza sola |
+| Tareas, fechas, riesgos | OpenProject (o por Telegram); el árbol se actualiza solo |
 
 Lo que hay entre `<!-- jarvis:red:start -->` y `<!-- jarvis:red:end -->` se regenera;
 *Memoria de Jarvis* en OpenProject se sobrescribe desde Obsidian. Nada se borra solo: si
 quitas algo de OpenProject, su nota se queda hasta que la borres.
 
-### Dos capas: árbol y red
+### Un solo árbol, unido por nexos
 
-No todo lo que Jarvis sabe se relaciona igual, así que no se guarda igual:
+Cada nota cuelga de **una sola** nota padre, y la carpeta es el árbol, así que el
+explorador de Obsidian ya te sirve de índice. Todo sale del núcleo, `🧭 Mapa de Jarvis`
+(en la raíz del vault, con el diagrama de todo el árbol):
 
-* **El árbol** — lo que *contiene* a otra cosa, donde cada nota tiene un padre y solo uno.
-  La carpeta **es** el árbol, así que el explorador de Obsidian ya te sirve de índice:
+```
+🧭 Mapa de Jarvis
+├── 🗂 Empresas                         entities/Empresas/
+│   └── 🏢 Estudio Delta                entities/Empresas/Estudio Delta/
+│       ├── 👥 Equipo de Estudio Delta  → 👤 Lucía Martín, 👤 Diego Sanz…
+│       ├── 🗃 Documentos de Estudio Delta → 📄 …
+│       └── 📁 App de reservas          …/App de reservas/
+│           ├── 🏁 Hitos de App de reservas      → 🏁 Puesta en marcha
+│           ├── ⚠️ Riesgos de App de reservas    → ⚠️ El proveedor de pagos tarda…
+│           ├── 📅 Reuniones de App de reservas  → 📅 2026-09-24 · Kick-off → 📝 su acta
+│           ├── ✅ Tareas de App de reservas     → ✅ las que pesan
+│           └── 🗃 Documentos de App de reservas → 📄 Brief app reservas
+├── 📚 Conocimiento                     concepts/Conocimiento/
+│   ├── 🗂 Metodologías → 📐 PMI → 📄 PMBOK 7Ed, 📄 Snyder…
+│   ├── 🗃 Documentación general → 📄 …
+│   ├── 🗂 Temas → 💡 …
+│   └── 🧠 Directivas de Jarvis
+├── 🕸 Nexos                            entities/Nexos/ → 🔗 personas de varias empresas
+├── 👥 Contactos                        personas que aún no trabajan con ninguna empresa
+└── 📅 Agenda                           reuniones y actas sin proyecto
+```
 
-  ```
-  entities/empresas/Acme Consulting.md
-  entities/empresas/Acme Consulting/Migración ERP.md
-  entities/empresas/Acme Consulting/Migración ERP/{hitos,riesgos,reuniones,tareas}/…
-  ```
+Las reglas:
 
-  La relación la declara **siempre el hijo** (`relationships: pertenece-a`); el padre
-  lista a sus hijos para poder navegarlos, pero no repite la relación. Las **tareas** solo
-  tienen nota propia cuando pesan —están bloqueadas o las nombra un acta—; el resto se
-  quedan como líneas de la nota del proyecto, que si no el árbol se vuelve ilegible.
+* **El hijo declara su padre** (`relationships: pertenece-a`) y enlaza solo con él; el
+  padre lista a sus hijos. Las hojas (hitos, riesgos, reuniones, tareas, documentos) **no
+  enlazan** con personas ni con conceptos: los nombran en texto. Así el grafo es un árbol
+  y no una maraña. Las relaciones completas (responsable, equipo, metodología…) siguen en
+  el frontmatter, que es lo que lee Jarvis y que Obsidian no dibuja.
+* **Las personas viven en el equipo de su empresa** (`👥 Equipo de <Empresa>`), con lo que
+  hacen allí en texto. El propietario (`JARVIS_OWNER_NAME`) no tiene nota: es el núcleo.
+* **Lo que une ramas es un nexo**, una nota con varias relaciones que hace de puente, nunca
+  un enlace suelto entre hojas:
+  * una persona que trabaja con **dos o más empresas** no cuelga de ninguna: es `🔗 Persona`
+    en `🕸 Nexos`, enlaza con el equipo de cada empresa y explica el motivo (su rol, en qué
+    proyectos y qué hace en cada una);
+  * una **metodología** (`📐 PMI`) une el conocimiento con los proyectos que la usan (la
+    zona *Proyectos* de `MEMORY.md`).
+  En los diagramas, los nexos son líneas de puntos.
+* **Las tareas** solo tienen nota propia cuando pesan —están bloqueadas o en espera, o las
+  nombra un acta—; el resto son líneas de `✅ Tareas de <Proyecto>`.
+* **Las actas** cuelgan de su reunión (mismo proyecto y fecha) o, si no la hay, de las
+  reuniones del proyecto. Jarvis las guarda ya en su sitio si el proyecto existe; si no,
+  en `sources/proyectos/` y la red las mueve cuando aparece.
+* **Nombres que se entienden**: un icono por tipo y el título, sin códigos (`⚠️ Retraso del
+  proveedor`, `📅 2026-09-24 · Kick-off`). El número de OpenProject está en la nota y en su
+  `id`; solo se añade al nombre si dos notas de la misma carpeta se llaman igual.
+* **Si algo cambia de rama** (una persona empieza a trabajar con una segunda empresa, un
+  contacto entra en un equipo, cambias el título de una tarea), la nota se mueve con lo que
+  hayas escrito fuera del bloque: se reconoce por su `id`, no por su nombre. Los enlaces
+  llevan la ruta completa, así que dos notas pueden llamarse igual en carpetas distintas.
 
-* **La red** — lo que *se asocia* con muchas cosas a la vez: personas
-  (`entities/personas/`), documentos del RAG (`entities/documentos/`), las actas
-  (`sources/proyectos/…`) y los conceptos (`concepts/`). Aquí sí se cruzan proyectos y
-  empresas a propósito: una persona enlaza con todo aquello en lo que participa.
+Cada empresa, proyecto, metodología y nexo lleva un **diagrama** (Mermaid, que Obsidian y
+OpenProject dibujan) con su parte del árbol.
 
-Los conceptos (*Gestión de riesgos*, *Hitos y cronograma*, *Reuniones y actas*,
-*Documentación*, *Equipo*) son **índices por proyecto**: enlazan al proyecto con su
-recuento, no a cada riesgo de cada empresa. Enlazarlos uno a uno era lo que convertía la
-vista de grafo en una maraña y lo que cruzaba el aislamiento entre empresas.
+### Verlo como árbol
 
-Si vienes de la estructura plana anterior (`entities/proyectos/`, `entities/riesgos/`…),
-la primera pasada mueve cada nota a su sitio del árbol conservando lo que escribieras
-fuera del bloque generado, y borra las carpetas vacías. Los enlaces `[[Nombre]]` de
-Obsidian no llevan carpeta, así que ninguno se rompe.
+Abre la **vista de grafo** (icono del grafo o `Ctrl/Cmd+G`) y, en sus ajustes:
 
-### Verlo como red
+* **Filtros**: `-path:reports -path:sources -file:index -file:AGENTS -file:WIKI`. Quita los
+  índices y los informes del plugin de memoria, que enlazan con todas las notas y harían
+  de estrella en el centro.
+* **Grupos** (uno por rama, con su color): `path:entities/Empresas`,
+  `path:concepts/Conocimiento`, `path:entities/Nexos`, `path:entities/Contactos`; o por
+  tipo: `tag:#empresa`, `tag:#proyecto`, `tag:#persona`, `tag:#nexo`, `tag:#riesgo`,
+  `tag:#hito`, `tag:#reunion`, `tag:#tarea`, `tag:#documento`, `tag:#metodologia`.
+* Para ver solo una empresa: `path:"entities/Empresas/Estudio Delta"`.
 
-Abre la **vista de grafo** (icono del grafo o `Ctrl/Cmd+G`). Para distinguir los tipos,
-en *Grupos* añade uno por etiqueta con su color: `tag:#empresa`, `tag:#proyecto`,
-`tag:#persona`, `tag:#riesgo`, `tag:#hito`, `tag:#reunion`, `tag:#documento`,
-`tag:#concepto`. Para ver solo el árbol de una empresa, filtra por ruta:
-`path:"entities/empresas/Acme Consulting"`. Con *Filtros → Archivos huérfanos*
-desactivado se ocultan los índices del plugin. Los ajustes de la vista son de cada
-dispositivo.
+Los ajustes de la vista son de cada dispositivo. Los iconos de los nombres ya distinguen el
+tipo de cada nodo sin configurar nada.
+
+Si vienes de la estructura anterior (`entities/empresas/…`, `entities/personas/`,
+`concepts/Gestión de riesgos`…), sus notas no se mueven solas: vacía esas carpetas (tras
+una copia, `scripts/backup`) y la siguiente pasada crea el árbol nuevo. Lo que escribiste a
+mano en ellas sigue en el historial git del vault.
 
 ## Comprobar que funciona
 
