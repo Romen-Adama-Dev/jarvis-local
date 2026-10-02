@@ -1,0 +1,94 @@
+diff --git a/PeerStorage.ts b/PeerStorage.ts
+index 01c5f8c..a5f6031 100644
+--- a/PeerStorage.ts
++++ b/PeerStorage.ts
+@@ -22,9 +22,22 @@ export class PeerStorage extends Peer {
+ 
+     constructor(conf: PeerStorageConf, dispatcher: DispatchFun) {
+         super(conf, dispatcher);
++        this.privatePaths = (conf.privatePaths ?? []).map((p) => new RegExp(p));
++    }
++
++    // Files matching privatePaths stay in this directory: they are never sent to the other
++    // peers and changes to them from the other peers are ignored. A file-stat entry means
++    // the file was sent before, so at start-up those copies are deleted from the others.
++    privatePaths: RegExp[];
++    isPrivate(path: string) {
++        return this.privatePaths.some((re) => re.test(path));
+     }
+ 
+     async delete(pathSrc: string): Promise<boolean> {
++        if (this.isPrivate(pathSrc)) {
++            this.debugLog(`${pathSrc} is private, remote delete ignored`);
++            return false;
++        }
+         const lp = this.toLocalPath(pathSrc);
+         const path = this.toStoragePath(lp);
+         if (await this.isRepeating(lp, false)) {
+@@ -43,6 +56,10 @@ export class PeerStorage extends Peer {
+         return true;
+     }
+     async put(pathSrc: string, data: FileData): Promise<boolean> {
++        if (this.isPrivate(pathSrc)) {
++            this.debugLog(`${pathSrc} is private, remote change ignored`);
++            return false;
++        }
+         const lp = this.toLocalPath(pathSrc);
+         const path = this.toStoragePath(lp);
+         if (await this.isRepeating(lp, data)) {
+@@ -171,6 +188,7 @@ export class PeerStorage extends Peer {
+     async dispatch(pathSrc: string) {
+         const lP = this.toStoragePath(this.toLocalPath("."));
+         const path = this.toPosixPath(relative(lP, pathSrc));
++        if (this.isPrivate(path)) return;
+ 
+         const data = await this.get(path);
+ 
+@@ -192,6 +210,7 @@ export class PeerStorage extends Peer {
+     async dispatchDeleted(pathSrc: string) {
+         const lP = this.toStoragePath(this.toLocalPath("."));
+         const path = this.toPosixPath(relative(lP, pathSrc));
++        if (this.isPrivate(path)) return await this.purgePrivate(path);
+         await scheduleOnceIfDuplicated(pathSrc, async () => {
+             await delay(250);
+             if (!await this.isRepeating(path, false)) {
+@@ -277,6 +296,14 @@ export class PeerStorage extends Peer {
+         }
+     }
+ 
++    async purgePrivate(path: string) {
++        const key = this._getKey(`file-stat-${this.toLocalPath(path)}`);
++        if (localStorage.getItem(key) === null) return;
++        this.normalLog(`${path} is private now, deleting it from the other peers`);
++        await this.dispatchToHub(this, this.toGlobalPath(path), false);
++        localStorage.removeItem(key);
++    }
++
+     processFile(event: Deno.FsEvent) {
+         for (const path of event.paths) {
+             const key = `${event.kind}-${path}`;
+@@ -315,6 +342,10 @@ export class PeerStorage extends Peer {
+                 if (entry.isFile) {
+                     const ePath = this.toPosixPath(relative(this.toLocalPath("."), entry.path));
+                     seen.add(this.toLocalPath(ePath));
++                    if (this.isPrivate(ePath)) {
++                        await this.purgePrivate(ePath);
++                        continue;
++                    }
+                     if (await this.isChanged(ePath)) {
+                         this.debugLog(`Offline changes detected: ${ePath}`);
+                         await this.dispatch(entry.path);
+diff --git a/types.ts b/types.ts
+index c7e721f..5a3ed03 100644
+--- a/types.ts
++++ b/types.ts
+@@ -10,6 +10,9 @@ export interface PeerStorageConf {
+     // Max. fraction of known files that may be missing at start-up for their deletion to be
+     // propagated (default 0.5).
+     offlineDeletionLimit?: number;
++    // Regular expressions on the path relative to baseDir: files that never leave this
++    // directory (and are deleted from the other peers if they were sent before).
++    privatePaths?: string[];
+     type: "storage";
+     group?: string;
+     name: string;
