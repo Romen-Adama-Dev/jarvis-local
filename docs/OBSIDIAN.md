@@ -230,6 +230,30 @@ Las reglas:
 Cada empresa, proyecto, metodología y nexo lleva un **diagrama** (Mermaid, que Obsidian y
 OpenProject dibujan) con su parte del árbol.
 
+### El plan y la carga (packages/knowledge/plan.py)
+
+Además de las tareas, la red lee de OpenProject cómo está organizado el trabajo y lo
+escribe en texto, sin enlaces nuevos:
+
+* **Nota del proyecto**: *Estado* (el que declara el director en OpenProject, con su
+  explicación), *Plan* (metodología del campo «Metodología», horas estimadas e
+  imputadas, presupuestos) y lo propio de cada metodología: *Sprints* con historias y
+  puntos y la pila de producto sin sprint (Scrum), *Fases (EDT)* con sus hitos (las
+  tareas de resumen, PMI) o *Tablero* con las tarjetas por columna y el límite WIP
+  (Kanban, si su zona de `MEMORY.md` lo fija). Después, *Dependencias con otros
+  proyectos* y *Alertas*.
+* **Hitos, riesgos y tareas que pesan**: tipo, padre (fase, épico o historia), sprint,
+  puntos, horas, prioridad, categoría y sus *Dependencias* («precede a», «bloqueado
+  por»…, con el proyecto si es otro). En el frontmatter, una relación por dependencia.
+* **Nota de cada persona**: *Carga*: paquetes abiertos y en qué proyectos, horas
+  pendientes e imputadas, entregas de los próximos 21 días y sus conflictos.
+* **🕸 Nexos**: *Conflictos entre empresas*.
+
+Los conflictos que busca: la misma persona con entregas de **dos proyectos la misma
+semana**, más tarjetas en curso que el **límite WIP**, una **dependencia entre proyectos
+con menos de 7 días de margen** y **trabajo vencido**. Las fases, los épicos y las
+historias con tareas no cuentan dos veces: sus fechas y horas salen de sus hijas.
+
 ### Verlo como árbol
 
 Abre la **vista de grafo** (icono del grafo o `Ctrl/Cmd+G`): no hace falta filtrar nada.
