@@ -18,7 +18,12 @@ vencido. Todo es texto para las notas del vault; no enlaza notas (la regla del �
 import datetime
 import re
 from collections import defaultdict
+from collections.abc import Mapping
 from dataclasses import dataclass, field
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:  # red importa este módulo: solo para los tipos
+    from packages.knowledge.red import Item
 
 # Estados que no cuentan como trabajo pendiente (los mismos que red.CLOSED).
 DONE = ("cerrado", "closed", "rechazado", "rejected")
@@ -157,7 +162,7 @@ def read_plan(op, project: dict, field_names: dict[str, str] | None = None) -> P
     return plan
 
 
-def attach_relations(relations: list[dict], items: dict[str, tuple[str, object]]) -> None:
+def attach_relations(relations: list[dict], items: "Mapping[str, tuple[str, Item]]") -> None:
     """Añade a cada paquete sus dependencias (`items`: id → (tipo de nota, red.Item))."""
     for relation in relations:
         verbs = RELATION_VERBS.get(relation.get("type", ""))
@@ -227,7 +232,7 @@ def wip_limits(snap) -> dict[str, int]:
     return limits
 
 
-def work_items(snap) -> list[tuple[str, object]]:
+def work_items(snap) -> "list[tuple[str, Item]]":
     """Paquetes con responsable que forman el plan: tareas e hitos (no riesgos)."""
     return [("tarea", t) for t in snap.tasks] + [("hito", m) for m in snap.milestones]
 
@@ -238,7 +243,7 @@ def _containers(snap) -> set[tuple[str, str]]:
     return {(i.project, i.parent) for i in items if i.parent}
 
 
-def leaf_work(snap) -> list[tuple[str, object]]:
+def leaf_work(snap) -> "list[tuple[str, Item]]":
     """Paquetes que son trabajo en sí: sin hijas (sus fechas y horas no son derivadas)."""
     parents = _containers(snap)
     return [
@@ -302,8 +307,9 @@ def _tight_dependencies(snap) -> list[Conflict]:
             if link.verb not in ORDERING or not link.project or link.project == item.project:
                 continue
             after = by_id.get(link.item_id)
-            end = _date(item.date)
-            begin = _date(after.start or after.date) if after else None
+            if after is None:
+                continue
+            end, begin = _date(item.date), _date(after.start or after.date)
             if not end or not begin or not is_open(item):
                 continue
             slack = (begin - end).days
