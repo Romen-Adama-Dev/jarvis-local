@@ -1,0 +1,225 @@
+{
+ "caso": "Dos clientes unidos y un equipo compartido",
+ "fecha": "2026-10-02T12:57:35",
+ "aprobacion": "simulada a los 10 s",
+ "resumen": {
+  "segundos": {
+   "mediana": 121.9,
+   "min": 114.9,
+   "max": 122.4
+  },
+  "turnos_modelo": {
+   "mediana": 9,
+   "min": 5,
+   "max": 12
+  },
+  "llamadas": {
+   "mediana": 10,
+   "min": 8,
+   "max": 11
+  },
+  "hecho": {
+   "mediana": 12,
+   "min": 10,
+   "max": 14
+  },
+  "total": 16
+ },
+ "pasadas": [
+  {
+   "segundos": 122.4,
+   "respuesta": "He completado el alta de los nuevos clientes y la configuración inicial. Aquí tienes el resumen:\n\n### 🏢 Empresas y Proyectos Creados\n1.  **Empresa: Talleres Norte**\n    *   **Proyecto:** `App de citas` (Metodología: **Scrum**).\n    *   **Hito final:** 15 de diciembre de 2026.\n2.  **Empresa: Clínica Dental Sonrisas**\n    *   **Proyecto:** `Web de la clínica` (Metodología: **Kanban**).\n    *   **Hito final:** 16 de diciembre de 2026 (Vinculado a la salida de la App).\n\n### 👥 Equipo y Gestión de Alta\n*   **Equipo:** Diego Sanz (Dev), Marta Ruiz (QA) y Lucía Martín (Diseño).\n*   **Estado:** He solicitado el alta de los tres en ambos proyectos mediante un botón en tu Telegram. **Debes pulsar «Dar de alta» para que se registren definitivamente en OpenProject** y las tareas que he creado se les asignen formalmente.\n\n### 📋 Trabajo Inicial Distribuido\nHe repartido las primeras tareas basándome en la cronología de los proyectos:\n\n**Proyecto: App de citas (Talleres Norte)**\n*   #172: **Diseño de UI** (Lucía Martín) - Vence: 15-Oct\n*   #173: **Desarrollo módulo reservas** (Diego Sanz) - Vence: 05-Nov\n*   #174: **Pruebas de usabilidad** (Marta Ruiz) - Vence: 16-Nov\n*   #175: **Activos gráficos para web** (Lucía Martín) - Vence: 10-Dic\n\n**Proyecto: Web de la clínica (Clínica Dental Sonrisas)**\n*   #176: **Desarrollo backend integración** (Diego Sanz) - Vence: 21-Dic (Programado tras el lanzamiento de la App).\n\n### ⚠️ Análisis de Carga y Conflictos\n*   **Conflicto de fecha:** He respetado la restricción de que la integración web no puede empezar antes de que la App esté lista. He programado la tarea de integración de Diego (#176) para finales de diciembre.\n*   **Carga de trabajo:** No detecto conflictos críticos de saturación inmediata. El equipo tiene un flujo constante de tareas que se solapan temporalmente en noviembre entre el desarrollo de la App y los preparativos de la Web, lo cual es normal en un modelo de trabajo paralelo.\n*   **Nota:** Como la Web usa Kanban y aún no hemos definido sus reglas específicas, la gestión de tareas de ese proyecto será más fluida conforme el flujo de trabajo se estabilice.\n\n**¿Deseas que defina las reglas de Kanban o que añada alguna otra tarea específica?**",
+   "aprobacion": {
+    "pedida_s": 85.1,
+    "aprobada_s": 101.2,
+    "resultado": [
+     {
+      "status": 200,
+      "lines": [
+       "👤 Diego Sanz: dado de alta (diego.sanz@demo.invalid)",
+       "   · Talleres Norte › App de citas: miembro",
+       "   · Clínica Dental Sonrisas › Web de la clínica: miembro",
+       "👤 Marta Ruiz: dado de alta (marta.ruiz@demo.invalid)",
+       "   · Talleres Norte › App de citas: miembro",
+       "   · Clínica Dental Sonrisas › Web de la clínica: miembro",
+       "👤 Lucía Martín: dado de alta (lucia.martin@demo.invalid)",
+       "   · Talleres Norte › App de citas: miembro",
+       "   · asignada #172 Diseño de la interfaz de usuario (UI) para la App",
+       "   · Clínica Dental Sonrisas › Web de la clínica: miembro"
+      ]
+     }
+    ]
+   },
+   "trayectoria": {
+    "turnos_modelo": 9,
+    "llamadas": 8,
+    "llamadas_fallidas": 0,
+    "segundos_modelo": 111.8,
+    "segundos_herramientas": 4.0,
+    "herramientas": [
+     "jarvis-pm__pm_setup",
+     "jarvis-pm__pm_setup",
+     "jarvis-pm__pm_add_people",
+     "jarvis-pm__pm_create_task",
+     "jarvis-pm__pm_create_task",
+     "jarvis-pm__pm_create_task",
+     "jarvis-pm__pm_create_task",
+     "jarvis-pm__pm_create_task"
+    ]
+   },
+   "resultado": {
+    "hecho": 12,
+    "total": 16,
+    "comprobaciones": {
+     "proyecto Talleres Norte › App de citas": true,
+     "metodología App de citas en MEMORY.md": true,
+     "equipo en App de citas": true,
+     "tareas en App de citas": true,
+     "tareas asignadas en App de citas": true,
+     "hito del 15-dic": true,
+     "proyecto Clínica Dental Sonrisas › Web de la clínica": true,
+     "metodología Web de la clínica en MEMORY.md": true,
+     "equipo en Web de la clínica": true,
+     "tareas en Web de la clínica": false,
+     "tareas asignadas en Web de la clínica": false,
+     "cuenta de Diego Sanz": true,
+     "cuenta de Marta Ruiz": true,
+     "cuenta de Lucía Martín": true,
+     "cada empleado en los dos proyectos": false,
+     "reglas de Kanban": false
+    }
+   }
+  },
+  {
+   "segundos": 114.9,
+   "respuesta": "He completado la configuración inicial de los nuevos clientes. Aquí tienes el detalle de lo que he hecho:\n\n### 🏗️ Alta de Empresas y Proyectos\n1.  **Talleres Norte** (Metodología: **Scrum**)\n    *   Proyecto: **App de citas**\n    *   Hito: App en Producción (15 de diciembre de 2026)\n2.  **Clínica Dental Sonrisas** (Metodología: **Kanban**)\n    *   Proyecto: **Web de la clínica**\n\n### 👥 Personal y Asignación\nHe solicitado el alta de **Diego Sanz** (Dev), **Marta Ruiz** (QA) y **Lucía Martín** (Diseño) en ambos proyectos.\n*⚠️ Te ha llegado un mensaje a Telegram para aprobar su alta en OpenProject. Una vez lo apruebes, se les asignarán formalmente las tareas que he adelantado.*\n\n**Tareas iniciales repartidas:**\n\n**Talleres Norte (Scrum):**\n*   💻 **Diego Sanz:** Configuración inicial del entorno de desarrollo y repositorio (#178).\n*   ✅ **Marta Ruiz:** Definición de criterios de aceptación para el backlog inicial (#179).\n*   🎨 **Lucía Martín:** Diseño de la arquitectura de identidad de la App (#180).\n\n**Clínica Dental Sonrisas (Kanban):**\n*   💻 **Diego Sanz:** Investigación de la API de reservas de Talleres Norte (#181).\n*   ✅ **Marta Ruiz:** Definición de flujos de usuario para la reserva de citas (#182).\n\n### ⚠️ Observación de Riesgos y Carga\n*   **Dependencia Crítica Identificada:** He tomado nota de la dependencia técnica: la integración de la web de la clínica no puede ejecutarse hasta que la App de Talleres Norte esté en producción (15 de dic). No he creado tareas de integración para la web todavía para evitar bloqueos en el flujo Kanban.\n*   **Carga de Trabajo:** La carga inicial parece equilibrada, enfocándose en las fases de investigación, diseño y configuración de entorno.\n*   **Conflicto de Carga:** No detecto conflictos de carga inmediatos, pero como los tres empleados trabajan en ambos proyectos de forma simultánea, deberás supervisar el WIP (Work In Progress) en el proyecto Kanban para que la investigación no se convierta en un cuello de botella para la fase de desarrollo.\n\nQuedo a la espera de que apruebes el alta de los empleados en Telegram.",
+   "aprobacion": {
+    "pedida_s": 78.9,
+    "aprobada_s": 94.6,
+    "resultado": [
+     {
+      "status": 200,
+      "lines": [
+       "👤 Diego Sanz: dado de alta (diego.sanz@demo.invalid)",
+       "   · Talleres Norte › App de citas: miembro",
+       "   · Clínica Dental Sonrisas › Web de la clínica: miembro",
+       "👤 Marta Ruiz: dado de alta (marta.ruiz@demo.invalid)",
+       "   · Talleres Norte › App de citas: miembro",
+       "   · Clínica Dental Sonrisas › Web de la clínica: miembro",
+       "👤 Lucia Martín: dado de alta (lucia.martin@demo.invalid)",
+       "   · Talleres Norte › App de citas: miembro",
+       "   · Clínica Dental Sonrisas › Web de la clínica: miembro"
+      ]
+     }
+    ]
+   },
+   "trayectoria": {
+    "turnos_modelo": 12,
+    "llamadas": 11,
+    "llamadas_fallidas": 2,
+    "segundos_modelo": 104.9,
+    "segundos_herramientas": 4.1,
+    "herramientas": [
+     "jarvis-pm__pm_add_people",
+     "jarvis-pm__pm_setup",
+     "jarvis-pm__pm_create_project",
+     "jarvis-pm__pm_setup",
+     "jarvis-pm__pm_add_people",
+     "jarvis-rag__jarvis_set_methodology",
+     "jarvis-pm__pm_create_task",
+     "jarvis-pm__pm_create_task",
+     "jarvis-pm__pm_create_task",
+     "jarvis-pm__pm_create_task",
+     "jarvis-pm__pm_create_task"
+    ]
+   },
+   "resultado": {
+    "hecho": 10,
+    "total": 16,
+    "comprobaciones": {
+     "proyecto Talleres Norte › App de citas": true,
+     "metodología App de citas en MEMORY.md": true,
+     "equipo en App de citas": false,
+     "tareas en App de citas": true,
+     "tareas asignadas en App de citas": false,
+     "hito del 15-dic": true,
+     "proyecto Clínica Dental Sonrisas › Web de la clínica": true,
+     "metodología Web de la clínica en MEMORY.md": true,
+     "equipo en Web de la clínica": false,
+     "tareas en Web de la clínica": false,
+     "tareas asignadas en Web de la clínica": false,
+     "cuenta de Diego Sanz": true,
+     "cuenta de Marta Ruiz": true,
+     "cuenta de Lucía Martín": true,
+     "cada empleado en los dos proyectos": false,
+     "reglas de Kanban": true
+    }
+   }
+  },
+  {
+   "segundos": 121.9,
+   "respuesta": "He completado el alta de los clientes y la gestión inicial de los proyectos. Aquí tienes el detalle:\n\n### 🏢 Empresas y Proyectos Creados\n1.  **Talleres Norte** (Metodología: **Scrum**)\n    *   Proyecto: **App de citas**\n    *   Hito final: 15-dic-2026\n2.  **Clínica Dental Sonrisas** (Metodología: **Kanban**)\n    *   Proyecto: **Web de la clínica**\n\n---\n\n### 👥 Equipo y Tareas Asignadas\nHe dado de alta al equipo (pendiente de tu aprobación en Telegram para la creación definitiva de las cuentas en OpenProject) y he repartido el trabajo inicial:\n\n**Diego Sanz (Desarrollador)**\n*   #183: Configuración del entorno de desarrollo (App de citas)\n*   #187: Desarrollo de infraestructura base (Web de la clínica)\n*   #189: Integración del módulo de reservas (Web de la clínica) — *Nota: Programada para iniciar tras el lanzamiento de la App (16-dic).*\n\n**Lucía Martín (Diseñadora)**\n*   #184: Diseño de la interfaz de usuario (UI/UX) (App de citas)\n*   #186: Diseño de interfaz web (Web de la clínica)\n\n**Marta Ruiz (Calidad)**\n*   #185: Plan de pruebas de la aplicación (App de citas)\n*   #188: Plan de QA para web (Web de la clínica)\n\n---\n\n### ⚠️ Observaciones y Conflictos de Carga\n*   **Gestión de Dependencias:** He configurado la tarea de integración para la Web de la clínica para que comience el **16 de diciembre**, asegurando que no haya solapamiento con el lanzamiento de la App el día 15.\n*   **Conflicto de Carga:**\n    *   **Diego Sanz:** Presenta una carga crítica inicial al tener tareas de infraestructura y configuración en ambos proyectos simultáneamente.\n    *   **Lucía Martín:** Tiene la carga distribuida de forma equilibrada entre diseño UI/UX y diseño web.\n    *   **Marta Ruiz:** Su carga es manejable, centrada en la planificación de calidad para ambos entornos.\n\n**Acción necesaria:** Por favor, revisa el mensaje en Telegram para **\"Dar de alta\"** a los miembros del equipo y formalizar sus cuentas en OpenProject.",
+   "aprobacion": {
+    "pedida_s": 71.9,
+    "aprobada_s": 87.1,
+    "resultado": [
+     {
+      "status": 200,
+      "lines": [
+       "👤 Diego Sanz: dado de alta (diego.sanz@demo.invalid)",
+       "   · Talleres Norte › App de citas: miembro",
+       "   · Clínica Dental Sonrisas › Web de la clínica: miembro",
+       "👤 Marta Ruiz: dado de alta (marta.ruiz@demo.invalid)",
+       "   · Talleres Norte › App de citas: miembro",
+       "   · Clínica Dental Sonrisas › Web de la clínica: miembro",
+       "👤 Lucía Martín: dado de alta (lucia.martin@demo.invalid)",
+       "   · Talleres Norte › App de citas: miembro",
+       "   · Clínica Dental Sonrisas › Web de la clínica: miembro"
+      ]
+     }
+    ]
+   },
+   "trayectoria": {
+    "turnos_modelo": 5,
+    "llamadas": 10,
+    "llamadas_fallidas": 0,
+    "segundos_modelo": 112.5,
+    "segundos_herramientas": 9.9,
+    "herramientas": [
+     "jarvis-pm__pm_setup",
+     "jarvis-pm__pm_setup",
+     "jarvis-pm__pm_add_people",
+     "jarvis-pm__pm_create_task",
+     "jarvis-pm__pm_create_task",
+     "jarvis-pm__pm_create_task",
+     "jarvis-pm__pm_create_task",
+     "jarvis-pm__pm_create_task",
+     "jarvis-pm__pm_create_task",
+     "jarvis-pm__pm_create_task"
+    ]
+   },
+   "resultado": {
+    "hecho": 14,
+    "total": 16,
+    "comprobaciones": {
+     "proyecto Talleres Norte › App de citas": true,
+     "metodología App de citas en MEMORY.md": true,
+     "equipo en App de citas": true,
+     "tareas en App de citas": true,
+     "tareas asignadas en App de citas": true,
+     "hito del 15-dic": false,
+     "proyecto Clínica Dental Sonrisas › Web de la clínica": true,
+     "metodología Web de la clínica en MEMORY.md": true,
+     "equipo en Web de la clínica": true,
+     "tareas en Web de la clínica": true,
+     "tareas asignadas en Web de la clínica": true,
+     "cuenta de Diego Sanz": true,
+     "cuenta de Marta Ruiz": true,
+     "cuenta de Lucía Martín": true,
+     "cada empleado en los dos proyectos": true,
+     "reglas de Kanban": false
+    }
+   }
+  }
+ ]
+}

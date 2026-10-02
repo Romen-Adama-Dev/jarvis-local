@@ -1,0 +1,16 @@
+{
+  "nombre": "Dos clientes unidos y un equipo compartido",
+  "descripcion": "Un solo mensaje (como un audio de Telegram) para que Jarvis monte dos empresas con un proyecto cada una, con metodologías distintas, unidos por una dependencia y con los mismos empleados en los dos. Referencia: docs/demo/caso-complejo.md.",
+  "mensaje": "Jarvis, tenemos dos clientes nuevos. Da de alta la empresa Talleres Norte con el proyecto App de citas, que va con Scrum, y la empresa Clínica Dental Sonrisas con el proyecto Web de la clínica, que va con Kanban. Los dos proyectos están unidos: la web de la clínica va a usar la reserva de citas que hacemos para Talleres Norte, así que la integración en la web no puede empezar hasta que la app salga a producción el 15 de diciembre. Mis empleados van a trabajar en los dos proyectos: Diego Sanz, desarrollador (diego.sanz@demo.invalid); Marta Ruiz, de calidad (marta.ruiz@demo.invalid), y Lucía Martín, diseñadora (lucia.martin@demo.invalid). Dalos de alta en OpenProject, mételos en los dos proyectos y reparte entre ellos el trabajo inicial de cada uno. Cuando acabes, dime qué has creado y si ves algún conflicto de carga.",
+  "proyectos": [
+    {"empresa": "Talleres Norte", "proyecto": "App de citas", "metodologia": "Scrum"},
+    {"empresa": "Clínica Dental Sonrisas", "proyecto": "Web de la clínica", "metodologia": "Kanban"}
+  ],
+  "personas": [
+    {"nombre": "Diego Sanz", "correo": "diego.sanz@demo.invalid"},
+    {"nombre": "Marta Ruiz", "correo": "marta.ruiz@demo.invalid"},
+    {"nombre": "Lucía Martín", "correo": "lucia.martin@demo.invalid"}
+  ],
+  "metodologias_nuevas": ["Kanban"],
+  "hito": {"proyecto": "App de citas", "fecha": "2026-12-15"}
+}
