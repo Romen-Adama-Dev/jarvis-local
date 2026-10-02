@@ -109,6 +109,7 @@
           "OPENPROJECT_HTTPS_PORT": "__OPENPROJECT_HTTPS_PORT__",
           "JARVIS_API_URL": "http://127.0.0.1:8000",
           "JARVIS_API_INTERNAL_TOKEN": "__JARVIS_API_INTERNAL_TOKEN__",
+          "JARVIS_OWNER_TELEGRAM_ID": "__TELEGRAM_USER_ID__",
           "JARVIS_OUTBOX_DIR": "__HOME__/.openclaw/workspace-jarvis/outbox"
         },
         "requestTimeoutMs": 300000

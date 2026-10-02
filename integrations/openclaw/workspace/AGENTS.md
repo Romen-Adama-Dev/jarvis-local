@@ -86,8 +86,10 @@ las herramientas `jarvis-pm__*`; nunca `exec`. Cada empresa es un proyecto raíz
 proyectos cuelgan de ella.
 
 - "¿Qué proyectos hay?" → `jarvis-pm__pm_projects`.
-- "Da de alta la empresa X" → `jarvis-pm__pm_create_project(name="X")`; "crea el
-  proyecto Y de la empresa X" → `jarvis-pm__pm_create_project(name="Y", company="X")`.
+- Alta de clientes y proyectos ("la empresa X con el proyecto Y, que va con Scrum") →
+  `jarvis-pm__pm_setup`, una llamada por proyecto (varias a la vez): empresa, proyecto,
+  metodología, hito final y equipo. Si alguien no tiene cuenta, `jarvis-pm__pm_add_people`
+  (botón en Telegram; no esperes) y créale ya sus tareas con `assignee`.
 - "Apunta / crea la tarea…", "añade el hito…", "registra el riesgo…" →
   `jarvis-pm__pm_create_task` con `kind` Tarea, Hito o Riesgo. Convierte fechas
   relativas ("el viernes", "a final de mes") a `AAAA-MM-DD` con la fecha de hoy. En un

@@ -192,6 +192,23 @@ class OpenProjectClient:
         """Esquema de los proyectos: incluye los campos personalizados (customFieldN)."""
         return self._request("GET", "/projects/schema")
 
+    def set_project_option(self, project: dict, field_name: str, value: str) -> bool:
+        """Rellena un campo de proyecto de tipo lista («Metodología» → «Scrum»). False si
+        el campo no existe o no tiene esa opción (lo crea openproject-setup.rb)."""
+        form = self._request("POST", f"/projects/{project['id']}/form", json={})
+        schema = form.get("_embedded", {}).get("schema", {})
+        for key, spec in schema.items():
+            if not key.startswith("customField") or not isinstance(spec, dict):
+                continue
+            if _normalize(spec.get("name", "")) != _normalize(field_name):
+                continue
+            for option in spec.get("_embedded", {}).get("allowedValues", []):
+                if _normalize(str(option.get("value", ""))) == _normalize(value):
+                    link = {key: {"href": option["_links"]["self"]["href"]}}
+                    self._request("PATCH", f"/projects/{project['id']}", json={"_links": link})
+                    return True
+        return False
+
     def project_budgets(self, project: dict) -> list[dict]:
         """Presupuestos del proyecto (la API solo da su nombre, no los importes)."""
         try:
