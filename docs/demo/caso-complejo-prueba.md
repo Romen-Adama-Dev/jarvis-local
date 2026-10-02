@@ -65,3 +65,29 @@ añade) pasaba de 20.000 caracteres y se truncaba; ahora lo vigila
    membresías con aprobación.
 3. **Instrucciones**: en `AGENTS.md`, que al dar de alta un proyecto cree desde el principio
    las fechas, el hito final y el tipo de paquete de su metodología (historias en Scrum).
+
+## Benchmark: terminal frente a Telegram (mismo mensaje)
+
+Segunda pasada el mismo día, con OpenProject vaciado antes, el mismo mensaje inyectado en
+la sesión de Telegram del propietario (`--session-key agent:main:main --deliver`, tras
+`/new`). Tiempos sacados de la trayectoria de cada sesión
+(`openclaw sessions export-trajectory`).
+
+| | Terminal (sesión aislada) | Telegram (sesión del propietario) |
+|---|---|---|
+| Tiempo total | **4 min 17 s** | **6 min 32 s** |
+| Turnos del modelo | 10 | 8 (uno vacío de 197 s) |
+| Llamadas a herramientas | 23, en lotes paralelos | 6, de una en una |
+| Tiempo dentro de las herramientas | ~4 s | ~3 s |
+| Primer proyecto creado | 72 s | 54 s |
+| Resultado | 2 empresas, 2 proyectos, metodologías, zona Kanban, 6 tareas sin asignar | 1 empresa y 1 proyecto; se rinde y pregunta |
+| Aprobaciones pedidas | 0 (denegada por no tener chat) | 0 (no llegó a las altas) |
+
+* **El cuello de botella es el modelo**: más del 98 % del tiempo es generación de
+  `gemma4:26b` (20–35 s por turno en la L4); las herramientas tardan un segundo.
+* **Mucha variación con el mismo mensaje**: en Telegram creó Talleres Norte dos veces
+  (la segunda falló), intentó crear el proyecto de la clínica sin haber creado la empresa
+  y, tras ese error, pasó 197 s en un turno que no produjo nada antes de rendirse.
+* **Menos turnos = más rápido y más fiable**: en terminal agrupó cuatro altas en un solo
+  turno. Una herramienta que monte empresa + proyecto + metodología + miembros de una vez
+  quitaría la mitad de los turnos.
