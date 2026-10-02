@@ -188,6 +188,27 @@ class OpenProjectClient:
             },
         )
 
+    def project_schema(self) -> dict:
+        """Esquema de los proyectos: incluye los campos personalizados (customFieldN)."""
+        return self._request("GET", "/projects/schema")
+
+    def project_budgets(self, project: dict) -> list[dict]:
+        """Presupuestos del proyecto (la API solo da su nombre, no los importes)."""
+        try:
+            return self._elements(f"/projects/{project['id']}/budgets")
+        except (NotFoundError, ProviderUnavailableError):  # módulo desactivado: 403 o 404
+            return []
+
+    def sprints(self, project: dict) -> list[dict]:
+        try:
+            return self._elements(f"/projects/{project['id']}/sprints")
+        except (NotFoundError, ProviderUnavailableError):  # módulo backlogs desactivado
+            return []
+
+    def relations(self) -> list[dict]:
+        """Todas las relaciones visibles entre paquetes de trabajo (precede, bloquea…)."""
+        return self._elements("/relations", {"pageSize": 1000})
+
     def project_url(self, project: dict, view: str = "") -> str:
         base = f"{self.config.web_url}/projects/{project['identifier']}"
         return f"{base}/{view}" if view else base

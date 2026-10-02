@@ -51,6 +51,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from packages.core.directives import methodology_from_metadata, methodology_id, parse_directives
+from packages.core.errors import NotFoundError, ProviderUnavailableError, ValidationFailedError
+from packages.knowledge import plan
 
 START = "<!-- jarvis:red:start -->"
 END = "<!-- jarvis:red:end -->"
@@ -134,6 +136,17 @@ class Item:
     # Solo en las actas: títulos de las tareas que nombra (deciden qué tarea es nota).
     mentions: list[str] = field(default_factory=list)
     methodology: str = ""  # solo en documentos
+    # Plan (packages/knowledge/plan.py): solo en paquetes de trabajo de OpenProject.
+    type_name: str = ""
+    start: str = ""
+    parent: str = ""
+    sprint: str = ""
+    points: float = 0
+    estimate: float = 0.0
+    spent: float = 0.0
+    priority: str = ""
+    category: str = ""
+    links: list = field(default_factory=list)  # plan.Link
 
 
 @dataclass
@@ -153,6 +166,8 @@ class Snapshot:
     topics: list[str] = field(default_factory=list)
     has_directives: bool = False
     glossary: tuple = ()  # packages.glossary.Term, por ámbito
+    plans: dict = field(default_factory=dict)  # proyecto -> plan.ProjectPlan
+    today: str = ""  # fecha de referencia para vencimientos y conflictos (vacío = hoy)
 
 
 # --- Utilidades --------------------------------------------------------------------------
@@ -374,6 +389,7 @@ def collect(
                 detail=description.split("\nOrigen:")[0].strip()[:400],
                 url=op.work_package_url(wp),
             )
+            plan.enrich(item, wp)
             if kind in ("hito", "milestone"):
                 snap.milestones.append(item)
             elif kind in ("riesgo", "risk"):
@@ -381,6 +397,13 @@ def collect(
             else:
                 snap.tasks.append(item)
     if op:
+        snap.today = datetime.date.today().isoformat()
+        try:
+            plan.read_all(
+                op, snap, {p["name"]: p for p in by_id.values() if p["name"] in snap.projects}
+            )
+        except (ProviderUnavailableError, NotFoundError, ValidationFailedError) as exc:
+            print(f"red: sin plan de OpenProject ({exc})", file=sys.stderr)
         now = datetime.datetime.now(datetime.UTC)
         span = datetime.timedelta(days=365)
         for meeting in op.meetings(now - span, now + span):
@@ -655,6 +678,8 @@ def _work_line(kind: str, item: Item) -> str:
         parts.append(("vence " if kind == "tarea" else "") + item.date)
     if item.status:
         parts.append(item.status)
+    if extra := plan.item_extra(item):
+        parts.append(extra)
     return "- " + " · ".join(parts)
 
 
@@ -677,11 +702,13 @@ def _leaf(path: str, kind: str, item: Item, parent: str, company: str = "") -> P
         ("Personas" if kind == "reunion" else "Responsable", ", ".join(item.people)),
         ("OpenProject", f"[#{item.id}]({item.url})" if item.url else ""),
         ("Metodología", item.methodology),
+        *plan.item_facts(item),
     ]
     lines = [f"# {_label(path)}", "", f"{LEAF_LABELS[kind]} de {link(parent)}", ""]
     lines += [f"- **{k}:** {v}" for k, v in facts if v]
     if item.detail and kind != "documento":  # en documentos es el nombre del archivo
         lines += ["", item.detail]
+    lines += plan.link_lines(item)
     rels = []
     if item.project:
         rels.append(_rel("pertenece-a", _project_id(item.company, item.project), item.project))
@@ -690,6 +717,10 @@ def _leaf(path: str, kind: str, item: Item, parent: str, company: str = "") -> P
     rels += [_rel("responsable", _person_id(p), p) for p in item.people]
     if item.methodology:
         rels.append(_rel("metodologia", _method_id(item.methodology), item.methodology))
+    rels += [
+        _rel(_slug(dep.verb), f"entity.{dep.kind or 'tarea'}.op-{dep.item_id}", dep.title)
+        for dep in item.links
+    ]
     page_id = f"entity.{kind}.{'op-' + item.id if item.id.isdigit() else _slug(item.id)}"
     front = _entity(kind, item.title, page_id, rels, date=item.date, status=item.status)
     return Page(path, front, "\n".join(lines))
@@ -891,6 +922,7 @@ def build_pages(snap: Snapshot) -> list[Page]:
             )
 
     # --- Proyectos ----------------------------------------------------------------------------
+    found = plan.conflicts(snap)
     order = list(PROJECT_GROUPS)
     for project, info in sorted(snap.projects.items(), key=lambda kv: _key(kv[0])):
         company = info["company"]
@@ -920,9 +952,14 @@ def build_pages(snap: Snapshot) -> list[Page]:
             for person in people:
                 roles = ", ".join(sorted(snap.roles.get(person, [])))
                 lines.append(f"- {person}" + (f" — {roles}" if roles else ""))
+        lines += plan.plan_lines(snap, project, found)
         rels = [_rel("pertenece-a", _company_id(company), company)]
         rels += [_rel("equipo", _person_id(p), p) for p in people if _key(p) != owner]
         rels += [_rel("metodologia", _method_id(m), m) for m in methods]
+        rels += [
+            _rel("depende-de", _project_id(snap.projects[other]["company"], other), other)
+            for other in plan.related_projects(snap, project)
+        ]
         front = _entity("proyecto", project, _project_id(company, project), rels, company=company)
         pages.append(_note(note, front, lines))
 
@@ -1055,6 +1092,7 @@ def build_pages(snap: Snapshot) -> list[Page]:
             lines = [f"# {_label(path)}", "", f"Persona de {link(parent)}"]
             lines += [f"Rol: {roles}"] if roles else []
             lines += ["", "## En qué participa", *work_lines(person)]
+        lines += plan.load_lines(snap, person, found)
         pages.append(_note(path, front, lines))
 
     # --- Conocimiento: metodologías, documentación general, temas y directivas ------------------
@@ -1210,6 +1248,7 @@ def build_pages(snap: Snapshot) -> list[Page]:
             "",
         ]
         lines += [f"- {link(person_path(p))} — {', '.join(person_companies[p])}" for p in nexus]
+        lines += plan.conflict_lines(found, set(nexus))
         pages.append(_branch("nexos", core, lines))
     if contacts:
         lines = ["Personas que aún no trabajan con ninguna empresa.", ""]
