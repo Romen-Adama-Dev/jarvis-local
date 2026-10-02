@@ -552,7 +552,7 @@ services:
   livesync-bridge:
     build:
       context: infra/livesync-bridge
-    image: jarvis-livesync-bridge:c3760be-borrados
+    image: jarvis-livesync-bridge:c3760be-privadas
     restart: unless-stopped
     profiles: ["livesync"]
     networks:
