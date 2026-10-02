@@ -1291,10 +1291,10 @@ def build_pages(snap: Snapshot) -> list[Page]:
         "",
         "## Verlo como árbol",
         "",
-        "En la **vista de grafo**: filtro `-path:reports -path:sources -file:index -file:AGENTS "
-        "-file:WIKI` (quita los índices del plugin de memoria, que enlazan con todo) y un grupo "
-        "de color por rama: `path:entities/Empresas`, `path:concepts/Conocimiento`, "
-        "`path:entities/Nexos`. Detalle en docs/OBSIDIAN.md.",
+        "La **vista de grafo** de Obsidian ya muestra solo este árbol: los índices e informes "
+        "del plugin de memoria se quedan en el servidor. Para colorear las ramas, un grupo por "
+        "ruta: `path:entities/Empresas`, `path:concepts/Conocimiento`, `path:entities/Nexos`. "
+        "Detalle en docs/OBSIDIAN.md.",
     ]
     pages.append(_note(core, _group(core, "jarvis.mapa", "mapa"), lines))
     return pages

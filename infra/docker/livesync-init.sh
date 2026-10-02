@@ -20,6 +20,11 @@ hostname=http://couchdb:5984 username="$COUCHDB_USER" password="$COUCHDB_PASSWOR
   "$LIVESYNC_UTILS/couchdb/provision.ts"
 
 echo "== Configuración de livesync-bridge =="
+# privatePaths: lo que el plugin de memoria genera para sí mismo (índices que enlazan con
+# todas las notas, informes, páginas de fuentes) y el estado de la red no sale del servidor.
+# En Obsidian solo queda el árbol que cuelga de "🧭 Mapa de Jarvis"; si algo de esto ya
+# estaba en CouchDB, el puente lo borra de allí al arrancar. sources/proyectos/ (actas a la
+# espera de su proyecto) sí se sincroniza.
 mkdir -p /bridge
 cat >/bridge/config.json <<JSON
 {
@@ -42,7 +47,14 @@ cat >/bridge/config.json <<JSON
       "name": "vault",
       "group": "vault",
       "baseDir": "/state/wiki/main/",
-      "scanOfflineChanges": true
+      "scanOfflineChanges": true,
+      "privatePaths": [
+        "^(index|AGENTS|WIKI|inbox)\\\\.md\$",
+        "^\\\\.gitignore\$",
+        "^(entities|concepts)/index\\\\.md\$",
+        "^(reports|syntheses|_views|\\\\.jarvis)/",
+        "^sources/(?!proyectos/)"
+      ]
     }
   ]
 }

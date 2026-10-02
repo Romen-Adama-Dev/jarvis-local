@@ -232,16 +232,23 @@ OpenProject dibujan) con su parte del árbol.
 
 ### Verlo como árbol
 
-Abre la **vista de grafo** (icono del grafo o `Ctrl/Cmd+G`) y, en sus ajustes:
+Abre la **vista de grafo** (icono del grafo o `Ctrl/Cmd+G`): no hace falta filtrar nada.
+Lo que el plugin de memoria genera para sí mismo —los índices (`index.md` en la raíz y en
+`entities/` y `concepts/`), que enlazan con todas las notas y harían de estrella en el
+centro, los informes de `reports/`, las páginas de `sources/` y `syntheses/`, `AGENTS.md`,
+`WIKI.md`, `inbox.md`— y el estado de la red (`.jarvis/`) se quedan en el servidor:
+`livesync-bridge` no los sube a CouchDB (`privatePaths` en `infra/docker/livesync-init.sh`,
+con `infra/livesync-bridge/private-paths.patch`) y, si ya estaban, los borra de allí al
+arrancar, con lo que desaparecen también del móvil. Jarvis los sigue usando igual. Las
+actas a la espera de su proyecto (`sources/proyectos/`) sí se sincronizan.
 
-* **Filtros**: `-path:reports -path:sources -file:index -file:AGENTS -file:WIKI`. Quita los
-  índices y los informes del plugin de memoria, que enlazan con todas las notas y harían
-  de estrella en el centro.
+En sus ajustes, para colorear:
+
 * **Grupos** (uno por rama, con su color): `path:entities/Empresas`,
   `path:concepts/Conocimiento`, `path:entities/Nexos`, `path:entities/Contactos`; o por
   tipo: `tag:#empresa`, `tag:#proyecto`, `tag:#persona`, `tag:#nexo`, `tag:#riesgo`,
   `tag:#hito`, `tag:#reunion`, `tag:#tarea`, `tag:#documento`, `tag:#metodologia`.
-* Para ver solo una empresa: `path:"entities/Empresas/Estudio Delta"`.
+* Para ver solo una empresa: `path:"entities/Empresas/<Empresa>"`.
 
 Los ajustes de la vista son de cada dispositivo. Los iconos de los nombres ya distinguen el
 tipo de cada nodo sin configurar nada.
@@ -271,6 +278,7 @@ mano en ellas sigue en el historial git del vault.
 | Notas creadas en el móvil que no llegan al vault del servidor | Obsidian en segundo plano (iOS pausa la sincronización) o sin Tailscale: ábrelo y lanza *Self-hosted sync: Replicate now*. Si CouchDB las recibió (`docker compose logs couchdb \| grep _bulk_docs`) pero no aparecen en el vault, `docker compose restart livesync-bridge` (visto el 18-09 en la primera sincronización del iPhone). |
 | Cambios del vault que no llegan a Obsidian | El puente detecta cambios por eventos del sistema de archivos; tras cambios hechos con el contenedor parado, se recogen al arrancar (`scanOfflineChanges`). |
 | Notas borradas del vault que siguen en el móvil | Borradas con el puente parado (reinicio, recompilación): el puente del upstream no las detectaba y quedaban en CouchDB para siempre (así quedaron 27 notas de proyectos de prueba y de la estructura plana anterior al árbol, visto el 21-09). `infra/livesync-bridge/offline-deletions.patch` lo arregla: al arrancar, cada archivo que el puente conocía y ya no está se borra también en CouchDB (`Offline deletions detected: N` en el log). Si falta más de la mitad de lo conocido (vault vacío o sin montar, restauración a medias) no borra nada y lo avisa. Las notas nuevas del móvil no se tocan: el puente nunca las vio en el vault. |
+| En el grafo salen proyectos o personas ya borrados | Son enlaces de los índices e informes del plugin de memoria, que no se regeneran solos (visto el 02-10: `entities/index.md` y `reports/` del 23-09 seguían enlazando con proyectos de prueba borrados). Desde `private-paths.patch` no llegan a Obsidian. Si aparece una nota que no es del árbol (p. ej. un índice renombrado en el móvil), bórrala en Obsidian o en el vault. En el servidor se rehacen con `docker compose exec openclaw openclaw wiki compile`. |
 
 ## Seguridad
 
@@ -287,7 +295,7 @@ mano en ellas sigue en el historial git del vault.
 | Pieza | Versión |
 |---|---|
 | CouchDB | imagen `couchdb:3.5.2` |
-| livesync-bridge | commit `c3760be` de `vrtmrz/livesync-bridge` (sin releases publicadas) más `infra/livesync-bridge/offline-deletions.patch` (imagen `jarvis-livesync-bridge:c3760be-borrados`) |
+| livesync-bridge | commit `c3760be` de `vrtmrz/livesync-bridge` (sin releases publicadas) más `infra/livesync-bridge/offline-deletions.patch` y `private-paths.patch` (imagen `jarvis-livesync-bridge:c3760be-privadas`) |
 | Herramientas de preparación y Setup URI | commit `85a12e3` de `vrtmrz/obsidian-livesync` (`LIVESYNC_UTILS_REF`) |
 
 ## Desactivar
