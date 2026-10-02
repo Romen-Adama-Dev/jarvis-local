@@ -1,0 +1,955 @@
+{
+ "generado": "2026-10-02",
+ "fuente": "OpenProject 17.8 (jarvis-gpu-us)",
+ "empresas": [
+  {
+   "nombre": "Clínica Dental Sonrisas",
+   "proyectos": [
+    {
+     "nombre": "Soporte de la web",
+     "descripcion": "Mantenimiento continuo de la web y la reserva online de la Clínica Dental Sonrisas. Kanban: flujo continuo, sin sprints; como máximo 2 tarjetas en curso por persona.",
+     "metodologia": "Kanban",
+     "estado": "en camino",
+     "estado_explicacion": "Una urgencia en curso (Safari); límite WIP respetado.",
+     "presupuestos": [
+      "Bolsa de horas de soporte (oct-dic)"
+     ],
+     "sprints": [],
+     "paquetes": [
+      {
+       "id": 113,
+       "tipo": "Tarea",
+       "titulo": "El formulario de contacto no se envía en Safari",
+       "asignado": "Diego Sanz",
+       "responsable": "Administrador Admin",
+       "estado": "En curso",
+       "fin": "2026-10-06",
+       "manual": true,
+       "imputadas_h": 5.0,
+       "prioridad": "Inmediata",
+       "categoria": "Urgente",
+       "descripcion": "Clase de servicio: urgente.\nOrigen: planificación inicial (2026-10-02).\nResponsable: Diego Sanz"
+      },
+      {
+       "id": 114,
+       "tipo": "Tarea",
+       "titulo": "Pruebas de regresión tras cada despliegue",
+       "asignado": "Marta Ruiz",
+       "responsable": "Administrador Admin",
+       "estado": "En curso",
+       "manual": true,
+       "imputadas_h": 2.0,
+       "categoria": "Estándar",
+       "descripcion": "Clase de servicio: estándar.\nOrigen: planificación inicial (2026-10-02).\nResponsable: Marta Ruiz"
+      },
+      {
+       "id": 115,
+       "tipo": "Tarea",
+       "titulo": "Revisar la accesibilidad de la página de tratamientos",
+       "asignado": "Marta Ruiz",
+       "responsable": "Administrador Admin",
+       "estado": "En curso",
+       "manual": true,
+       "imputadas_h": 3.0,
+       "categoria": "Estándar",
+       "descripcion": "Clase de servicio: estándar.\nOrigen: planificación inicial (2026-10-02).\nResponsable: Marta Ruiz"
+      },
+      {
+       "id": 116,
+       "tipo": "Tarea",
+       "titulo": "Añadir el horario de verano a la página de contacto",
+       "asignado": "Diego Sanz",
+       "responsable": "Administrador Admin",
+       "estado": "Nuevo",
+       "fin": "2026-10-20",
+       "manual": true,
+       "categoria": "Con fecha",
+       "descripcion": "Clase de servicio: con fecha.\nOrigen: planificación inicial (2026-10-02).\nResponsable: Diego Sanz"
+      },
+      {
+       "id": 117,
+       "tipo": "Tarea",
+       "titulo": "Validar los textos legales de privacidad y cookies",
+       "asignado": "Elena Castro",
+       "responsable": "Administrador Admin",
+       "estado": "En espera",
+       "manual": true,
+       "prioridad": "Alta",
+       "categoria": "Estándar",
+       "descripcion": "Clase de servicio: estándar. Bloqueada: falta el texto del delegado de protección de datos.\nOrigen: planificación inicial (2026-10-02).\nResponsable: Elena Castro"
+      },
+      {
+       "id": 118,
+       "tipo": "Tarea",
+       "titulo": "Botón de WhatsApp en la cabecera",
+       "asignado": "Diego Sanz",
+       "responsable": "Administrador Admin",
+       "estado": "Nuevo",
+       "manual": true,
+       "prioridad": "Baja",
+       "categoria": "Estándar",
+       "descripcion": "Clase de servicio: estándar.\nOrigen: planificación inicial (2026-10-02).\nResponsable: Diego Sanz"
+      },
+      {
+       "id": 119,
+       "tipo": "Tarea",
+       "titulo": "Las fotos del equipo tardan en cargar en el móvil",
+       "asignado": "Diego Sanz",
+       "responsable": "Administrador Admin",
+       "estado": "Cerrado",
+       "manual": true,
+       "imputadas_h": 4.0,
+       "categoria": "Estándar",
+       "descripcion": "Clase de servicio: estándar. Resuelto comprimiendo las imágenes.\nOrigen: planificación inicial (2026-10-02).\nResponsable: Diego Sanz"
+      },
+      {
+       "id": 120,
+       "tipo": "Riesgo",
+       "titulo": "Diego Sanz comparte dedicación con App de citas de Talleres Norte",
+       "asignado": "Administrador Admin",
+       "responsable": "Administrador Admin",
+       "estado": "Nuevo",
+       "manual": true,
+       "descripcion": "Probabilidad: alta. Impacto: medio.\nMitigación: Límite de 2 tarjetas en curso y solo la clase urgente puede saltarse la cola; se avisa a Talleres Norte cuando entra una urgencia.\nOrigen: planificación inicial (2026-10-02).\nResponsable: Romen"
+      },
+      {
+       "id": 121,
+       "tipo": "Riesgo",
+       "titulo": "Caída de la web en la campaña de ortodoncia de enero",
+       "asignado": "Diego Sanz",
+       "responsable": "Administrador Admin",
+       "estado": "Nuevo",
+       "manual": true,
+       "descripcion": "Probabilidad: baja. Impacto: alto.\nMitigación: Monitorización de disponibilidad y copia diaria.\nOrigen: planificación inicial (2026-10-02).\nResponsable: Diego Sanz"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "nombre": "Talleres Norte",
+   "proyectos": [
+    {
+     "nombre": "Apertura del taller de Gijón",
+     "descripcion": "Tercer taller de Talleres Norte en una nave alquilada en Roces (Gijón): obra de adecuación, licencia de actividad, equipamiento, contratación y apertura. Presupuesto: 240.000 €. Ciclo de vida predictivo (PMI).",
+     "metodologia": "PMI",
+     "estado": "en riesgo",
+     "estado_explicacion": "La licencia municipal tarda unas seis semanas y condiciona la inauguración; Diego Sanz depende de App de citas.",
+     "presupuestos": [
+      "Presupuesto de apertura del taller de Gijón"
+     ],
+     "sprints": [],
+     "paquetes": [
+      {
+       "id": 98,
+       "tipo": "Hito",
+       "titulo": "Acta de constitución aprobada",
+       "asignado": "Administrador Admin",
+       "responsable": "Administrador Admin",
+       "estado": "Nuevo",
+       "fin": "2026-10-09",
+       "manual": true,
+       "padre": "1. Inicio",
+       "descripcion": "Origen: planificación inicial (2026-10-02).\nResponsable: Romen"
+      },
+      {
+       "id": 99,
+       "tipo": "Hito",
+       "titulo": "Licencia de actividad concedida",
+       "asignado": "Administrador Admin",
+       "responsable": "Administrador Admin",
+       "estado": "Nuevo",
+       "fin": "2026-11-27",
+       "manual": true,
+       "padre": "3. Ejecución",
+       "categoria": "Licencias",
+       "descripcion": "Origen: planificación inicial (2026-10-02).\nResponsable: Romen"
+      },
+      {
+       "id": 100,
+       "tipo": "Hito",
+       "titulo": "Fin de obra",
+       "asignado": "Administrador Admin",
+       "responsable": "Administrador Admin",
+       "estado": "Nuevo",
+       "fin": "2026-12-18",
+       "manual": true,
+       "padre": "3. Ejecución",
+       "categoria": "Obra",
+       "descripcion": "Origen: planificación inicial (2026-10-02).\nResponsable: Romen"
+      },
+      {
+       "id": 101,
+       "tipo": "Hito",
+       "titulo": "Inauguración del taller de Gijón",
+       "asignado": "Administrador Admin",
+       "responsable": "Administrador Admin",
+       "estado": "Nuevo",
+       "fin": "2027-01-15",
+       "manual": true,
+       "padre": "4. Cierre",
+       "descripcion": "Origen: planificación inicial (2026-10-02).\nResponsable: Romen"
+      },
+      {
+       "id": 102,
+       "tipo": "Tarea",
+       "titulo": "Redactar el acta de constitución y el registro de interesados",
+       "asignado": "Administrador Admin",
+       "responsable": "Administrador Admin",
+       "estado": "En curso",
+       "inicio": "2026-10-05",
+       "fin": "2026-10-09",
+       "manual": true,
+       "padre": "1. Inicio",
+       "estimadas_h": 12.0,
+       "imputadas_h": 3.0,
+       "prioridad": "Alta",
+       "descripcion": "Con las plantillas del libro de formularios de Snyder.\nOrigen: planificación inicial (2026-10-02).\nResponsable: Romen"
+      },
+      {
+       "id": 103,
+       "tipo": "Tarea",
+       "titulo": "Solicitar la licencia de actividad al Ayuntamiento de Gijón",
+       "asignado": "Pablo Vidal",
+       "responsable": "Administrador Admin",
+       "estado": "Nuevo",
+       "inicio": "2026-10-12",
+       "fin": "2026-10-15",
+       "padre": "2. Planificación",
+       "estimadas_h": 10.0,
+       "prioridad": "Alta",
+       "categoria": "Licencias",
+       "descripcion": "Proyecto técnico de la nave y declaración responsable.\nOrigen: planificación inicial (2026-10-02).\nResponsable: Pablo Vidal"
+      },
+      {
+       "id": 104,
+       "tipo": "Tarea",
+       "titulo": "Contratar la obra de adecuación de la nave",
+       "asignado": "Pablo Vidal",
+       "responsable": "Administrador Admin",
+       "estado": "Nuevo",
+       "inicio": "2026-10-19",
+       "fin": "2026-10-30",
+       "manual": true,
+       "padre": "2. Planificación",
+       "estimadas_h": 16.0,
+       "prioridad": "Alta",
+       "categoria": "Obra",
+       "descripcion": "Tres presupuestos como mínimo; foso, tomas de aire y aseos.\nOrigen: planificación inicial (2026-10-02).\nResponsable: Pablo Vidal"
+      },
+      {
+       "id": 105,
+       "tipo": "Tarea",
+       "titulo": "Diseñar la señalética y la imagen del nuevo taller",
+       "asignado": "Lucía Martín",
+       "responsable": "Administrador Admin",
+       "estado": "Nuevo",
+       "inicio": "2026-10-26",
+       "fin": "2026-11-13",
+       "manual": true,
+       "padre": "3. Ejecución",
+       "estimadas_h": 30.0,
+       "categoria": "Imagen",
+       "descripcion": "La misma imagen que la App de citas.\nOrigen: planificación inicial (2026-10-02).\nResponsable: Lucía Martín"
+      },
+      {
+       "id": 106,
+       "tipo": "Tarea",
+       "titulo": "Plan de gestión de la calidad y auditoría de prevención",
+       "asignado": "Marta Ruiz",
+       "responsable": "Administrador Admin",
+       "estado": "Nuevo",
+       "inicio": "2026-11-02",
+       "fin": "2026-11-20",
+       "manual": true,
+       "padre": "2. Planificación",
+       "estimadas_h": 24.0,
+       "categoria": "Calidad",
+       "descripcion": "Criterios de aceptación de la obra y del equipamiento.\nOrigen: planificación inicial (2026-10-02).\nResponsable: Marta Ruiz"
+      },
+      {
+       "id": 107,
+       "tipo": "Tarea",
+       "titulo": "Contratar a dos mecánicos y un recepcionista",
+       "asignado": "Pablo Vidal",
+       "responsable": "Administrador Admin",
+       "estado": "Nuevo",
+       "inicio": "2026-11-16",
+       "fin": "2026-12-11",
+       "manual": true,
+       "padre": "3. Ejecución",
+       "estimadas_h": 20.0,
+       "categoria": "Personal",
+       "descripcion": "Origen: planificación inicial (2026-10-02).\nResponsable: Pablo Vidal"
+      },
+      {
+       "id": 108,
+       "tipo": "Tarea",
+       "titulo": "Comprar y montar los elevadores y la cabina de pintura",
+       "asignado": "Pablo Vidal",
+       "responsable": "Administrador Admin",
+       "estado": "Nuevo",
+       "inicio": "2026-12-01",
+       "fin": "2026-12-18",
+       "manual": true,
+       "padre": "3. Ejecución",
+       "estimadas_h": 12.0,
+       "categoria": "Obra",
+       "descripcion": "Origen: planificación inicial (2026-10-02).\nResponsable: Pablo Vidal"
+      },
+      {
+       "id": 109,
+       "tipo": "Tarea",
+       "titulo": "Dar de alta el taller de Gijón en la App de citas",
+       "asignado": "Diego Sanz",
+       "responsable": "Administrador Admin",
+       "estado": "Nuevo",
+       "inicio": "2026-12-21",
+       "fin": "2027-01-08",
+       "manual": true,
+       "padre": "3. Ejecución",
+       "estimadas_h": 8.0,
+       "categoria": "Sistemas",
+       "descripcion": "Depende de la salida a producción de App de citas.\nOrigen: planificación inicial (2026-10-02).\nResponsable: Diego Sanz"
+      },
+      {
+       "id": 110,
+       "tipo": "Riesgo",
+       "titulo": "Retraso en la licencia de actividad del Ayuntamiento de Gijón",
+       "asignado": "Pablo Vidal",
+       "responsable": "Administrador Admin",
+       "estado": "Nuevo",
+       "manual": true,
+       "descripcion": "Probabilidad: alta. Impacto: alto.\nMitigación: Presentar declaración responsable para abrir mientras se resuelve la licencia; gestoría especializada.\nOrigen: planificación inicial (2026-10-02).\nResponsable: Pablo Vidal"
+      },
+      {
+       "id": 111,
+       "tipo": "Riesgo",
+       "titulo": "Sobrecoste de la obra de adecuación de la nave",
+       "asignado": "Administrador Admin",
+       "responsable": "Administrador Admin",
+       "estado": "Nuevo",
+       "manual": true,
+       "descripcion": "Probabilidad: media. Impacto: alto.\nMitigación: Reserva de contingencia del 10 % y precio cerrado en el contrato.\nOrigen: planificación inicial (2026-10-02).\nResponsable: Romen"
+      },
+      {
+       "id": 112,
+       "tipo": "Riesgo",
+       "titulo": "La App de citas no esté en producción para la inauguración",
+       "asignado": "Diego Sanz",
+       "responsable": "Administrador Admin",
+       "estado": "Nuevo",
+       "manual": true,
+       "descripcion": "Probabilidad: media. Impacto: medio.\nMitigación: Reservas por teléfono las dos primeras semanas; el alta en la app no bloquea la apertura.\nOrigen: planificación inicial (2026-10-02).\nResponsable: Diego Sanz"
+      },
+      {
+       "id": 137,
+       "tipo": "Tarea de resumen",
+       "titulo": "1. Inicio",
+       "asignado": "Administrador Admin",
+       "estado": "Nuevo",
+       "inicio": "2026-10-05",
+       "fin": "2026-10-09",
+       "imputadas_h": 3.0,
+       "descripcion": "Acta de constitución e interesados.\nOrigen: planificación inicial (2026-10-02).\nResponsable: Romen"
+      },
+      {
+       "id": 138,
+       "tipo": "Tarea de resumen",
+       "titulo": "2. Planificación",
+       "asignado": "Administrador Admin",
+       "estado": "Nuevo",
+       "inicio": "2026-10-12",
+       "fin": "2026-11-20",
+       "descripcion": "Licencia, contratación de la obra y plan de calidad.\nOrigen: planificación inicial (2026-10-02).\nResponsable: Romen"
+      },
+      {
+       "id": 139,
+       "tipo": "Tarea de resumen",
+       "titulo": "3. Ejecución",
+       "asignado": "Administrador Admin",
+       "estado": "Nuevo",
+       "inicio": "2026-10-26",
+       "fin": "2027-01-08",
+       "descripcion": "Obra, equipamiento, imagen, personal y sistemas.\nOrigen: planificación inicial (2026-10-02).\nResponsable: Romen"
+      },
+      {
+       "id": 140,
+       "tipo": "Tarea de resumen",
+       "titulo": "4. Cierre",
+       "asignado": "Administrador Admin",
+       "estado": "Nuevo",
+       "inicio": "2027-01-15",
+       "fin": "2027-01-22",
+       "descripcion": "Inauguración, lecciones aprendidas y cierre administrativo.\nOrigen: planificación inicial (2026-10-02).\nResponsable: Romen"
+      },
+      {
+       "id": 141,
+       "tipo": "Tarea",
+       "titulo": "Lecciones aprendidas y cierre administrativo",
+       "asignado": "Administrador Admin",
+       "estado": "Nuevo",
+       "inicio": "2027-01-18",
+       "fin": "2027-01-22",
+       "manual": true,
+       "padre": "4. Cierre",
+       "estimadas_h": 8.0,
+       "descripcion": "Origen: planificación inicial (2026-10-02).\nResponsable: Romen"
+      }
+     ]
+    },
+    {
+     "nombre": "App de citas",
+     "descripcion": "",
+     "metodologia": "Scrum",
+     "estado": "en camino",
+     "estado_explicacion": "Sprint 1 en marcha; el acceso a la base de datos del taller sigue pendiente.",
+     "presupuestos": [
+      "Presupuesto de App de citas"
+     ],
+     "sprints": [
+      {
+       "name": "Sprint 1",
+       "start": "2026-09-28",
+       "finish": "2026-10-16",
+       "status": "en curso"
+      },
+      {
+       "name": "Sprint 2",
+       "start": "2026-10-19",
+       "finish": "2026-11-06",
+       "status": "en planificación"
+      },
+      {
+       "name": "Sprint 3",
+       "start": "2026-11-09",
+       "finish": "2026-11-27",
+       "status": "en planificación"
+      },
+      {
+       "name": "Sprint 4",
+       "start": "2026-11-30",
+       "finish": "2026-12-18",
+       "status": "en planificación"
+      }
+     ],
+     "paquetes": [
+      {
+       "id": 92,
+       "tipo": "Tarea",
+       "titulo": "Pedir al taller el acceso a la base de datos",
+       "asignado": "Administrador Admin",
+       "responsable": "Administrador Admin",
+       "estado": "En curso",
+       "fin": "2026-10-05",
+       "manual": true,
+       "padre": "Como cliente quiero reservar una cita eligiendo servicio y hueco",
+       "sprint": "Sprint 1",
+       "estimadas_h": 2.0,
+       "imputadas_h": 1.0,
+       "descripcion": "Es necesario para que Diego pueda empezar la integración.\nOrigen: acta «Kick-off de App de citas» (2026-10-01).\nResponsable: Romen"
+      },
+      {
+       "id": 93,
+       "tipo": "Tarea",
+       "titulo": "Realizar los diseños de las tres pantallas de reserva",
+       "asignado": "Lucía Martín",
+       "responsable": "Administrador Admin",
+       "estado": "En curso",
+       "fin": "2026-10-12",
+       "manual": true,
+       "padre": "Como cliente quiero reservar una cita eligiendo servicio y hueco",
+       "sprint": "Sprint 1",
+       "estimadas_h": 24.0,
+       "imputadas_h": 9.0,
+       "descripcion": "Las pantallas deben incluir: elegir servicio, elegir hueco en calendario y confirmación.\nOrigen: acta «Kick-off de App de citas» (2026-10-01).\nResponsable: Lucía Martín"
+      },
+      {
+       "id": 94,
+       "tipo": "Tarea",
+       "titulo": "Conectar el calendario de huecos con el programa del taller",
+       "asignado": "Diego Sanz",
+       "responsable": "Administrador Admin",
+       "estado": "Nuevo",
+       "fin": "2026-10-20",
+       "manual": true,
+       "padre": "Como taller quiero que los huecos salgan de mi programa de gestión",
+       "sprint": "Sprint 2",
+       "estimadas_h": 40.0,
+       "imputadas_h": 2.0,
+       "descripcion": "Requiere acceso a la base de datos del taller.\nOrigen: acta «Kick-off de App de citas» (2026-10-01).\nResponsable: Diego Sanz"
+      },
+      {
+       "id": 95,
+       "tipo": "Tarea",
+       "titulo": "Preparar el plan de pruebas con clientes",
+       "asignado": "Marta Ruiz",
+       "responsable": "Administrador Admin",
+       "estado": "Nuevo",
+       "fin": "2026-10-30",
+       "manual": true,
+       "padre": "Como equipo queremos validar la app con cinco clientes reales",
+       "sprint": "Sprint 4",
+       "estimadas_h": 16.0,
+       "imputadas_h": 1.0,
+       "descripcion": "Se realizarán pruebas con cinco clientes reales antes del lanzamiento.\nOrigen: acta «Kick-off de App de citas» (2026-10-01).\nResponsable: Marta Ruiz"
+      },
+      {
+       "id": 96,
+       "tipo": "Riesgo",
+       "titulo": "Retraso en el acceso a la base de datos del taller que afecte la integración del calendario y el proyecto",
+       "asignado": "Administrador Admin",
+       "responsable": "Administrador Admin",
+       "estado": "Nuevo",
+       "manual": true,
+       "descripcion": "Probabilidad: media. Impacto: alto.\nMitigación: Pedir el acceso esta misma semana; si no llega, Diego empezará trabajando con datos de ejemplo\nOrigen: acta «Kick-off de App de citas» (2026-10-01).\nResponsable: Romen"
+      },
+      {
+       "id": 97,
+       "tipo": "Riesgo",
+       "titulo": "Frustración de los clientes si no encuentran huecos libres los sábados",
+       "asignado": "Lucía Martín",
+       "responsable": "Administrador Admin",
+       "estado": "Nuevo",
+       "manual": true,
+       "descripcion": "Probabilidad: alta. Impacto: medio.\nMitigación: Mostrar el primer hueco disponible en la primera pantalla\nOrigen: acta «Kick-off de App de citas» (2026-10-01).\nResponsable: Lucía Martín"
+      },
+      {
+       "id": 122,
+       "tipo": "Épico",
+       "titulo": "Reserva online de citas para los tres talleres",
+       "asignado": "Administrador Admin",
+       "estado": "Nuevo",
+       "inicio": "2026-10-05",
+       "fin": "2026-12-11",
+       "imputadas_h": 13.0,
+       "descripcion": "Objetivo de producto: que los clientes reserven desde el móvil sin llamar.\nOrigen: planificación inicial (2026-10-02).\nResponsable: Romen"
+      },
+      {
+       "id": 123,
+       "tipo": "Historia de usuario",
+       "titulo": "Como cliente quiero reservar una cita eligiendo servicio y hueco",
+       "asignado": "Lucía Martín",
+       "estado": "Nuevo",
+       "inicio": "2026-10-05",
+       "fin": "2026-10-12",
+       "padre": "Reserva online de citas para los tres talleres",
+       "sprint": "Sprint 1",
+       "puntos": 8,
+       "imputadas_h": 10.0,
+       "descripcion": "Criterios de aceptación: ver la wiki «Definition of Done».\nOrigen: planificación inicial (2026-10-02).\nResponsable: Lucía Martín"
+      },
+      {
+       "id": 124,
+       "tipo": "Historia de usuario",
+       "titulo": "Como taller quiero que los huecos salgan de mi programa de gestión",
+       "asignado": "Diego Sanz",
+       "estado": "Nuevo",
+       "inicio": "2026-10-20",
+       "fin": "2026-10-20",
+       "padre": "Reserva online de citas para los tres talleres",
+       "sprint": "Sprint 2",
+       "puntos": 5,
+       "imputadas_h": 2.0,
+       "descripcion": "Criterios de aceptación: ver la wiki «Definition of Done».\nOrigen: planificación inicial (2026-10-02).\nResponsable: Diego Sanz"
+      },
+      {
+       "id": 125,
+       "tipo": "Historia de usuario",
+       "titulo": "Como cliente quiero recibir la confirmación de la cita por correo",
+       "asignado": "Diego Sanz",
+       "estado": "Nuevo",
+       "inicio": "2026-10-23",
+       "fin": "2026-10-28",
+       "padre": "Reserva online de citas para los tres talleres",
+       "sprint": "Sprint 2",
+       "puntos": 3,
+       "descripcion": "Criterios de aceptación: ver la wiki «Definition of Done».\nOrigen: planificación inicial (2026-10-02).\nResponsable: Diego Sanz"
+      },
+      {
+       "id": 126,
+       "tipo": "Historia de usuario",
+       "titulo": "Como personal del taller quiero ver las citas del día en un panel",
+       "asignado": "Diego Sanz",
+       "estado": "Nuevo",
+       "inicio": "2026-11-13",
+       "fin": "2026-11-25",
+       "padre": "Reserva online de citas para los tres talleres",
+       "sprint": "Sprint 3",
+       "puntos": 5,
+       "descripcion": "Criterios de aceptación: ver la wiki «Definition of Done».\nOrigen: planificación inicial (2026-10-02).\nResponsable: Diego Sanz"
+      },
+      {
+       "id": 127,
+       "tipo": "Historia de usuario",
+       "titulo": "Como cliente quiero ver primero el primer hueco libre del sábado",
+       "asignado": "Lucía Martín",
+       "estado": "Nuevo",
+       "inicio": "2026-11-20",
+       "fin": "2026-11-20",
+       "padre": "Reserva online de citas para los tres talleres",
+       "sprint": "Sprint 3",
+       "puntos": 2,
+       "descripcion": "Criterios de aceptación: ver la wiki «Definition of Done».\nOrigen: planificación inicial (2026-10-02).\nResponsable: Lucía Martín"
+      },
+      {
+       "id": 128,
+       "tipo": "Historia de usuario",
+       "titulo": "Como equipo queremos validar la app con cinco clientes reales",
+       "asignado": "Marta Ruiz",
+       "estado": "Nuevo",
+       "inicio": "2026-10-30",
+       "fin": "2026-12-11",
+       "padre": "Reserva online de citas para los tres talleres",
+       "sprint": "Sprint 4",
+       "puntos": 3,
+       "imputadas_h": 1.0,
+       "descripcion": "Criterios de aceptación: ver la wiki «Definition of Done».\nOrigen: planificación inicial (2026-10-02).\nResponsable: Marta Ruiz"
+      },
+      {
+       "id": 129,
+       "tipo": "Historia de usuario",
+       "titulo": "Como cliente quiero registrarme para guardar mis datos",
+       "asignado": "Diego Sanz",
+       "estado": "Nuevo",
+       "manual": true,
+       "padre": "Reserva online de citas para los tres talleres",
+       "puntos": 5,
+       "descripcion": "Criterios de aceptación: ver la wiki «Definition of Done». Fuera de la primera versión (decisión del kick-off).\nOrigen: planificación inicial (2026-10-02).\nResponsable: Diego Sanz"
+      },
+      {
+       "id": 130,
+       "tipo": "Tarea",
+       "titulo": "Plantilla del correo de confirmación",
+       "asignado": "Diego Sanz",
+       "estado": "Nuevo",
+       "fin": "2026-10-28",
+       "manual": true,
+       "padre": "Como cliente quiero recibir la confirmación de la cita por correo",
+       "sprint": "Sprint 2",
+       "estimadas_h": 6.0,
+       "descripcion": "Origen: planificación inicial (2026-10-02).\nResponsable: Diego Sanz"
+      },
+      {
+       "id": 131,
+       "tipo": "Tarea",
+       "titulo": "Configurar SPF y DKIM del dominio del taller",
+       "asignado": "Administrador Admin",
+       "estado": "Nuevo",
+       "fin": "2026-10-23",
+       "manual": true,
+       "padre": "Como cliente quiero recibir la confirmación de la cita por correo",
+       "sprint": "Sprint 2",
+       "estimadas_h": 3.0,
+       "descripcion": "Origen: planificación inicial (2026-10-02).\nResponsable: Romen"
+      },
+      {
+       "id": 132,
+       "tipo": "Tarea",
+       "titulo": "Diseñar el panel del personal",
+       "asignado": "Lucía Martín",
+       "estado": "Nuevo",
+       "fin": "2026-11-13",
+       "manual": true,
+       "padre": "Como personal del taller quiero ver las citas del día en un panel",
+       "sprint": "Sprint 3",
+       "estimadas_h": 16.0,
+       "descripcion": "Origen: planificación inicial (2026-10-02).\nResponsable: Lucía Martín"
+      },
+      {
+       "id": 133,
+       "tipo": "Tarea",
+       "titulo": "Desarrollar el panel del personal",
+       "asignado": "Diego Sanz",
+       "estado": "Nuevo",
+       "fin": "2026-11-25",
+       "manual": true,
+       "padre": "Como personal del taller quiero ver las citas del día en un panel",
+       "sprint": "Sprint 3",
+       "estimadas_h": 32.0,
+       "descripcion": "Origen: planificación inicial (2026-10-02).\nResponsable: Diego Sanz"
+      },
+      {
+       "id": 134,
+       "tipo": "Tarea",
+       "titulo": "Mostrar el primer hueco libre en la primera pantalla",
+       "asignado": "Lucía Martín",
+       "estado": "Nuevo",
+       "fin": "2026-11-20",
+       "manual": true,
+       "padre": "Como cliente quiero ver primero el primer hueco libre del sábado",
+       "sprint": "Sprint 3",
+       "estimadas_h": 8.0,
+       "descripcion": "Origen: planificación inicial (2026-10-02).\nResponsable: Lucía Martín"
+      },
+      {
+       "id": 135,
+       "tipo": "Tarea",
+       "titulo": "Ejecutar las pruebas con cinco clientes reales",
+       "asignado": "Marta Ruiz",
+       "estado": "Nuevo",
+       "fin": "2026-12-11",
+       "manual": true,
+       "padre": "Como equipo queremos validar la app con cinco clientes reales",
+       "sprint": "Sprint 4",
+       "estimadas_h": 20.0,
+       "descripcion": "Origen: planificación inicial (2026-10-02).\nResponsable: Marta Ruiz"
+      },
+      {
+       "id": 136,
+       "tipo": "Hito",
+       "titulo": "Salida a producción de App de citas",
+       "asignado": "Administrador Admin",
+       "estado": "Nuevo",
+       "fin": "2026-12-15",
+       "manual": true,
+       "descripcion": "Primera versión en producción antes del 15 de diciembre (kick-off).\nOrigen: planificación inicial (2026-10-02).\nResponsable: Romen"
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "personas": [
+  {
+   "nombre": "Elena Castro",
+   "login": "elena.castro",
+   "correo": "elena.castro@demo.invalid"
+  },
+  {
+   "nombre": "Pablo Vidal",
+   "login": "pablo.vidal",
+   "correo": "pablo.vidal@demo.invalid"
+  },
+  {
+   "nombre": "Lucía Martín",
+   "login": "lucia.martin",
+   "correo": "lucia.martin@demo.invalid"
+  },
+  {
+   "nombre": "Marta Ruiz",
+   "login": "marta.ruiz",
+   "correo": "marta.ruiz@demo.invalid"
+  },
+  {
+   "nombre": "Diego Sanz",
+   "login": "diego.sanz",
+   "correo": "diego.sanz@demo.invalid"
+  }
+ ],
+ "relaciones": [
+  {
+   "tipo": "relates",
+   "de": "Diego Sanz comparte dedicación con App de citas de Talleres Norte",
+   "a": "Conectar el calendario de huecos con el programa del taller",
+   "nota": "Misma persona y misma semana (20 de octubre)."
+  },
+  {
+   "tipo": "relates",
+   "de": "La App de citas no esté en producción para la inauguración",
+   "a": "Salida a producción de App de citas",
+   "nota": "Riesgo entre proyectos."
+  },
+  {
+   "tipo": "follows",
+   "de": "Dar de alta el taller de Gijón en la App de citas",
+   "a": "Salida a producción de App de citas",
+   "nota": "Depende de la salida a producción de App de citas (Talleres Norte)."
+  },
+  {
+   "tipo": "relates",
+   "de": "Retraso en la licencia de actividad del Ayuntamiento de Gijón",
+   "a": "Licencia de actividad concedida",
+   "nota": ""
+  },
+  {
+   "tipo": "relates",
+   "de": "Plan de gestión de la calidad y auditoría de prevención",
+   "a": "Contratar la obra de adecuación de la nave",
+   "nota": "Los criterios de aceptación de la obra salen del plan de calidad."
+  },
+  {
+   "tipo": "follows",
+   "de": "Lecciones aprendidas y cierre administrativo",
+   "a": "Inauguración del taller de Gijón",
+   "nota": ""
+  },
+  {
+   "tipo": "follows",
+   "de": "Inauguración del taller de Gijón",
+   "a": "Dar de alta el taller de Gijón en la App de citas",
+   "nota": ""
+  },
+  {
+   "tipo": "follows",
+   "de": "Inauguración del taller de Gijón",
+   "a": "Contratar a dos mecánicos y un recepcionista",
+   "nota": ""
+  },
+  {
+   "tipo": "follows",
+   "de": "Inauguración del taller de Gijón",
+   "a": "Fin de obra",
+   "nota": ""
+  },
+  {
+   "tipo": "follows",
+   "de": "Inauguración del taller de Gijón",
+   "a": "Licencia de actividad concedida",
+   "nota": "Sin licencia no se puede abrir."
+  },
+  {
+   "tipo": "follows",
+   "de": "Fin de obra",
+   "a": "Diseñar la señalética y la imagen del nuevo taller",
+   "nota": ""
+  },
+  {
+   "tipo": "follows",
+   "de": "Fin de obra",
+   "a": "Comprar y montar los elevadores y la cabina de pintura",
+   "nota": ""
+  },
+  {
+   "tipo": "follows",
+   "de": "Comprar y montar los elevadores y la cabina de pintura",
+   "a": "Contratar la obra de adecuación de la nave",
+   "nota": ""
+  },
+  {
+   "tipo": "follows",
+   "de": "Licencia de actividad concedida",
+   "a": "Solicitar la licencia de actividad al Ayuntamiento de Gijón",
+   "nota": "Plazo municipal de unas seis semanas."
+  },
+  {
+   "tipo": "follows",
+   "de": "Contratar la obra de adecuación de la nave",
+   "a": "Acta de constitución aprobada",
+   "nota": ""
+  },
+  {
+   "tipo": "follows",
+   "de": "Solicitar la licencia de actividad al Ayuntamiento de Gijón",
+   "a": "Acta de constitución aprobada",
+   "nota": ""
+  },
+  {
+   "tipo": "follows",
+   "de": "Acta de constitución aprobada",
+   "a": "Redactar el acta de constitución y el registro de interesados",
+   "nota": ""
+  },
+  {
+   "tipo": "follows",
+   "de": "Salida a producción de App de citas",
+   "a": "Ejecutar las pruebas con cinco clientes reales",
+   "nota": ""
+  },
+  {
+   "tipo": "blocks",
+   "de": "Pedir al taller el acceso a la base de datos",
+   "a": "Conectar el calendario de huecos con el programa del taller",
+   "nota": null
+  }
+ ],
+ "reuniones": [
+  {
+   "titulo": "Kick-off de App de citas",
+   "proyecto": "App de citas",
+   "inicio": "2026-10-01T07:00:00.000Z",
+   "estado": "closed"
+  },
+  {
+   "titulo": "Revisión del tablero de Soporte de la web",
+   "proyecto": "Soporte de la web",
+   "inicio": "2026-10-07T07:30:00.000Z",
+   "estado": "open"
+  },
+  {
+   "titulo": "Reunión de arranque de Apertura del taller de Gijón",
+   "proyecto": "Apertura del taller de Gijón",
+   "inicio": "2026-10-08T08:00:00.000Z",
+   "estado": "open"
+  }
+ ],
+ "horas": [
+  {
+   "persona": "Administrador Admin",
+   "dia": "2026-10-02",
+   "horas": 3.0,
+   "paquete": "Redactar el acta de constitución y el registro de interesados",
+   "comentario": "Borrador con la plantilla de Snyder."
+  },
+  {
+   "persona": "Administrador Admin",
+   "dia": "2026-10-02",
+   "horas": 1.0,
+   "paquete": "Pedir al taller el acceso a la base de datos",
+   "comentario": "Petición enviada a Pablo Vidal."
+  },
+  {
+   "persona": "Lucía Martín",
+   "dia": "2026-10-02",
+   "horas": 5.0,
+   "paquete": "Realizar los diseños de las tres pantallas de reserva",
+   "comentario": "Pantalla del calendario de huecos."
+  },
+  {
+   "persona": "Lucía Martín",
+   "dia": "2026-10-01",
+   "horas": 4.0,
+   "paquete": "Realizar los diseños de las tres pantallas de reserva",
+   "comentario": "Pantalla de elegir servicio."
+  },
+  {
+   "persona": "Marta Ruiz",
+   "dia": "2026-10-02",
+   "horas": 1.0,
+   "paquete": "Preparar el plan de pruebas con clientes",
+   "comentario": "Primer borrador de escenarios."
+  },
+  {
+   "persona": "Marta Ruiz",
+   "dia": "2026-10-01",
+   "horas": 3.0,
+   "paquete": "Revisar la accesibilidad de la página de tratamientos",
+   "comentario": "Contraste y textos alternativos."
+  },
+  {
+   "persona": "Marta Ruiz",
+   "dia": "2026-09-29",
+   "horas": 2.0,
+   "paquete": "Pruebas de regresión tras cada despliegue",
+   "comentario": "Batería de regresión básica."
+  },
+  {
+   "persona": "Diego Sanz",
+   "dia": "2026-10-02",
+   "horas": 2.0,
+   "paquete": "Conectar el calendario de huecos con el programa del taller",
+   "comentario": "Estudio del esquema del programa del taller."
+  },
+  {
+   "persona": "Diego Sanz",
+   "dia": "2026-10-01",
+   "horas": 2.0,
+   "paquete": "El formulario de contacto no se envía en Safari",
+   "comentario": "Fallo en la validación del teléfono."
+  },
+  {
+   "persona": "Diego Sanz",
+   "dia": "2026-09-30",
+   "horas": 3.0,
+   "paquete": "El formulario de contacto no se envía en Safari",
+   "comentario": "Reproducido en Safari 18."
+  },
+  {
+   "persona": "Diego Sanz",
+   "dia": "2026-09-28",
+   "horas": 4.0,
+   "paquete": "Las fotos del equipo tardan en cargar en el móvil",
+   "comentario": "Compresión y carga diferida de imágenes."
+  }
+ ]
+}
