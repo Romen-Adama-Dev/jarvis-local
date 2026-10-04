@@ -57,6 +57,18 @@ def format_timestamp(seconds: float) -> str:
     return f"{total // 3600:02d}:{total % 3600 // 60:02d}:{total % 60:02d}"
 
 
+# Lo que whisper confunde si no se lo enseñan («pemboquet» por PMBOK, «Aplecitas» por App
+# de citas): va como contexto previo (initial_prompt) junto a STT_VOCABULARY.
+BASE_VOCABULARY = (
+    "Jarvis, OpenProject, Obsidian, Telegram, PMBOK, PMI, Scrum, Kanban, Gantt, sprint, hito, "
+    "Excel, Word, PowerPoint, PDF"
+)
+
+
+def vocabulary_prompt(extra: str = "") -> str:
+    return ", ".join(x for x in (BASE_VOCABULARY, extra.strip(" ,")) if x) + "."
+
+
 def _cuda_available() -> bool:
     try:
         import ctranslate2
@@ -73,6 +85,7 @@ def transcribe(
     models_dir: Path,
     device: str = "auto",
     language: str | None = "es",
+    vocabulary: str = "",
 ) -> Transcript:
     from faster_whisper import BatchedInferencePipeline, WhisperModel
 
@@ -91,6 +104,7 @@ def transcribe(
         segments, info = pipeline.transcribe(
             str(audio_path),
             language=language or None,
+            initial_prompt=vocabulary_prompt(vocabulary),
             batch_size=8 if use_cuda else 4,
             vad_filter=True,
         )

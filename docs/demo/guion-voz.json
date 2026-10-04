@@ -1,0 +1,84 @@
+{
+ "nombre": "voz",
+ "vaciar": {
+  "empresas": [
+   "Talleres Norte"
+  ],
+  "proyectos": [
+   "Talleres Norte › Apertura del taller de Gijón"
+  ],
+  "metodologias": [],
+  "correos": [],
+  "contactos": [
+   "Pablo Vidal"
+  ]
+ },
+ "pasos": [
+  {
+   "id": "calentar",
+   "modo": "texto",
+   "dice": "Hola Jarvis, ¿estás listo?"
+  },
+  {
+   "id": "alta",
+   "modo": "voz",
+   "dice": "Hola Jarvis. Tenemos un cliente nuevo: Talleres Norte. Da de alta su proyecto Apertura del taller de Gijón, que va con PMI y termina con la inauguración el quince de enero de dos mil veintisiete."
+  },
+  {
+   "id": "pmbok",
+   "modo": "voz",
+   "dice": "Según el PMBOK, ¿qué debe incluir el acta de constitución de un proyecto?"
+  },
+  {
+   "id": "glosario",
+   "modo": "voz",
+   "dice": "¿Qué es la ruta crítica y cómo se dice en inglés?"
+  },
+  {
+   "id": "reunion",
+   "modo": "texto",
+   "reunion": "docs/demo/reunion-arranque-gijon.txt",
+   "dice": "Es la grabación de la reunión de arranque del proyecto de Gijón. Haz el acta."
+  },
+  {
+   "id": "a-openproject",
+   "modo": "voz",
+   "dice": "Sí, pásalo a OpenProject."
+  },
+  {
+   "id": "acta-constitucion",
+   "modo": "voz",
+   "dice": "Prepara el acta de constitución del proyecto de Gijón en un documento de Word, con la plantilla de Snyder y lo que se decidió en la reunión. El patrocinador es Pablo Vidal."
+  },
+  {
+   "id": "informe",
+   "modo": "voz",
+   "dice": "¿Cómo va el proyecto de Gijón?"
+  },
+  {
+   "id": "excel",
+   "modo": "voz",
+   "dice": "Exporta las tareas del proyecto de Gijón a Excel."
+  },
+  {
+   "id": "convocar",
+   "modo": "voz",
+   "dice": "Convoca la próxima reunión de seguimiento del proyecto de Gijón el viernes treinta de octubre de diez a once."
+  },
+  {
+   "id": "confirmar",
+   "modo": "voz",
+   "dice": "Sí, confírmala."
+  },
+  {
+   "id": "recordar",
+   "modo": "voz",
+   "dice": "Recuerda que Pablo Vidal prefiere que le llamemos por la mañana y nunca los lunes."
+  },
+  {
+   "id": "que-sabes",
+   "modo": "voz",
+   "dice": "¿Qué sabes de Pablo Vidal?"
+  }
+ ]
+}

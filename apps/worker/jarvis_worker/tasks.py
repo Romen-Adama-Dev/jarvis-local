@@ -310,6 +310,7 @@ async def meeting_minutes(
                 models_dir=settings.jarvis_models_dir,
                 device=settings.meetings_whisper_device,
                 language=settings.meetings_language,
+                vocabulary=settings.stt_vocabulary,
             )
             if not transcript.segments:
                 await mark_failed(session, job, "No se ha reconocido voz en la grabación.")
