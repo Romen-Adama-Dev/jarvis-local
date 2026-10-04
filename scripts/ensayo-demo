@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# Ensayo de la demo (docs/demo/GUION.md): manda a Jarvis el guion paso a paso, como notas
+# de voz simuladas (Piper → whisper, igual que por Telegram) o como mensajes de texto, y
+# mide cada paso: transcripción, tiempo de Jarvis, herramientas, archivos y respuesta.
+#
+#   scripts/ensayo-demo docs/demo/guion-voz.json
+#   scripts/ensayo-demo docs/demo/guion-texto.json --desde 3 --hasta 5
+#
+# No borra nada ni pulsa botones (correos y altas esperan en Telegram). Resultados en
+# ~/jarvis-ensayos/ (fuera del repo: las respuestas llevan los enlaces del servidor).
+set -euo pipefail
+cd "$(dirname "$0")/.."
+exec python3 scripts/_ensayo_demo.py "$@"

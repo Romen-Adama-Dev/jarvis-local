@@ -99,6 +99,10 @@ class Settings(BaseSettings):
     meetings_whisper_device: str = "auto"
     meetings_language: str = "es"
     meetings_max_upload_mb: int = 500
+    # Nombres propios que la transcripción debe reconocer (clientes, proyectos, personas),
+    # además del vocabulario base de packages/meetings/transcribe.py. Lo usan también las
+    # notas de voz de OpenClaw.
+    stt_vocabulary: str = ""
     rate_limit_per_minute: int = 30
 
     @property

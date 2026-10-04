@@ -1,0 +1,87 @@
+{
+ "nombre": "texto",
+ "vaciar": {
+  "empresas": [
+   "Talleres Norte",
+   "Clínica Dental Sonrisas"
+  ],
+  "proyectos": [
+   "Talleres Norte › App de citas",
+   "Clínica Dental Sonrisas › Web de la clínica"
+  ],
+  "metodologias": [
+   "Kanban"
+  ],
+  "correos": [
+   "diego.sanz@demo.invalid",
+   "marta.ruiz@demo.invalid",
+   "lucia.martin@demo.invalid"
+  ],
+  "contactos": [
+   "Pablo Vidal"
+  ]
+ },
+ "pasos": [
+  {
+   "id": "servicios",
+   "modo": "texto",
+   "dice": "¿Qué servicios tienes y dónde los abro?"
+  },
+  {
+   "id": "dos-clientes",
+   "modo": "texto",
+   "dice": "Tenemos dos clientes nuevos. Talleres Norte, con el proyecto App de citas, que va con Scrum y sale a producción el 15 de diciembre. Y Clínica Dental Sonrisas, con el proyecto Web de la clínica, que va con Kanban. En los dos proyectos trabajan Diego Sanz, desarrollador (diego.sanz@demo.invalid), Marta Ruiz, de calidad (marta.ruiz@demo.invalid), y Lucía Martín, diseñadora (lucia.martin@demo.invalid). Dalos de alta y reparte el trabajo inicial de cada proyecto entre ellos."
+  },
+  {
+   "id": "dependencia",
+   "modo": "texto",
+   "dice": "La integración de la web de la clínica no puede empezar hasta que App de citas salga a producción. Enlázalas en OpenProject."
+  },
+  {
+   "id": "brief",
+   "modo": "texto",
+   "adjunto": "docs/demo/brief-app-citas.md",
+   "dice": "Es el brief de App de citas de Talleres Norte: añádelo a la documentación de ese proyecto."
+  },
+  {
+   "id": "rag",
+   "modo": "texto",
+   "dice": "Según el brief, ¿qué presupuesto y qué plazo tiene App de citas?"
+  },
+  {
+   "id": "abstencion",
+   "modo": "texto",
+   "dice": "¿Y cuántos empleados tiene Talleres Norte?"
+  },
+  {
+   "id": "pdf",
+   "modo": "texto",
+   "dice": "Hazme un resumen de App de citas en PDF."
+  },
+  {
+   "id": "correo",
+   "modo": "texto",
+   "dice": "Mándaselo por correo a Pablo Vidal, pablo.vidal@demo.invalid, con un texto corto."
+  },
+  {
+   "id": "pptx",
+   "modo": "texto",
+   "dice": "Hazme un PowerPoint de 4 diapositivas con el plan del primer sprint de App de citas."
+  },
+  {
+   "id": "web",
+   "modo": "texto",
+   "dice": "Busca en internet qué es DKIM."
+  },
+  {
+   "id": "web-fuentes",
+   "modo": "texto",
+   "dice": "Usa la 1 y la 2."
+  },
+  {
+   "id": "carga",
+   "modo": "texto",
+   "dice": "¿Ves algún conflicto de carga entre los dos clientes?"
+  }
+ ]
+}

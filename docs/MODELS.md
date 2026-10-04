@@ -27,7 +27,7 @@ validar todavía en hardware real.
 | `vram_7000` | ≥ 7000, < 11000 | `qwen2.5:7b` | `llama3.1:8b` | 32768 |
 | `vram_11000` | ≥ 11000, < 15000 | `qwen2.5:7b` | `qwen2.5:14b` | 32768 |
 | `vram_15000` | ≥ 15000, < 21000 | `qwen2.5:14b` | `qwen2.5:14b` | 32768 |
-| `vram_21000` | ≥ 21000, < 38000 | `gemma4:26b-a4b-it-qat` | `gemma4:26b-a4b-it-qat` | 32768 |
+| `vram_21000` | ≥ 21000, < 38000 | `gemma4:26b-a4b-it-qat` | `gemma4:26b-a4b-it-qat` | 65536 |
 | `vram_38000` | ≥ 38000, < 47000 | `qwen2.5:14b` | `qwen2.5:32b` | 32768 |
 | `vram_47000` | ≥ 47000 | `qwen2.5:32b` | `qwen2.5:72b` | 32768 |
 
@@ -49,6 +49,17 @@ OpenClaw): pedir un resumen en PDF, preguntar por la documentación y charlar.
 
 Gemma 4 razona por defecto: la API de RAG lo desactiva con `think: false` y OpenClaw
 con `reasoning_effort: "none"`. Deja además ~8 GB libres para embeddings y reranker.
+
+**Contexto de 64k (2026-10-04).** OpenClaw reserva una cuarta parte de la ventana para
+compactar (8.192 tokens con 32k) y el prompt de Jarvis (instrucciones, memoria y
+herramientas) ya ronda los 24.000 tokens: con 32k pasaba el umbral en cada mensaje y,
+tras cada respuesta, hacía un volcado de memoria y una compactación (dos llamadas más a
+Gemma, 40-60 s de GPU). Además la compactación reescribe el historial e invalida la caché
+de prompt de Ollama, así que el turno siguiente vuelve a procesar el prompt entero. Con
+65536 no compacta en una demo entera, Gemma ocupa 18,5 GB (0,6 GB más que con 32k) y los
+turnos sencillos pasan de ~50 s a ~10 s (`scripts/ensayo-demo`, docs/demo/GUION.md). La
+primera respuesta tras reiniciar Ollama u OpenClaw sigue tardando 1-4 minutos: procesa el
+prompt sin caché (~250 tok/s en la L4).
 
 ## Uso
 

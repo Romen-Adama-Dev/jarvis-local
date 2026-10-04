@@ -12,7 +12,12 @@ from packages.meetings.minutes import (
     render_minutes_markdown,
     split_words,
 )
-from packages.meetings.transcribe import Segment, Transcript, format_timestamp
+from packages.meetings.transcribe import (
+    Segment,
+    Transcript,
+    format_timestamp,
+    vocabulary_prompt,
+)
 
 
 class FakeModel:
@@ -166,3 +171,9 @@ def test_parse_tolerates_wrapped_json(raw):
     from packages.meetings.minutes import _parse
 
     assert _parse(raw) == {"titulo": "x"}
+
+
+def test_vocabulary_prompt_adds_the_owner_names_to_the_base():
+    assert vocabulary_prompt().startswith("Jarvis, OpenProject") and "PMBOK" in vocabulary_prompt()
+    prompt = vocabulary_prompt(" Talleres Norte, Gijón, ")
+    assert prompt.endswith(", Talleres Norte, Gijón.")
