@@ -1,5 +1,7 @@
 import datetime
 import json
+import sys
+import types
 
 import pytest
 
@@ -16,6 +18,7 @@ from packages.meetings.transcribe import (
     Segment,
     Transcript,
     format_timestamp,
+    transcribe,
     vocabulary_prompt,
 )
 
@@ -177,3 +180,37 @@ def test_vocabulary_prompt_adds_the_owner_names_to_the_base():
     assert vocabulary_prompt().startswith("Jarvis, OpenProject") and "PMBOK" in vocabulary_prompt()
     prompt = vocabulary_prompt(" Talleres Norte, Gijón, ")
     assert prompt.endswith(", Talleres Norte, Gijón.")
+
+
+class _FakeWhisper:
+    """faster-whisper de mentira: en GPU se queda sin memoria al transcribir."""
+
+    devices: list[str] = []
+
+    def __init__(self, model_name, device, compute_type, download_root):
+        self.device = device
+        _FakeWhisper.devices.append(f"{device}/{compute_type}")
+
+
+class _FakePipeline:
+    def __init__(self, model):
+        self.model = model
+
+    def transcribe(self, path, **kwargs):
+        if self.model.device == "cuda":
+            raise RuntimeError("CUDA failed with error out of memory")
+        info = types.SimpleNamespace(language="es", duration=86.0)
+        return iter([types.SimpleNamespace(start=0.0, end=4.0, text=" Buenos días.")]), info
+
+
+def test_meeting_falls_back_to_cpu_when_the_gpu_is_full(monkeypatch, tmp_path):
+    fake = types.ModuleType("faster_whisper")
+    fake.WhisperModel = _FakeWhisper  # type: ignore[attr-defined]
+    fake.BatchedInferencePipeline = _FakePipeline  # type: ignore[attr-defined]
+    monkeypatch.setitem(sys.modules, "faster_whisper", fake)
+    _FakeWhisper.devices = []
+    transcript = transcribe(
+        tmp_path / "reunion.ogg", model_name="large-v3-turbo", models_dir=tmp_path, device="cuda"
+    )
+    assert _FakeWhisper.devices == ["cuda/int8_float16", "cpu/int8"]
+    assert transcript.text == "Buenos días." and transcript.duration_seconds == 86.0
