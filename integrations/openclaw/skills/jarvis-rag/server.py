@@ -626,15 +626,11 @@ def jarvis_remember(about: str, text: str, new: str = "") -> str:
 def _save_directive(zone: str, name: str, text: str, replace_all: bool) -> tuple[str, str]:
     """Aplica una directiva a MEMORY.md (packages/core/directives.py) y devuelve el archivo
     resultante y la sección tal como queda."""
-    from packages.core.directives import set_directive
+    from packages.core.directives import write_directive
 
-    memory = JARVIS_WORKSPACE_DIR / "MEMORY.md"
-    current = memory.read_text(encoding="utf-8") if memory.is_file() else ""
-    updated, section = set_directive(current, zone, name, text, replace_all=replace_all)
-    tmp = memory.with_suffix(".md.tmp")
-    tmp.write_text(updated, encoding="utf-8")
-    tmp.replace(memory)
-    return updated, section
+    return write_directive(
+        JARVIS_WORKSPACE_DIR / "MEMORY.md", zone, name, text, replace_all=replace_all
+    )
 
 
 def _saved(section: str, notes: list[str]) -> str:
