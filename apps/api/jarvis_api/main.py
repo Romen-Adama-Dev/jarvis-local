@@ -20,6 +20,7 @@ from apps.api.jarvis_api.routers import (
     jobs,
     meetings,
     models,
+    pm,
     rag,
     system,
 )
@@ -94,6 +95,7 @@ def create_app() -> FastAPI:
     app.include_router(models.router, dependencies=protected)
     app.include_router(calendar.router, dependencies=protected)
     app.include_router(email.router, dependencies=protected)
+    app.include_router(pm.router, dependencies=protected)
     app.include_router(meetings.router, dependencies=protected)
 
     @app.exception_handler(JarvisError)

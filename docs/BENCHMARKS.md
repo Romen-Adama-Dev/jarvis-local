@@ -235,6 +235,49 @@ Un prompt que pedía "la terminología técnica del ámbito" no mejoró a Gemma 
 eso se descartaron tanto un traductor dedicado como el reranker multilingüe jina: la
 traducción actual ya conserva la terminología y tarda una fracción de segundo.
 
+## Benchmark de la demo: dos clientes con un solo mensaje
+
+`scripts/benchmark-demo` mide a Jarvis montando el caso de la demo
+(`docs/benchmarks/casos/demo-dos-clientes.json`, referencia en
+[demo/caso-complejo.md](demo/caso-complejo.md)): dos empresas, un proyecto en cada una
+con Scrum y Kanban, unidos por una dependencia y con tres empleados en los dos. En cada
+pasada vacía el escenario (solo lo que crea el caso), manda el mensaje en una sesión
+aislada, mide el tiempo y los turnos con la trayectoria de OpenClaw y comprueba 16
+cosas en OpenProject y en `MEMORY.md` (proyectos y empresa, metodología, equipo, tareas
+asignadas, cada empleado en los dos proyectos, hito, cuentas y reglas de Kanban).
+
+```
+scripts/benchmark-demo --veces 3                      # altas con el botón de Telegram
+scripts/benchmark-demo --veces 3 --aprobar --espera 10  # hace de propietario a los 10 s
+```
+
+### Resultados del 02-10-2026 (L4, gemma4:26b, aprobación simulada a los 10 s)
+
+| | Antes (`pm_create_project`, altas con `exec`) | Con `pm_setup` y `pm_add_people` |
+|---|---|---|
+| Tiempo (mediana) | 257 s por terminal · 392 s por Telegram | **122 s** (115–122) |
+| Turnos del modelo | 8–10 | 9 (5–12) |
+| Comprobaciones hechas | — (sin cuentas ni asignaciones) | **12/16** (10–14) |
+| Altas de empleados | imposibles (aprobación denegada sin chat) | pedidas a los 72–85 s y hechas en las 3 pasadas |
+
+Lo que aún falla a veces: definir las reglas de Kanban cuando `pm_setup` avisa de que no
+las tiene (2 de 3), repartir tareas también en el segundo proyecto (2 de 3) y llamar a
+`pm_add_people` antes de crear los proyectos (1 de 3, falla y lo repite). En la pasada 2
+Jarvis escribió «Lucia» sin tilde y la comprobación del equipo, que entonces comparaba
+nombres exactos, la dio por fallida; ahora ignora tildes y mayúsculas. El detalle de
+cada pasada está en `docs/benchmarks/demo-20261002-1248.json`.
+
+### Con dependencias entre proyectos (02-10-2026, 13:41)
+
+Con `after` en `pm_create_task`, `pm_link_tasks` y las reglas de una metodología nueva en
+la misma llamada de `pm_setup` (17 comprobaciones; se añade la dependencia entre
+proyectos): **68 s de mediana** (68–85), 8 turnos y 9 llamadas sin fallos, 13/17 (12–15).
+Faltó en las tres pasadas la dependencia entre proyectos (Jarvis la explica pero no llama
+a `pm_link_tasks`), en dos las tareas del segundo proyecto y en una las reglas de Kanban.
+Por eso `pm_setup` guarda ahora una plantilla base (`packages/core/methodologies.py`:
+Scrum, Kanban, PMI, cascada) cuando el método es nuevo y no le pasan reglas. Detalle en
+`docs/benchmarks/demo-20261002-1341.json`.
+
 ## AirLLM: evaluado y descartado
 
 El modo profundo con AirLLM (servir por capas desde disco un modelo que no cabe en

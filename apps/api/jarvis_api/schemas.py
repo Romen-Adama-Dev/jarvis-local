@@ -218,3 +218,26 @@ class CalendarConfirmRequest(BaseModel):
 
 class EmailConfirmRequest(BaseModel):
     telegram_user_id: int
+
+
+class PersonIn(BaseModel):
+    name: str
+    email: str
+
+
+class PeopleDraftRequest(BaseModel):
+    """Altas en OpenProject (jarvis-pm__pm_add_people): se aprueban con un botón."""
+
+    people: list[PersonIn]
+    projects: list[str]
+    telegram_user_id: int
+
+
+class PeopleDraftResponse(BaseModel):
+    # Sin token: la aprobación va por un botón de Telegram, no por el agente.
+    summary: str
+    expires_at: float
+
+
+class PeopleConfirmRequest(BaseModel):
+    telegram_user_id: int
