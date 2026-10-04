@@ -2,8 +2,9 @@
 
 En GPU (`device="auto"` y CUDA disponible) usa `int8_float16` y el pipeline por lotes:
 una hora de audio tarda un par de minutos y ocupa ~2 GB de VRAM junto al modelo de
-Ollama. Sin GPU cae a CPU en `int8`. El modelo se descarga la primera vez en
-`<models_dir>/whisper` y se libera al terminar para devolver la VRAM.
+Ollama. Sin GPU, o si la GPU no tiene memoria libre, transcribe en CPU en `int8`. El
+modelo se descarga la primera vez en `<models_dir>/whisper` y se libera al terminar para
+devolver la VRAM.
 
 faster-whisper decodifica el audio con PyAV: vale cualquier formato habitual (ogg/opus de
 Telegram, m4a, mp3, wav, webm de la grabadora de Obsidian...).
@@ -78,19 +79,17 @@ def _cuda_available() -> bool:
         return False
 
 
-def transcribe(
+def _transcribe_on(
+    device_name: str,
     audio_path: Path,
-    *,
     model_name: str,
     models_dir: Path,
-    device: str = "auto",
-    language: str | None = "es",
-    vocabulary: str = "",
+    language: str | None,
+    vocabulary: str,
 ) -> Transcript:
     from faster_whisper import BatchedInferencePipeline, WhisperModel
 
-    use_cuda = device == "cuda" or (device == "auto" and _cuda_available())
-    device_name = "cuda" if use_cuda else "cpu"
+    use_cuda = device_name == "cuda"
     compute_type = "int8_float16" if use_cuda else "int8"
     logger.info("meeting_transcribe_start", model=model_name, device=device_name)
     model = WhisperModel(
@@ -113,13 +112,36 @@ def transcribe(
             for s in segments
             if s.text.strip()
         ]
-        transcript = Transcript(
-            language=info.language, duration_seconds=info.duration, segments=result
-        )
+        return Transcript(language=info.language, duration_seconds=info.duration, segments=result)
     finally:
         # Devolver la VRAM antes de que el modelo de Ollama redacte el acta.
         del model
         gc.collect()
+
+
+def transcribe(
+    audio_path: Path,
+    *,
+    model_name: str,
+    models_dir: Path,
+    device: str = "auto",
+    language: str | None = "es",
+    vocabulary: str = "",
+) -> Transcript:
+    use_cuda = device == "cuda" or (device == "auto" and _cuda_available())
+    try:
+        transcript = _transcribe_on(
+            "cuda" if use_cuda else "cpu", audio_path, model_name, models_dir, language, vocabulary
+        )
+    except RuntimeError as exc:
+        # En la L4, Gemma con 64k de contexto y el modelo de embeddings ocupan ~20,7 GB de
+        # 23: el whisper de las actas (~1,5 GB) cabe con poco margen. Si un día no cabe,
+        # mejor un acta lenta en CPU que ninguna (docs/MODELS.md, «Presupuesto de VRAM»).
+        if not use_cuda or "out of memory" not in str(exc).lower():
+            raise
+        logger.warning("meeting_transcribe_gpu_oom", error=str(exc)[:200])
+        gc.collect()
+        transcript = _transcribe_on("cpu", audio_path, model_name, models_dir, language, vocabulary)
     logger.info(
         "meeting_transcribe_done",
         seconds=round(transcript.duration_seconds),
