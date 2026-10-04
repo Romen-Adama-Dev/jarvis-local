@@ -43,7 +43,7 @@ total, la reunión de prueba (1,5 min) tardó 51 segundos de punta a punta desde
 | Variable (`.env`) | Por defecto | Para qué |
 |---|---|---|
 | `MEETINGS_WHISPER_MODEL` | `large-v3-turbo` | Modelo de faster-whisper. En CPU usa `small` (lo fija `compose.cpu.yml`) o `medium` |
-| `MEETINGS_WHISPER_DEVICE` | `auto` | `cuda`, `cpu` o `auto` (GPU si la hay) |
+| `MEETINGS_WHISPER_DEVICE` | `auto` | `cuda`, `cpu` o `auto` (GPU si la hay). Si la GPU no tiene memoria libre, el acta se transcribe en CPU (más lenta) en vez de fallar |
 | `MEETINGS_LANGUAGE` | `es` | Idioma de la reunión; vacío = detectarlo |
 | `MEETINGS_MAX_UPLOAD_MB` | `500` | Tamaño máximo de una grabación |
 

@@ -61,6 +61,34 @@ turnos sencillos pasan de ~50 s a ~10 s (`scripts/ensayo-demo`, docs/demo/GUION.
 primera respuesta tras reiniciar Ollama u OpenClaw sigue tardando 1-4 minutos: procesa el
 prompt sin caché (~250 tok/s en la L4).
 
+### Presupuesto de VRAM en la L4 (2026-10-04)
+
+Medido con `nvidia-smi` y el registro de carga de Ollama, con 64k de contexto:
+
+| Qué | VRAM | Cómo se ahorra ya |
+|---|---|---|
+| Pesos de `gemma4:26b-a4b-it-qat` | 13,4 GB | Cuantizado a 4 bits (Q4_0) con QAT, entrenado para esa precisión: en BF16 serían ~50 GB |
+| Caché KV: capas globales (65.536 celdas) | 2,7 GB | En `q8_0` (`OLLAMA_KV_CACHE_TYPE`), la mitad que en FP16; la comparten las 4 conversaciones paralelas (`OLLAMA_NUM_PARALLEL`) |
+| Caché KV: capas de ventana deslizante (1.536 celdas) | 0,6 GB | 25 de las 30 capas de Gemma 4 solo miran 1.024 tokens atrás |
+| Búferes de cálculo de Ollama | 1,3 GB al cargar | — |
+| **Gemma, al cargar → tras una tarde de uso** | **18,4 → 19,8 GB** | |
+| `embeddinggemma` (memoria de OpenClaw) | 0,9 GB | Modelo de 300M parámetros |
+| Whisper de las actas (`large-v3-turbo`), solo mientras transcribe | +1,5 GB | `int8_float16`; se carga por acta y se libera al terminar (86 s de audio en 13 s) |
+| **Pico durante un acta** | **22,3 de 23,0 GB** | Si no cabe, el acta se transcribe en CPU en vez de fallar |
+
+No se entrena ni se ajusta ningún modelo (solo inferencia), así que técnicas de
+entrenamiento como la acumulación de gradientes no aplican. Si hiciera falta más margen,
+por orden de coste:
+
+* `OLLAMA_KV_CACHE_TYPE=q4_0`: −1,6 GB, con algo de pérdida de calidad en contextos
+  largos (sin medir con Jarvis).
+* `OLLAMA_CONTEXT_LENGTH=49152`: −0,7 GB, pero la conversación más larga de los ensayos
+  (36.453 tokens) llega justo al umbral de compactación de 48k (36.864).
+* `MEETINGS_WHISPER_MODEL=small` para las actas: ~1 GB menos de pico, con peor
+  transcripción.
+* `OLLAMA_NUM_PARALLEL=2`: apenas ahorra (la caché global es compartida) y frena los
+  documentos, que generan 4 secciones a la vez (`docgen_concurrency`).
+
 ## Uso
 
 ```bash
