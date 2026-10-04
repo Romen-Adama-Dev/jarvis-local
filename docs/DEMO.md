@@ -4,6 +4,10 @@ Guion para enseñar (o probar) todos los servicios de Jarvis con un proyecto fic
 **Talleres Norte › App de citas**. Sirve para una demo en directo o para que otra persona
 (p. ej. un tutor con su Telegram autorizado) lo pruebe sola. Dura unos 30-40 minutos.
 
+> Para una demo corta en directo, usa los dos guiones ensayados de
+> [demo/GUION.md](demo/GUION.md): uno por voz (≈ 12 min) y otro por texto (≈ 10 min),
+> con los tiempos medidos y lo que hay que preparar antes.
+
 ## ¿Basta con mandar un audio?
 
 En parte. Con la **grabación de una reunión** y una frase que diga de qué proyecto es,

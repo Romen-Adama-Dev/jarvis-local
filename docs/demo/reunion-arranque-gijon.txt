@@ -1,0 +1,11 @@
+# Reunión de arranque de «Apertura del taller de Gijón» para el acta de la demo (docs/demo/GUION.md).
+# Formato «voz|frase»: 0 Romen (director), 1 Pablo Vidal, 2 Diego Sanz, 3 Marta Ruiz. scripts/ensayo-demo
+# la convierte en una grabación con Piper; en la demo real, léela con otras personas y grábala con el móvil.
+0|Buenos días. Empezamos la reunión de arranque del proyecto Apertura del taller de Gijón, de Talleres Norte. Estamos Romen, director del proyecto; Pablo Vidal, gerente de Talleres Norte; Diego Sanz, de sistemas; y Marta Ruiz, de calidad.
+1|Gracias. Para Talleres Norte el objetivo es abrir el tercer taller en la nave de Roces el quince de enero, con cuatro elevadores y el mismo sistema de citas que los otros dos talleres.
+0|Primer punto, el presupuesto. Pablo confirma doscientos cuarenta mil euros, con una reserva del diez por ciento para imprevistos. Se decide que las compras de más de cinco mil euros las aprueba Pablo.
+1|Segundo punto, la licencia de actividad. Yo, Pablo, presento la solicitud en el ayuntamiento antes del viernes veintitrés de octubre. Ojo, que la licencia suele tardar dos meses: si se retrasa, no llegamos a la inauguración.
+0|Lo apuntamos como riesgo alto. Como mitigación, Diego contactará con una gestoría que conoce el trámite antes del miércoles veintiuno de octubre, y revisaremos la licencia cada quince días.
+3|Tercer punto, la calidad. Yo, Marta, tendré el plan de calidad listo el treinta de octubre, con la inspección de los elevadores antes de la apertura.
+2|Y yo, Diego, daré de alta el taller de Gijón en la App de citas antes del dieciocho de diciembre.
+0|Se decide también que la obra empezará el dos de noviembre. La próxima reunión será el viernes treinta de octubre a las diez, para revisar la licencia y el plan de calidad. Gracias a todos.

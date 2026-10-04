@@ -1,11 +1,18 @@
+import re
 from pathlib import Path
 
-WORKSPACE = Path(__file__).parents[2] / "integrations/openclaw/workspace"
-# OpenClaw recorta los archivos de arranque del workspace a 20.000 caracteres (contados
-# como en JavaScript) y avisa en el registro: "AGENTS.md is … chars (limit 20000);
-# truncating". Lo que queda fuera, Jarvis no lo lee. Además migra TOOLS.md al final de
-# AGENTS.md ("## Tools / ### Local notes (migrated from TOOLS.md)").
-OPENCLAW_BOOTSTRAP_LIMIT = 20_000
+OPENCLAW = Path(__file__).parents[2] / "integrations/openclaw"
+WORKSPACE = OPENCLAW / "workspace"
+# OpenClaw recorta los archivos de arranque del workspace a `bootstrapMaxChars` caracteres
+# (20.000 por defecto; la plantilla lo sube) contados como en JavaScript, y avisa en el
+# registro: "AGENTS.md is … chars (limit …); truncating". Lo que queda fuera, Jarvis no lo
+# lee. Además migra TOOLS.md al final de AGENTS.md ("## Tools / ### Local notes (migrated
+# from TOOLS.md)").
+_LIMIT = re.search(
+    r'"bootstrapMaxChars": (\d+)',
+    (OPENCLAW / "config/openclaw.template.json").read_text(encoding="utf-8"),
+)
+OPENCLAW_BOOTSTRAP_LIMIT = int(_LIMIT.group(1)) if _LIMIT else 20_000
 MIGRATION_HEADER = "\n\n## Tools\n\n### Local notes (migrated from TOOLS.md)\n\n"
 # Valores largos para los marcadores, para no quedarse justo con los de este servidor.
 LONG_OWNER = "Nombre Apellido1 X"  # 18 caracteres

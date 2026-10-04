@@ -89,6 +89,16 @@ if tailscale status >/dev/null 2>&1; then
   TAILSCALE_MODE=serve
 fi
 
+# Notas de voz: whisper.cpp en CPU va mejor con un hilo por núcleo físico (con todos los
+# hilos lógicos, si Ollama también tira de CPU, OpenMP se atasca: 12 s → 40 s por nota), y
+# el vocabulario en --prompt le enseña los nombres que si no confunde (PMBOK → «pemboquet»;
+# el mismo que BASE_VOCABULARY de packages/meetings/transcribe.py, más STT_VOCABULARY).
+WHISPER_THREADS=$(($(nproc) / 2))
+[[ "$WHISPER_THREADS" -ge 1 ]] || WHISPER_THREADS=1
+STT_PROMPT="Jarvis, OpenProject, Obsidian, Telegram, PMBOK, PMI, Scrum, Kanban, Gantt, sprint, hito, Excel, Word, PowerPoint, PDF"
+[[ -z "${STT_VOCABULARY:-}" ]] || STT_PROMPT="$STT_PROMPT, $STT_VOCABULARY"
+STT_PROMPT="$(sed_escape "$(printf '%s' "$STT_PROMPT" | tr -d '"\\')")."
+
 echo "== Generando $CONFIG desde la plantilla =="
 sed -e "s/__TELEGRAM_USER_ID__/${TELEGRAM_USER_ID}/g" \
   -e "s/__TELEGRAM_ENABLED__/${TELEGRAM_ENABLED}/g" \
@@ -105,7 +115,9 @@ sed -e "s/__TELEGRAM_USER_ID__/${TELEGRAM_USER_ID}/g" \
   -e "s/__COUCHDB_PORT__/${COUCHDB_PORT:-5984}/g" \
   -e "s/__LIVESYNC_HTTPS_PORT__/${LIVESYNC_HTTPS_PORT:-8443}/g" \
   -e "s|__WHISPER_CLI__|/usr/local/bin/whisper-cli|g" \
-  -e "s/__WHISPER_THREADS__/$(nproc)/g" \
+  -e "s/__WHISPER_THREADS__/${WHISPER_THREADS}/g" \
+  -e "s|__STT_LANGUAGE__|${STT_LANGUAGE:-es}|g" \
+  -e "s|__STT_PROMPT__|${STT_PROMPT}|g" \
   "$TEMPLATE" >"$CONFIG"
 chmod 600 "$CONFIG"
 
@@ -125,6 +137,14 @@ for f in SOUL.md IDENTITY.md USER.md TOOLS.md HEARTBEAT.md MEMORY.md; do
   [[ -f "$WORKSPACE/$f" ]] ||
     render_workspace_file "$APP_DIR/integrations/openclaw/workspace/$f" "$WORKSPACE/$f"
 done
+# Respuestas habladas (tts.auto inbound): por encima de TTS_MAX_CHARS caracteres la voz
+# es un resumen y el texto completo va escrito debajo. Es una preferencia local: si el
+# propietario la cambia con `/tts limit`, se respeta.
+if [[ ! -f "$STATE_DIR/settings/tts.json" ]]; then
+  mkdir -p "$STATE_DIR/settings"
+  printf '{"tts": {"maxLength": %s, "summarize": true}}\n' "${TTS_MAX_CHARS:-500}" \
+    >"$STATE_DIR/settings/tts.json"
+fi
 mkdir -p "$STATE_DIR/hooks/nueva-sesion-ayuda"
 cp "$APP_DIR"/integrations/openclaw/hooks/nueva-sesion-ayuda/* "$STATE_DIR/hooks/nueva-sesion-ayuda/"
 
