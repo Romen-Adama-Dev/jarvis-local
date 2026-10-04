@@ -13,13 +13,27 @@ cuelgan de ella. Los nombres se pueden dar tal cual los diga el usuario (sin til
 en minúsculas o con el identificador): la herramienta los resuelve.
 
 * `pm_projects`: empresas y proyectos, con su enlace.
+* `pm_setup(company, project, methodology="", description="", final_milestone="",
+  final_milestone_date="", team="", methodology_rules="")`: monta en una llamada el
+  proyecto de un cliente (crea la empresa si falta, el proyecto, su metodología en
+  MEMORY.md y en el campo «Metodología» —con sus reglas si es nueva—, el hito final y
+  mete al equipo que ya tiene cuenta). No repite nada. Dos clientes, dos llamadas a la vez.
+* `pm_add_people(people, projects)`: alta de personas (`Nombre <correo>; …`) en varios
+  proyectos (`Empresa › Proyecto; …`). Se hace cuando el propietario pulsa «Dar de alta»
+  en Telegram; al aprobarlo se les asignan las tareas que ya estaban a su nombre.
 * `pm_create_project(name, company="")`: con `company` crea un proyecto dentro de esa
   empresa; sin ella, da de alta una empresa.
 * `pm_list_tasks(project, kind="", include_closed=False, due_within_days=-1,
   overdue_only=False)`: trabajo del proyecto ordenado por vencimiento.
-* `pm_create_task(project, subject, kind="Tarea", ...)`: tipos Tarea, Hito y Riesgo (y
-  los que tenga activos el proyecto). Fechas `AAAA-MM-DD`. En un riesgo, la descripción
-  lleva probabilidad, impacto, mitigación y responsable.
+* `pm_create_task(project, subject, kind="Tarea", ..., after=0)`: tipos Tarea, Hito y
+  Riesgo (y los que tenga activos el proyecto). Fechas `AAAA-MM-DD`. `after` = lo que
+  tiene que terminar antes: el #id de un paquete o el nombre de otro proyecto (se usa su
+  hito final). En un riesgo, la descripción lleva probabilidad, impacto, mitigación y
+  responsable.
+* `pm_link_tasks(before, after, note="")`: dependencia entre dos paquetes que ya existen
+  (`before` también puede ser un proyecto: su hito final),
+  aunque sean de empresas distintas; se ve en el Gantt y la memoria de Jarvis la usa para
+  avisar si no hay margen.
 * `pm_update_task(task_id, status="", percent_done=-1, due_date="", assignee="",
   comment="")`: solo cambia lo indicado. Estados habituales: Nuevo, En curso, En espera,
   Cerrado, Rechazado.

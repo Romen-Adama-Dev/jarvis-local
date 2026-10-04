@@ -91,3 +91,11 @@ la sesión de Telegram del propietario (`--session-key agent:main:main --deliver
 * **Menos turnos = más rápido y más fiable**: en terminal agrupó cuatro altas en un solo
   turno. Una herramienta que monte empresa + proyecto + metodología + miembros de una vez
   quitaría la mitad de los turnos.
+
+## Después: `pm_setup` y `pm_add_people` (3 pasadas)
+
+Con una herramienta que monta cliente + proyecto + metodología + hito + equipo en una
+llamada y altas con el botón de Telegram (`scripts/benchmark-demo --veces 3 --aprobar`):
+**122 s de mediana** (115–122) frente a 257–392 s, 12 de 16 comprobaciones (hasta 14), y
+las altas de los tres empleados hechas en todas las pasadas, con sus tareas asignadas
+solas al aprobarlas. Detalle en docs/BENCHMARKS.md, «Benchmark de la demo».

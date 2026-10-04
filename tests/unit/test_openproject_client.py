@@ -119,6 +119,8 @@ class FakeOpenProject:
             return httpx.Response(201, json={})
         if path == "/work_packages/404":
             return httpx.Response(404, json={"message": "no"})
+        if method == "POST" and path.endswith("/relations"):
+            return httpx.Response(201, json={"type": json.loads(request.content)["type"]})
         return httpx.Response(500)
 
     def body(self, method: str, path: str) -> dict:
@@ -294,3 +296,17 @@ def test_add_member_by_name_or_email(op, fake):
     assert links["roles"] == [{"href": "/api/v3/roles/6"}]
     with pytest.raises(ValidationFailedError, match="El usuario"):
         op.add_member("migracion erp", "nadie")
+
+
+def test_relation_keeps_the_successor_dates(op, fake):
+    op.create_relation(49, 50, description="Tras la salida a producción")
+    # El sucesor tenía fecha: pasa a planificación manual para que no se mueva.
+    assert fake.body("PATCH", "/work_packages/50") == {"lockVersion": 3, "scheduleManually": True}
+    body = fake.body("POST", "/work_packages/49/relations")
+    assert body["type"] == "precedes" and body["description"] == "Tras la salida a producción"
+    assert body["_links"]["to"]["href"] == "/api/v3/work_packages/50"
+
+
+def test_relation_with_itself_is_rejected(op):
+    with pytest.raises(ValidationFailedError):
+        op.create_relation(50, 50)

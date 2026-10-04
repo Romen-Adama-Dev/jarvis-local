@@ -67,3 +67,19 @@ async def test_cancel_removes_the_pending_draft():
     pending = await service.request(1, "send_email", "x")
     await service.cancel(pending.token)
     assert store.items == {}
+
+
+def test_people_keyboard_and_text():
+    from packages.security.telegram_approval import PEOPLE_NAMESPACE, people_approval_text
+
+    buttons = approval_keyboard(TOKEN, PEOPLE_NAMESPACE)["inline_keyboard"][0]
+    assert [b["callback_data"] for b in buttons] == [
+        f"personas:alta:{TOKEN}",
+        f"personas:descartar:{TOKEN}",
+    ]
+    assert buttons[0]["text"] == "✅ Dar de alta"
+    text = people_approval_text(
+        [{"name": "Diego Sanz", "email": "diego@demo.invalid"}], ["Talleres Norte › App"], 10
+    )
+    for part in ("Diego Sanz <diego@demo.invalid>", "• Talleres Norte › App", "Caduca en 10 min."):
+        assert part in text
