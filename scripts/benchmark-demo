@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# Benchmark de la demo (docs/BENCHMARKS.md, "Benchmark de la demo"): Jarvis monta dos
+# clientes unidos y un equipo compartido con un solo mensaje, varias veces seguidas.
+#
+#   scripts/benchmark-demo                    # 3 pasadas; las altas, con el botón de Telegram
+#   scripts/benchmark-demo --veces 5 --aprobar --espera 10   # confirma las altas solo
+#
+# Borra antes de cada pasada lo que crea el caso (sus empresas, personas, líneas de
+# MEMORY.md y notas del vault) y nada más. Necesita los servicios arriba (perfiles pm y
+# vault/livesync). Resultado en docs/benchmarks/demo-<fecha>.json.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+exec python3 scripts/_benchmark_demo.py "$@"

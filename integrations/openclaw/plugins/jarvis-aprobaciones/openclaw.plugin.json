@@ -1,7 +1,7 @@
 {
   "id": "jarvis-aprobaciones",
-  "name": "Jarvis: aprobación de correos",
-  "description": "Botones Enviar/Descartar de los borradores de correo: la aprobación no pasa por el modelo",
+  "name": "Jarvis: aprobaciones",
+  "description": "Botones de aprobación de correos y de altas en OpenProject: la aprobación no pasa por el modelo",
   "activation": {
     "onStartup": true
   },

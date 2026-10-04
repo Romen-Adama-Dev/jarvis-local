@@ -192,6 +192,23 @@ class OpenProjectClient:
         """Esquema de los proyectos: incluye los campos personalizados (customFieldN)."""
         return self._request("GET", "/projects/schema")
 
+    def set_project_option(self, project: dict, field_name: str, value: str) -> bool:
+        """Rellena un campo de proyecto de tipo lista («Metodología» → «Scrum»). False si
+        el campo no existe o no tiene esa opción (lo crea openproject-setup.rb)."""
+        form = self._request("POST", f"/projects/{project['id']}/form", json={})
+        schema = form.get("_embedded", {}).get("schema", {})
+        for key, spec in schema.items():
+            if not key.startswith("customField") or not isinstance(spec, dict):
+                continue
+            if _normalize(spec.get("name", "")) != _normalize(field_name):
+                continue
+            for option in spec.get("_embedded", {}).get("allowedValues", []):
+                if _normalize(str(option.get("value", ""))) == _normalize(value):
+                    link = {key: {"href": option["_links"]["self"]["href"]}}
+                    self._request("PATCH", f"/projects/{project['id']}", json={"_links": link})
+                    return True
+        return False
+
     def project_budgets(self, project: dict) -> list[dict]:
         """Presupuestos del proyecto (la API solo da su nombre, no los importes)."""
         try:
@@ -204,6 +221,34 @@ class OpenProjectClient:
             return self._elements(f"/projects/{project['id']}/sprints")
         except (NotFoundError, ProviderUnavailableError):  # módulo backlogs desactivado
             return []
+
+    def create_relation(
+        self, before: int, after: int, kind: str = "precedes", description: str = ""
+    ) -> dict:
+        """`before` precede a (o bloquea a) `after`; pueden ser de proyectos distintos."""
+        if before == after:
+            raise ValidationFailedError("Un paquete no puede depender de sí mismo.")
+        successor = self.work_package(after)
+        if any(successor.get(k) for k in ("startDate", "dueDate", "date")) and not successor.get(
+            "scheduleManually"
+        ):
+            # Con planificación automática, OpenProject movería sus fechas al primer día
+            # posible tras el predecesor: se respetan las que dio el propietario.
+            self._request(
+                "PATCH",
+                f"/work_packages/{after}",
+                params={"notify": "false"},
+                json={"lockVersion": successor["lockVersion"], "scheduleManually": True},
+            )
+        return self._request(
+            "POST",
+            f"/work_packages/{before}/relations",
+            json={
+                "type": kind,
+                "description": description,
+                "_links": {"to": {"href": f"/api/v3/work_packages/{after}"}},
+            },
+        )
 
     def relations(self) -> list[dict]:
         """Todas las relaciones visibles entre paquetes de trabajo (precede, bloquea…)."""

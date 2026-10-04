@@ -26,6 +26,7 @@ documentos de esa metodología y los que no tienen ninguna (packages/rag/store.p
 
 import re
 from dataclasses import dataclass, field
+from pathlib import Path
 
 from packages.core.scope import slugify
 
@@ -230,3 +231,16 @@ def set_directive(
     result = re.sub(r"\n{3,}", "\n\n", result)
     result = re.sub(r"([^\n])\n(## )", r"\1\n\n\2", result)
     return result, "\n".join(new)
+
+
+def write_directive(
+    memory: Path, zone: str, name: str, body: str, *, replace_all: bool = False
+) -> tuple[str, str]:
+    """Aplica `set_directive` al archivo MEMORY.md (escritura atómica) y devuelve el archivo
+    resultante y la sección tal como queda. La usan jarvis-rag y jarvis-pm."""
+    current = memory.read_text(encoding="utf-8") if memory.is_file() else ""
+    updated, section = set_directive(current, zone, name, body, replace_all=replace_all)
+    tmp = memory.with_suffix(".md.tmp")
+    tmp.write_text(updated, encoding="utf-8")
+    tmp.replace(memory)
+    return updated, section

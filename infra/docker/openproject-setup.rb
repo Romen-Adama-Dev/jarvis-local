@@ -12,6 +12,8 @@
 #    tareas por nombre.
 # 5. El admin humano usa el correo de Jarvis (o OPENPROJECT_ADMIN_MAIL) para recibir los
 #    avisos y las invitaciones a reuniones; Jarvis no recibe correos de OpenProject.
+# 6. Campo de proyecto "Metodología" (lista, en todos los proyectos): lo rellena
+#    jarvis-pm__pm_setup con la de MEMORY.md, para verla y filtrar por ella en OpenProject.
 
 api_key = File.read("/run/jarvis/openproject_api_key").strip
 raise "clave de API vacía" if api_key.empty?
@@ -115,3 +117,20 @@ pref.settings = pref.settings.merge(
 pref.save!
 
 puts "OpenProject listo para Jarvis"
+
+# --- 6. Campo de proyecto "Metodología" ---------------------------------------------------
+methodology = ProjectCustomField.find_by(name: "Metodología")
+unless methodology
+  section = ProjectCustomFieldSection.order(:position).first ||
+            ProjectCustomFieldSection.create!(name: "Detalles del proyecto")
+  methodology = ProjectCustomField.create!(
+    name: "Metodología", field_format: "list", is_required: false, is_for_all: true,
+    admin_only: false, editable: true, possible_values: %w[PMI Scrum Kanban Cascada Híbrido],
+    project_custom_field_section: section
+  )
+  puts "campo creado: Metodología"
+end
+methodology.update!(is_for_all: true) unless methodology.is_for_all
+%w[Cascada].each do |value|
+  methodology.custom_options.create!(value:) unless methodology.custom_options.exists?(value:)
+end
