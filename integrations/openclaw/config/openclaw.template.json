@@ -24,6 +24,7 @@
       },
       "mediaMaxMb": 25,
       "pdfMaxPages": 3,
+      "bootstrapMaxChars": 24000,
       "heartbeat": {
         "target": "none"
       }
@@ -223,12 +224,14 @@
             "-m",
             "/srv/jarvis/models/whisper/ggml-small-q5_1.bin",
             "-l",
-            "auto",
+            "__STT_LANGUAGE__",
+            "--prompt",
+            "__STT_PROMPT__",
             "--no-timestamps",
-            "{{MediaPath}}"
+            "{{AttachmentPath}}"
           ],
           "timeoutSeconds": 120,
-          "maxBytes": 2097152,
+          "maxBytes": 1048576,
           "capabilities": [
             "audio"
           ]

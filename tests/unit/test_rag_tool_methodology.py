@@ -114,3 +114,28 @@ def test_methodology_tools_keep_methods_apart(rag_server, tmp_path):
     memory = (tmp_path / "MEMORY.md").read_text()
     assert "### Sprints" not in memory and "- Acme › Web: Lean" in memory
     assert "Guardado" in rag_server.jarvis_set_directive("Reuniones", "- Duración: 45 minutos")
+
+
+def test_minutes_audio_falls_back_to_latest_recording(rag_server, tmp_path, monkeypatch):
+    inbound = tmp_path / "inbound"
+    inbound.mkdir()
+    (inbound / "reunion-arranque.ogg").write_bytes(b"ogg")
+    (inbound / "notas.txt").write_text("no es audio")
+    monkeypatch.setattr(rag_server, "MEETING_AUDIO_ROOTS", (inbound,))
+    # Un nombre inventado o un .txt no es una grabación…
+    assert rag_server._resolve_audio("transcripcion_kickoff.txt") is None
+    assert rag_server._resolve_audio(str(inbound / "notas.txt")) is None
+    # …y vacío es la más reciente, que es la que usa el acta en ese caso.
+    assert rag_server._resolve_audio("") == (inbound / "reunion-arranque.ogg").resolve()
+    assert rag_server._resolve_audio("reunion-arranque.ogg").name == "reunion-arranque.ogg"
+
+
+def test_sources_are_cited_by_document_and_page(rag_server):
+    text = rag_server._format_answer(
+        {
+            "answer": "El acta autoriza el proyecto.",
+            "confidence": 0.9,
+            "sources": [{"filename": "input-PMBOK-7Ed---9379f549-d3db.pdf", "page": 34}],
+        }
+    )
+    assert "- PMBOK-7Ed (pág. 34)" in text and "Cita en tu respuesta" in text

@@ -117,8 +117,20 @@ def _format_answer(data: dict) -> str:
     lines = [data["answer"], "", "Fuentes:"]
     for source in data.get("sources", []):
         location = f"pág. {source['page']}" if source.get("page") else (source.get("section") or "")
-        lines.append(f"- {source['filename']} ({location}) [confianza {data['confidence']:.2f}]")
+        name = _document_name(source["filename"])
+        lines.append(f"- {name} ({location}) [confianza {data['confidence']:.2f}]")
+    if data.get("sources"):
+        lines.append(
+            "Cita en tu respuesta el documento y la página de lo que uses, p. ej. "
+            "«(PMBOK-7Ed, pág. 34)»: es lo que demuestra que no te lo inventas."
+        )
     return "\n".join(lines)
+
+
+def _document_name(filename: str) -> str:
+    """«input-PMBOK-7Ed---<uuid>.pdf» → «PMBOK-7Ed»: el nombre que se puede citar."""
+    stem = Path(filename).stem.removeprefix("input-").split("---", 1)[0]
+    return stem or filename
 
 
 @mcp.tool()
@@ -557,7 +569,8 @@ def _resolve_audio(file_path: str) -> Path | None:
     if file_path:
         candidate = Path(file_path).expanduser()
         if candidate.is_absolute():
-            return candidate.resolve()
+            audio = candidate.suffix.lower() in AUDIO_SUFFIXES and candidate.is_file()
+            return candidate.resolve() if audio else None
         wanted = Path(html.unescape(file_path))
         wanted_stem = _safe_stem(wanted.stem)
         matches = [
@@ -936,13 +949,20 @@ def jarvis_meeting_minutes(
     riesgos, y devuelve el acta en `format` (pdf, docx o md). La guarda también en
     Obsidian y en el RAG del proyecto.
 
-    `file_path`: nombre del audio adjunto en Telegram, ruta o nombre de un audio del vault
-    de Obsidian o de ~/jarvis-inbox; vacío = el audio más reciente recibido.
+    `file_path`: VACÍO para el audio que acaba de llegar por Telegram (el bloque [Audio]
+    trae su transcripción, no su nombre: no lo inventes); o el nombre de un audio del vault
+    de Obsidian o de ~/jarvis-inbox. Haz siempre el acta con esta herramienta, nunca a mano.
     `project`: proyecto al que pertenece (pregúntalo si no se sabe) y `company`, su
     empresa, si se sabe. `meeting_date`:
     AAAA-MM-DD, por defecto hoy. Tarda unos minutos y espera aquí; si se agota la espera
     devuelve el trabajo para recogerlo con jarvis_job_result."""
-    path = _resolve_audio(file_path)
+    path, note = _resolve_audio(file_path), ""
+    if path is None and file_path:
+        # El modelo no ve el nombre del audio de Telegram (solo su transcripción) y a veces
+        # se lo inventa: mejor la grabación más reciente que no hacer el acta.
+        path = _resolve_audio("")
+        if path is not None:
+            note = f"No hay ninguna grabación «{file_path}»: uso la más reciente, {path.name}.\n"
     if path is None:
         where = f"con el nombre {file_path}" if file_path else "en las últimas 24 horas"
         return (
@@ -976,7 +996,7 @@ def jarvis_meeting_minutes(
         poll.raise_for_status()
         job = poll.json()
         if job["status"] == "completed":
-            return _format_meeting_minutes(job_id, job.get("result") or {})
+            return note + _format_meeting_minutes(job_id, job.get("result") or {})
         if job["status"] in {"failed", "cancelled"}:
             return f"Trabajo {job_id} {job['status']}: {job.get('error') or 'sin detalle'}"
     return (

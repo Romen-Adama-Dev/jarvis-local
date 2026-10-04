@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# Deja limpio el escenario de la demo (docs/demo/GUION.md) antes de hacerla o tras
+# ensayarla: borra solo lo que crean los guiones (sus empresas, personas de prueba,
+# proyectos de MEMORY.md, documentos del RAG y notas del vault). Pide confirmación.
+#
+#   scripts/vaciar-demo docs/demo/guion-voz.json docs/demo/guion-texto.json
+set -euo pipefail
+cd "$(dirname "$0")/.."
+exec python3 scripts/_vaciar_demo.py "$@"
