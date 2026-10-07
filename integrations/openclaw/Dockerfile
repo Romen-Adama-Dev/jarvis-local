@@ -1,7 +1,8 @@
 # Imagen del gateway OpenClaw de Jarvis para docker compose: Node 24 + OpenClaw fijado,
-# las skills MCP de Python del repo (con su venv), whisper.cpp (STT en CPU) y Piper (TTS
-# es_ES). La configuración no se hornea: docker-entrypoint.sh la genera en cada arranque
-# desde integrations/openclaw/config/openclaw.template.json y .env. Contexto: raíz del repo.
+# las skills MCP de Python del repo (con su venv), whisper.cpp (STT en CPU), Piper (TTS
+# es_ES) y printcraft-cli (PDF). La configuración no se hornea: docker-entrypoint.sh la
+# genera en cada arranque desde integrations/openclaw/config/openclaw.template.json y .env.
+# Contexto: raíz del repo.
 ARG OPENCLAW_VERSION=2026.9.4
 
 FROM debian:bookworm-slim AS whisper
@@ -41,6 +42,29 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     && uv venv /opt/piper \
     && VIRTUAL_ENV=/opt/piper uv pip install piper-tts
 
+# printcraft-cli (github.com/storytold/printcraft) para la skill jarvis-pdf: solo el CLI de
+# la release para Linux, con su SHA-256. Al cambiar de versión, actualiza también la de CI.
+FROM debian:bookworm-slim AS printcraft
+ARG TARGETARCH
+ARG PRINTCRAFT_VERSION=0.2.1
+ARG PRINTCRAFT_SHA256_AMD64=73b2977330d73716971237f68f89cba6ad52cbfb563ad0ab6d9ad18f44d45192
+ARG PRINTCRAFT_SHA256_ARM64=c7ae5dac00b3c11bea4e7cc502878a1b6ab520362d09885293e48417452e5dc0
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+RUN set -eu; \
+    case "${TARGETARCH:-amd64}" in \
+      amd64) arch=x86_64; sha="$PRINTCRAFT_SHA256_AMD64" ;; \
+      arm64) arch=aarch64; sha="$PRINTCRAFT_SHA256_ARM64" ;; \
+      *) echo "printcraft-cli: arquitectura no soportada: $TARGETARCH" >&2; exit 1 ;; \
+    esac; \
+    name="printcraft-${PRINTCRAFT_VERSION}-linux-${arch}"; \
+    curl -fsSL -o /tmp/pc.tar.gz \
+      "https://github.com/storytold/printcraft/releases/download/v${PRINTCRAFT_VERSION}/${name}.tar.gz"; \
+    echo "${sha}  /tmp/pc.tar.gz" | sha256sum -c -; \
+    tar -xzf /tmp/pc.tar.gz -C /tmp "${name}/bin/printcraft-cli"; \
+    install -m 755 "/tmp/${name}/bin/printcraft-cli" /usr/local/bin/printcraft-cli
+
 FROM node:24-bookworm-slim AS node
 
 # CLI de Tailscale para `tailscale serve`/`whois` contra el tailscaled del servicio
@@ -61,6 +85,7 @@ RUN ln -s ../lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
     && npm cache clean --force
 
 COPY --from=whisper /build/bin/whisper-cli /usr/local/bin/whisper-cli
+COPY --from=printcraft /usr/local/bin/printcraft-cli /usr/local/bin/printcraft-cli
 COPY --from=tailscale /usr/local/bin/tailscale /usr/local/bin/tailscale
 COPY --from=voice-models /models /srv/jarvis/models
 COPY --from=app /opt/piper /opt/piper

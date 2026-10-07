@@ -21,7 +21,7 @@ Decisiones clave:
 * **`memory.search`**: activada con embeddings locales (`provider: ollama-embeddings`, modelo `embeddinggemma`; requiere `ollama` en `plugins.allow`). Por defecto OpenClaw usaría OpenAI, así que nunca se deja el proveedor sin fijar (principio "sin fallback a proveedores externos").
 * **Sandbox**: `agents.defaults.sandbox.mode: "off"`. Se probó `"non-main"` (sandbox Docker para sesiones no principales) pero el host no soporta el aislamiento por namespaces que requiere (`bwrap: setting up uid map: Permission denied`, ver aviso de `openclaw doctor`), y con un único usuario autorizado no hay sesiones "no principales" reales que proteger. Si en el futuro se añaden más agentes/canales, revisar esta decisión.
 * **`tools.deny`**: se deniegan `process`, `code_execution`, `browser`, `cron`, `nodes`, `gateway`, generación de imagen/música/vídeo, `tts`, las herramientas de sesiones y subagentes, entre otras (lista completa en la plantilla). `exec` **no** está denegado desde el 13-07: pasa por exec approvals (sección «Ejecución de comandos desde Telegram»).
-* **`tools.sandbox.tools.alsoAllow`** (`jarvis-rag__*`, `jarvis-calendar__*`, `jarvis-email__*`, `jarvis-office__*` y las `wiki_*`): necesario para que las herramientas del servidor MCP sigan siendo visibles si en el futuro se reactiva el sandbox.
+* **`tools.sandbox.tools.alsoAllow`** (`jarvis-rag__*`, `jarvis-calendar__*`, `jarvis-email__*`, `jarvis-office__*`, `jarvis-pdf__*` y las `wiki_*`): necesario para que las herramientas del servidor MCP sigan siendo visibles si en el futuro se reactiva el sandbox.
 * **`gateway.auth`**: token generado automáticamente por `openclaw doctor --fix` (websocket del gateway protegido incluso en loopback).
 
 ## Workspace del agente (plantillas)

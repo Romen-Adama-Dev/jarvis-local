@@ -65,6 +65,8 @@ Perfiles opcionales en `COMPOSE_PROFILES` (`.env`):
   (`.xlsx/.docx/.pptx/.ods/.odt/.odp`) con tablas, negritas y totales, incluida la
   exportación de tareas de OpenProject a Excel (`docs/DOCGEN.md`), **voz** local (whisper + Piper), **búsqueda web** con SearXNG y
   **directorio de servicios** con enlaces y estado.
+* **PDF** que le mandas: unir, dividir, extraer, borrar o girar páginas, contraseña,
+  formularios, marca de agua y reducir, con PrintCraft (`docs/EDITORES.md`).
 
 * **Menú de botones** con `/menu`: acta de reunión, añadir a la memoria, tarea en
   OpenProject, informe de estado, búsqueda web y agenda, sin escribir comandos; lo que
@@ -87,9 +89,10 @@ Estado detallado y lo que queda en `docs/ROADMAP.md`; criterios de aceptación e
 ```text
 apps/            API (FastAPI) y worker (arq)
 packages/        Dominio: core, security, documents, rag, inference, meetings, docgen,
-                 office, openproject, knowledge, imapsmtp, caldavcal, msgraph
+                 office, pdf, openproject, knowledge, imapsmtp, caldavcal, msgraph
 integrations/    OpenClaw: imagen, configuración, workspace y skills MCP
-                 (jarvis-rag, jarvis-email, jarvis-calendar, jarvis-pm, jarvis-office)
+                 (jarvis-rag, jarvis-email, jarvis-calendar, jarvis-pm, jarvis-office,
+                 jarvis-pdf)
 infra/           Arranque de los contenedores (init, OpenProject, LiveSync, Tailscale...)
 scripts/         configure-mail, configure-telegram, check-integrations, select-models...
 docs/            Documentación
