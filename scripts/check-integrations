@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Comprueba que cada integración de Jarvis responde de verdad (no solo que el contenedor
-# está "healthy"): modelos, API, RAG, búsqueda web, Telegram, correo, calendario,
+# está "healthy"): modelos, API, RAG, PDF, búsqueda web, Telegram, correo, calendario,
 # OpenProject, Obsidian (LiveSync y git) y Tailscale. Solo lee: no envía nada ni crea nada.
 #
 #   scripts/check-integrations
@@ -49,6 +49,8 @@ if running searxng; then
 else off "SearXNG" "no arrancado"; fi
 curl -fsS -m 10 -o /dev/null http://127.0.0.1:18789/ && pass "OpenClaw (panel)" "127.0.0.1:18789" \
   || bad "OpenClaw (panel)" "no responde"
+pc="$(dc exec -T openclaw printcraft-cli --version 2>/dev/null | head -1)"
+[[ "$pc" == printcraft-cli* ]] && pass "PDF (jarvis-pdf)" "$pc" || bad "PDF (jarvis-pdf)" "falta printcraft-cli en openclaw"
 
 echo "Telegram"
 bot="$(envval TELEGRAM_BOT_TOKEN)"

@@ -11,7 +11,7 @@ Telegram:
 * texto: el mensaje tal cual;
 * reunion: un guion de reunión (docs/demo/*.txt, «voz|frase») se convierte en una
   grabación de móvil y se deja en media/inbound, con el texto que la acompaña;
-* adjunto: un documento en media/inbound con su bloque <file …>.
+* adjunto: uno o varios documentos en media/inbound con su bloque <file …>.
 
 No borra nada ni pulsa botones: las aprobaciones (correo, altas) llegan al Telegram del
 propietario y aquí solo se cuentan. Como no vacía el escenario, el guion debe usar nombres
@@ -178,18 +178,23 @@ def attach(step: dict, message: str, n: int, result: dict) -> str:
         caption = f"User text:\n{message}\n" if message else ""
         return f"[Audio]\n{caption}Transcript:\n{heard['texto']}"
     if step.get("adjunto"):
-        src = ROOT / step["adjunto"]
-        shutil.copy(src, INBOUND / f"{src.stem}---{uuid.uuid4()}{src.suffix}")
-        mime = {".md": "text/markdown", ".pdf": "application/pdf"}.get(src.suffix, "text/plain")
-        extract = src.read_text(encoding="utf-8")[:1500] if src.suffix != ".pdf" else ""
-        tag = uuid.uuid4().hex[:16]
-        block = (
-            f'<file name="{src.name}" mime="{mime}">\n\n'
-            f'<<<EXTERNAL_UNTRUSTED_CONTENT id="{tag}">>>\nSource: External\n---\n{extract}\n'
-            f'<<<END_EXTERNAL_UNTRUSTED_CONTENT id="{tag}">>>\n</file>'
-        )
+        files = step["adjunto"] if isinstance(step["adjunto"], list) else [step["adjunto"]]
+        block = "\n\n".join(file_block(ROOT / name) for name in files)
         return f"{message}\n\n{block}" if message else block
     return message
+
+
+def file_block(src: Path) -> str:
+    """Deja el adjunto en media/inbound y devuelve su bloque <file …>, como por Telegram."""
+    shutil.copy(src, INBOUND / f"{src.stem}---{uuid.uuid4()}{src.suffix}")
+    mime = {".md": "text/markdown", ".pdf": "application/pdf"}.get(src.suffix, "text/plain")
+    extract = src.read_text(encoding="utf-8")[:1500] if src.suffix != ".pdf" else ""
+    tag = uuid.uuid4().hex[:16]
+    return (
+        f'<file name="{src.name}" mime="{mime}">\n\n'
+        f'<<<EXTERNAL_UNTRUSTED_CONTENT id="{tag}">>>\nSource: External\n---\n{extract}\n'
+        f'<<<END_EXTERNAL_UNTRUSTED_CONTENT id="{tag}">>>\n</file>'
+    )
 
 
 def run_step(step: dict, key: str, n: int) -> dict:
