@@ -108,6 +108,16 @@ CATALOG: tuple[Service, ...] = (
         tailscale_https_default=8447,
     ),
     Service(
+        "PhotoCraft",
+        "Edición de imagen en el navegador, como Photoshop: capas, máscaras, ajustes, filtros "
+        "y PSD (las imágenes no salen del dispositivo)",
+        "PHOTOCRAFT_PORT",
+        8099,
+        profile="photocraft",
+        tailscale_https_port_env="PHOTOCRAFT_HTTPS_PORT",
+        tailscale_https_default=8448,
+    ),
+    Service(
         "API de Jarvis",
         "RAG, documentos, actas, correo y calendario (documentación interactiva en /docs)",
         "JARVIS_API_PORT",

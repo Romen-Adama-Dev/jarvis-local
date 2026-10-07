@@ -248,7 +248,7 @@ Qué hay en el servidor, dónde se abre cada cosa y si está en marcha:
 
 Por Tailscale se publican el panel de OpenClaw (`https://<nombre>.ts.net`), OpenProject
 (`:8445`, perfil `pm`), CouchDB de LiveSync (`:8443`, perfil `livesync`) y los editores de
-`docs/EDITORES.md` (PrintCraft en `:8446` y VectorCraft en `:8447`). El resto (API,
+`docs/EDITORES.md` (PrintCraft `:8446`, VectorCraft `:8447` y PhotoCraft `:8448`). El resto (API,
 Ollama, Qdrant, SearXNG, PostgreSQL, Redis) escucha solo en `127.0.0.1`: desde el PC, túnel
 SSH (`ssh -L 8000:127.0.0.1:8000 <servidor>`) y la dirección local.
 

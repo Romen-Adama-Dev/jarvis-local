@@ -10,7 +10,7 @@
 # ollama, openclaw, api y worker usan network_mode: host y se hablan por 127.0.0.1; el
 # resto publica sus puertos solo en 127.0.0.1. Perfiles opcionales (COMPOSE_PROFILES):
 # tailscale, livesync, pm, vault, backup, admin, assistant, automation, webui, monitoring,
-# printcraft, vectorcraft.
+# printcraft, vectorcraft, photocraft.
 name: jarvis-local
 
 x-logging: &logging
@@ -501,6 +501,8 @@ services:
       PRINTCRAFT_PORT: ${PRINTCRAFT_PORT:-8097}
       VECTORCRAFT_HTTPS_PORT: ${VECTORCRAFT_HTTPS_PORT:-8447}
       VECTORCRAFT_PORT: ${VECTORCRAFT_PORT:-8098}
+      PHOTOCRAFT_HTTPS_PORT: ${PHOTOCRAFT_HTTPS_PORT:-8448}
+      PHOTOCRAFT_PORT: ${PHOTOCRAFT_PORT:-8099}
     volumes:
       - ./infra/docker/tailscale-entrypoint.sh:/opt/jarvis/tailscale-entrypoint.sh:ro
       - tailscale_state:/var/lib/tailscale
@@ -739,6 +741,22 @@ services:
     ports:
       - "127.0.0.1:${VECTORCRAFT_PORT:-8098}:8080"
 
+  # PhotoCraft (github.com/storytold/photocraft): edición de imagen con capas, máscaras,
+  # ajustes, filtros, texto y PSD reales. COMPOSE_PROFILES=photocraft (con tailscale, en
+  # https://<nombre>.ts.net:8448).
+  photocraft:
+    <<: *craft-web
+    build:
+      context: infra/docker/craft-web
+      args:
+        APP: photocraft
+        VERSION: "0.2.0"
+        SHA256: a03e6118beed115eac25e6f0d11d3a3b3a3624538bf8a77dbaebf2352bf48e5f
+    image: jarvis-photocraft:0.2.0
+    profiles: ["photocraft"]
+    ports:
+      - "127.0.0.1:${PHOTOCRAFT_PORT:-8099}:8080"
+
   changedetection:
     image: ghcr.io/dgtlmoon/changedetection.io@sha256:5438423d5e906eff4e8f7886823482ad23f472bf7b8530ccaca89fb48c337882
     restart: unless-stopped
@@ -812,6 +830,7 @@ services:
       OPENPROJECT_PORT: ${OPENPROJECT_PORT:-8090}
       PRINTCRAFT_PORT: ${PRINTCRAFT_PORT:-8097}
       VECTORCRAFT_PORT: ${VECTORCRAFT_PORT:-8098}
+      PHOTOCRAFT_PORT: ${PHOTOCRAFT_PORT:-8099}
       POSTGRES_PORT: ${POSTGRES_PORT:-5432}
       REDIS_PORT: ${REDIS_PORT:-6379}
       QDRANT_PORT: ${QDRANT_PORT:-6333}
