@@ -98,6 +98,16 @@ CATALOG: tuple[Service, ...] = (
         tailscale_https_default=8446,
     ),
     Service(
+        "VectorCraft",
+        "Ilustración vectorial en el navegador, como Illustrator: SVG, PDF, EPS y DXF (los "
+        "ficheros no salen del dispositivo)",
+        "VECTORCRAFT_PORT",
+        8098,
+        profile="vectorcraft",
+        tailscale_https_port_env="VECTORCRAFT_HTTPS_PORT",
+        tailscale_https_default=8447,
+    ),
+    Service(
         "API de Jarvis",
         "RAG, documentos, actas, correo y calendario (documentación interactiva en /docs)",
         "JARVIS_API_PORT",
