@@ -1,0 +1,42 @@
+{
+  "nombre": "pdf",
+  "pasos": [
+    {
+      "id": "unir",
+      "modo": "texto",
+      "adjunto": ["docs/demo/pdf/presupuesto-app-citas.pdf", "docs/demo/pdf/anexo-condiciones.pdf"],
+      "dice": "Únelos en un solo PDF: primero el presupuesto y luego el anexo."
+    },
+    {
+      "id": "contrasena",
+      "modo": "texto",
+      "dice": "Ahora ponle la contraseña Norte2026 al PDF unido."
+    },
+    {
+      "id": "pagina",
+      "modo": "texto",
+      "dice": "Del presupuesto que te pasé, sácame solo la página 2, la del calendario."
+    },
+    {
+      "id": "borrador",
+      "modo": "texto",
+      "dice": "Al PDF unido ponle una marca de agua que diga BORRADOR."
+    },
+    {
+      "id": "dividir",
+      "modo": "texto",
+      "dice": "Divide el PDF unido en páginas sueltas."
+    },
+    {
+      "id": "formulario",
+      "modo": "texto",
+      "adjunto": "docs/demo/pdf/solicitud-acceso.pdf",
+      "dice": "¿Qué campos tiene este formulario?"
+    },
+    {
+      "id": "rellenar",
+      "modo": "texto",
+      "dice": "Rellénalo: Ana Pérez, de Talleres Norte, ana.perez@demo.invalid, y marca que acepta las condiciones."
+    }
+  ]
+}

@@ -94,6 +94,24 @@ lugar de las de `demo.invalid`, y pulsa *Descartar* si no quieres enviar el corr
 Jarvis la menciona pero no la crea (ni con `after` en `pm_create_task`); por eso va en un
 mensaje aparte, donde la crea siempre.
 
+## PDF por Telegram (opcional)
+
+Los PDF de prueba están en [pdf/](pdf/) (datos ficticios de Talleres Norte). Encadena las
+operaciones sobre el PDF unido sin volver a adjuntarlo.
+
+| # | Escribe | Qué pasa | Jarvis |
+|---|---|---|---|
+| 1 | *Adjunta* `presupuesto-app-citas.pdf` y `anexo-condiciones.pdf` con `Únelos en un solo PDF: primero el presupuesto y luego el anexo.` | Un PDF de 3 páginas en ese orden | 24 s |
+| 2 | `Ahora ponle la contraseña Norte2026 al PDF unido.` | El unido con contraseña (AES-256); no la repite en el chat | 6 s |
+| 3 | `Del presupuesto que te pasé, sácame solo la página 2, la del calendario.` | PDF de una página | 8 s |
+| 4 | `Al PDF unido ponle una marca de agua que diga BORRADOR.` | BORRADOR en diagonal en las 3 páginas | 15 s |
+| 5 | `Divide el PDF unido en páginas sueltas.` | Tres PDF | 15 s |
+| 6 | *Adjunta* `solicitud-acceso.pdf` con `¿Qué campos tiene este formulario?` | Nombre, Empresa, Correo y la casilla Acepto | 6 s |
+| 7 | `Rellénalo: Ana Pérez, de Talleres Norte, ana.perez@demo.invalid, y marca que acepta las condiciones.` | El formulario relleno | 11 s |
+
+Unos 1,5 minutos de espera en total. En el navegador, el mismo PDF se abre en PrintCraft
+(`https://<nombre>.ts.net:8446`, `docs/EDITORES.md`).
+
 ## Qué enseñar fuera de Telegram
 
 | Dónde | Qué |
@@ -117,6 +135,7 @@ mensaje aparte, donde la crea siempre.
 ```bash
 scripts/ensayo-demo docs/demo/guion-voz.json          # notas de voz simuladas
 scripts/ensayo-demo docs/demo/guion-texto.json --desde 3 --hasta 5
+scripts/ensayo-demo docs/demo/guion-pdf.json           # PDF (jarvis-pdf)
 scripts/vaciar-demo docs/demo/guion-voz.json docs/demo/guion-texto.json
 ```
 
