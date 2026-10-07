@@ -108,6 +108,7 @@ if running tailscale; then
   serve="$(dc exec -T tailscale tailscale --socket /var/run/tailscale/tailscaled.sock serve status --json 2>/dev/null)"
   ports=(443 "$(envval LIVESYNC_HTTPS_PORT | grep . || echo 8443)" "$(envval OPENPROJECT_HTTPS_PORT | grep . || echo 8445)")
   profile printcraft && ports+=("$(envval PRINTCRAFT_HTTPS_PORT | grep . || echo 8446)")
+  profile vectorcraft && ports+=("$(envval VECTORCRAFT_HTTPS_PORT | grep . || echo 8447)")
   for p in "${ports[@]}"; do
     grep -q "ts\.net:$p\"" <<<"$serve" && pass "serve :$p" "publicado" || bad "serve :$p" "no publicado"
   done

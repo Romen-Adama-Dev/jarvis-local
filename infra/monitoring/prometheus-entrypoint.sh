@@ -26,6 +26,7 @@ to_json() {
   echo "http://127.0.0.1:${SEARXNG_PORT:-8888}/healthz searxng"
   has_profile livesync && echo "http://127.0.0.1:${COUCHDB_PORT:-5984}/_up couchdb"
   has_profile printcraft && echo "http://127.0.0.1:${PRINTCRAFT_PORT:-8097}/ printcraft"
+  has_profile vectorcraft && echo "http://127.0.0.1:${VECTORCRAFT_PORT:-8098}/ vectorcraft"
   true
 } | to_json >"$dir/http.json"
 
