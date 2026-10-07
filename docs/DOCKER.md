@@ -53,6 +53,7 @@ Perfiles opcionales (`COMPOSE_PROFILES` en `.env`, separados por comas):
 | `assistant` | changedetection |
 | `automation` | n8n |
 | `webui` | Open WebUI (habla con Ollama directamente, sin RAG ni herramientas de Jarvis) |
+| `printcraft` | PrintCraft, editor de PDF en el navegador (los PDF no salen del dispositivo); con `tailscale`, en `https://<nombre>.ts.net:8446` (`docs/EDITORES.md`) |
 
 Orden de arranque: `init` → `postgres`/`searxng`/`ollama` → `ollama-pull` y `api` →
 `worker` y `openclaw`.

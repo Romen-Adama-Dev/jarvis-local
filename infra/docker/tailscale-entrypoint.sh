@@ -18,9 +18,18 @@ until tailscale --socket="$SOCKET" status --json >/dev/null 2>&1; do sleep 1; do
 tailscale --socket="$SOCKET" up --hostname="${TS_HOSTNAME:-jarvis}" \
   ${TS_AUTHKEY:+--auth-key="$TS_AUTHKEY"} --timeout=0 &
 
+# publish <perfil> <puerto HTTPS en el tailnet> <puerto local>: publica el servicio si su
+# perfil está activo y, si no, retira una publicación anterior en ese puerto.
+publish() {
+  case ",${COMPOSE_PROFILES:-}," in
+    *,"$1",*) tailscale --socket="$SOCKET" serve --bg --yes --https="$2" "http://127.0.0.1:$3" ;;
+    *) tailscale --socket="$SOCKET" serve --yes --https="$2" off >/dev/null 2>&1 || true ;;
+  esac
+}
+
 # Cuando el nodo está conectado: nombre DNS para otros servicios (Setup URI de LiveSync,
 # enlaces de OpenProject) y los servicios de los perfiles activos publicados en el tailnet
-# por HTTPS: CouchDB (livesync) y OpenProject (pm).
+# por HTTPS: CouchDB (livesync), OpenProject (pm) y PrintCraft (printcraft).
 (
   until tailscale --socket="$SOCKET" status >/dev/null 2>&1; do sleep 5; done
   tailscale --socket="$SOCKET" status --json --peers=false \
@@ -29,22 +38,9 @@ tailscale --socket="$SOCKET" up --hostname="${TS_HOSTNAME:-jarvis}" \
     cp /var/run/tailscale/dnsname /var/run/tailscale-info/dnsname
     chmod 644 /var/run/tailscale-info/dnsname
   fi
-  port="${LIVESYNC_HTTPS_PORT:-8443}"
-  case ",${COMPOSE_PROFILES:-}," in
-    *,livesync,*)
-      tailscale --socket="$SOCKET" serve --bg --yes --https="$port" \
-        "http://127.0.0.1:${COUCHDB_PORT:-5984}"
-      ;;
-    *) tailscale --socket="$SOCKET" serve --yes --https="$port" off >/dev/null 2>&1 || true ;;
-  esac
-  port="${OPENPROJECT_HTTPS_PORT:-8445}"
-  case ",${COMPOSE_PROFILES:-}," in
-    *,pm,*)
-      tailscale --socket="$SOCKET" serve --bg --yes --https="$port" \
-        "http://127.0.0.1:${OPENPROJECT_PORT:-8090}"
-      ;;
-    *) tailscale --socket="$SOCKET" serve --yes --https="$port" off >/dev/null 2>&1 || true ;;
-  esac
+  publish livesync "${LIVESYNC_HTTPS_PORT:-8443}" "${COUCHDB_PORT:-5984}"
+  publish pm "${OPENPROJECT_HTTPS_PORT:-8445}" "${OPENPROJECT_PORT:-8090}"
+  publish printcraft "${PRINTCRAFT_HTTPS_PORT:-8446}" "${PRINTCRAFT_PORT:-8097}"
 ) &
 
 wait "$daemon"
