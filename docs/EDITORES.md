@@ -10,6 +10,7 @@ no se sube al servidor y, al guardar, se descarga en tu dispositivo.
 |---|---|---|---|---|
 | [PrintCraft](#printcraft-pdf) | PDF (como Acrobat) | `printcraft` | `https://<nombre>.ts.net:8446` | `http://127.0.0.1:8097` |
 | [VectorCraft](#vectorcraft-ilustración-vectorial) | Ilustración vectorial (como Illustrator) | `vectorcraft` | `https://<nombre>.ts.net:8447` | `http://127.0.0.1:8098` |
+| [PhotoCraft](#photocraft-imagen) | Edición de imagen (como Photoshop) | `photocraft` | `https://<nombre>.ts.net:8448` | `http://127.0.0.1:8099` |
 
 ## Cómo funciona
 
@@ -103,3 +104,15 @@ Para integrarlo hace falta un servidor MCP propio con pocas herramientas que lla
 Límites (según el propio proyecto, tiene entre el 69 y el 75 % de las funciones de
 Illustrator): sin 3D ni materiales, sin la galería de efectos de imagen y sin variables ni
 scripts.
+
+## PhotoCraft (imagen)
+
+[storytold/photocraft](https://github.com/storytold/photocraft), versión 0.2.0.
+
+* **Capas** con grupos, máscaras de píxel y vectoriales, capas de ajuste (Curvas, Niveles,
+  Tono/saturación...), estilos de capa y objetos inteligentes con filtros editables.
+* **Selección**: marcos, lazos, varita mágica, selección rápida y de objeto, y Seleccionar
+  y aplicar máscara; todo en local.
+* **Texto**, formas y pluma; filtros con vista previa; transformación libre e historial.
+* **Ficheros**: PSD y PSB reales, PNG, JPEG, TIFF, WebP, GIF, AVIF, OpenEXR y más, a 8, 16
+  y 32 bits, en RGB, escala de grises, CMYK y Lab.
