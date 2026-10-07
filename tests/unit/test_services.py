@@ -16,16 +16,24 @@ def test_statuses_follow_profiles_and_tailscale(monkeypatch):
     assert not items["Redis"].up
 
 
-def test_printcraft_only_with_its_profile(monkeypatch):
-    monkeypatch.delenv("PRINTCRAFT_PORT", raising=False)
-    monkeypatch.delenv("PRINTCRAFT_HTTPS_PORT", raising=False)
+def test_editors_only_with_their_profile(monkeypatch):
+    for env in (
+        "PRINTCRAFT_PORT",
+        "PRINTCRAFT_HTTPS_PORT",
+        "VECTORCRAFT_PORT",
+        "VECTORCRAFT_HTTPS_PORT",
+    ):
+        monkeypatch.delenv(env, raising=False)
     monkeypatch.setattr(services, "_is_up", lambda s: True)
-    monkeypatch.setenv("COMPOSE_PROFILES", "tailscale,printcraft")
+    monkeypatch.setenv("COMPOSE_PROFILES", "tailscale,printcraft,vectorcraft")
     items = {s.service.name: s for s in services.statuses("jarvis.example.ts.net")}
     assert items["PrintCraft"].tailnet_url == "https://jarvis.example.ts.net:8446"
     assert items["PrintCraft"].local_url == "http://127.0.0.1:8097"
-    monkeypatch.setenv("COMPOSE_PROFILES", "tailscale")
-    assert "PrintCraft" not in {s.service.name for s in services.statuses("jarvis.example.ts.net")}
+    assert items["VectorCraft"].tailnet_url == "https://jarvis.example.ts.net:8447"
+    assert items["VectorCraft"].local_url == "http://127.0.0.1:8098"
+    monkeypatch.setenv("COMPOSE_PROFILES", "tailscale,printcraft")
+    names = {s.service.name for s in services.statuses("jarvis.example.ts.net")}
+    assert "PrintCraft" in names and "VectorCraft" not in names
 
 
 def test_without_tailscale_everything_is_local(monkeypatch):

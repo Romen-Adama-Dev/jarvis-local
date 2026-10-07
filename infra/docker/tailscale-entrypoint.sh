@@ -29,7 +29,8 @@ publish() {
 
 # Cuando el nodo está conectado: nombre DNS para otros servicios (Setup URI de LiveSync,
 # enlaces de OpenProject) y los servicios de los perfiles activos publicados en el tailnet
-# por HTTPS: CouchDB (livesync), OpenProject (pm) y PrintCraft (printcraft).
+# por HTTPS: CouchDB (livesync), OpenProject (pm) y los editores de ArtCraft (printcraft,
+# vectorcraft).
 (
   until tailscale --socket="$SOCKET" status >/dev/null 2>&1; do sleep 5; done
   tailscale --socket="$SOCKET" status --json --peers=false \
@@ -41,6 +42,7 @@ publish() {
   publish livesync "${LIVESYNC_HTTPS_PORT:-8443}" "${COUCHDB_PORT:-5984}"
   publish pm "${OPENPROJECT_HTTPS_PORT:-8445}" "${OPENPROJECT_PORT:-8090}"
   publish printcraft "${PRINTCRAFT_HTTPS_PORT:-8446}" "${PRINTCRAFT_PORT:-8097}"
+  publish vectorcraft "${VECTORCRAFT_HTTPS_PORT:-8447}" "${VECTORCRAFT_PORT:-8098}"
 ) &
 
 wait "$daemon"

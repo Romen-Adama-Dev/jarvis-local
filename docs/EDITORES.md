@@ -9,6 +9,7 @@ no se sube al servidor y, al guardar, se descarga en tu dispositivo.
 | App | Para qué | Perfil | Por Tailscale | En el servidor |
 |---|---|---|---|---|
 | [PrintCraft](#printcraft-pdf) | PDF (como Acrobat) | `printcraft` | `https://<nombre>.ts.net:8446` | `http://127.0.0.1:8097` |
+| [VectorCraft](#vectorcraft-ilustración-vectorial) | Ilustración vectorial (como Illustrator) | `vectorcraft` | `https://<nombre>.ts.net:8447` | `http://127.0.0.1:8098` |
 
 ## Cómo funciona
 
@@ -88,3 +89,17 @@ texto, rellenar formularios, proteger, marcas de agua, OCR... Funciona en el ser
 pero sus esquemas ocupan unos 27 000 tokens, demasiados para Gemma con 64k de contexto
 (el mismo problema que con los MCP de OpenProject de la comunidad, `docs/OPENPROJECT.md`).
 Para integrarlo hace falta un servidor MCP propio con pocas herramientas que llame al CLI.
+
+## VectorCraft (ilustración vectorial)
+
+[storytold/vectorcraft](https://github.com/storytold/vectorcraft), versión 0.3.1.
+
+* **Dibujo**: pluma, formas, Buscatrazos y Generador de formas, pintura, degradados,
+  apariencia y transparencia.
+* **Texto** con estilos y enlazado entre cuadros.
+* **Ficheros**: SVG, PDF y `.ai` compatible con PDF (también PDF/X), EPS, DXF, EMF/WMF,
+  formatos de imagen y PSD; imprimir y empaquetar.
+
+Límites (según el propio proyecto, tiene entre el 69 y el 75 % de las funciones de
+Illustrator): sin 3D ni materiales, sin la galería de efectos de imagen y sin variables ni
+scripts.
