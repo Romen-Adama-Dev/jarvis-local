@@ -4,7 +4,10 @@
     {
       "id": "unir",
       "modo": "texto",
-      "adjunto": ["docs/demo/pdf/presupuesto-app-citas.pdf", "docs/demo/pdf/anexo-condiciones.pdf"],
+      "adjunto": [
+        "docs/demo/pdf/presupuesto-app-citas.pdf",
+        "docs/demo/pdf/anexo-condiciones.pdf"
+      ],
       "dice": "Únelos en un solo PDF: primero el presupuesto y luego el anexo."
     },
     {
@@ -37,6 +40,12 @@
       "id": "rellenar",
       "modo": "texto",
       "dice": "Rellénalo: Ana Pérez, de Talleres Norte, ana.perez@demo.invalid, y marca que acepta las condiciones."
+    },
+    {
+      "id": "correo",
+      "modo": "texto",
+      "adjunto": "docs/demo/pdf/presupuesto-app-citas.pdf",
+      "dice": "Sácame la página 2 de este presupuesto y mándasela por correo a Ana Pérez, ana.perez@demo.invalid, con un texto corto."
     }
   ]
 }

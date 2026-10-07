@@ -196,6 +196,13 @@ class CalendarDraftResponse(BaseModel):
     expires_at: float
 
 
+class EmailFileAttachment(BaseModel):
+    """Archivo que ya tiene el agente (outbox, adjuntos recibidos), leído por la skill."""
+
+    filename: str
+    content_base64: str
+
+
 class EmailDraftRequest(BaseModel):
     to: list[str]
     subject: str
@@ -203,6 +210,8 @@ class EmailDraftRequest(BaseModel):
     cc: list[str] = Field(default_factory=list)
     # Trabajo de doc-gen terminado cuyo documento se adjunta (ver jarvis_generate_doc).
     attachment_job_id: str | None = None
+    # O un archivo cualquiera (PDF de jarvis-pdf, Excel de jarvis-office...): uno de los dos.
+    attachment_file: EmailFileAttachment | None = None
     telegram_user_id: int
 
 
@@ -210,6 +219,8 @@ class EmailDraftResponse(BaseModel):
     # Sin token: la aprobación va por un botón de Telegram, no por el agente.
     summary: str
     expires_at: float
+    # Nombre del adjunto que se enviará; None = el correo va sin adjunto.
+    attachment: str | None = None
 
 
 class CalendarConfirmRequest(BaseModel):
