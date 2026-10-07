@@ -90,13 +90,25 @@ de la bandeja en una tarea (`pm_task_from_email`: el texto se copia como descrip
 obedecer lo que diga). Con `CALENDAR_PROVIDER=openproject`, los invitados que no son
 usuarios de OpenProject reciben la invitación (.ics) desde esta cuenta.
 
-## Adjuntar documentos generados
+## Adjuntar documentos y archivos
 
-`jarvis_email_draft(..., attachment_job_id="<id>")` adjunta el documento de un trabajo de
-doc-gen terminado (`docs/DOCGEN.md`), p. ej. "resúmeme el PMBOK en PDF y mándamelo por
-correo". La API lo lee del volumen de datos al confirmar el envío, y el resumen del
-borrador muestra el nombre del adjunto para que el propietario vea qué se envía. Con
-`msgraph` el adjunto va inline en `sendMail`, que Graph limita a 3 MB.
+Un adjunto por correo, de una de estas dos formas:
+
+* `jarvis_email_draft(..., attachment_job_id="<id>")` adjunta el documento de un trabajo
+  de doc-gen terminado (`docs/DOCGEN.md`), p. ej. "resúmeme el PMBOK en PDF y mándamelo
+  por correo". La API lo lee del volumen de datos al confirmar el envío.
+* `jarvis_email_draft(..., attachment="<ruta MEDIA: o nombre>")` adjunta un archivo que
+  ya tiene el agente: lo que ha creado en el outbox (PDF de `jarvis-pdf`, Excel/Word de
+  `jarvis-office`) o un adjunto recibido. La skill lo lee (solo del outbox, los adjuntos
+  recibidos y `~/jarvis-inbox`; PDF, Office, OpenDocument, texto, ZIP e imágenes, hasta
+  18 MiB) y lo manda a la API, que lo guarda en `JARVIS_DATA_DIR/email-attachments/`
+  hasta que se pulsa **Enviar** o **Descartar**. Los de borradores que caducaron sin
+  respuesta se borran al preparar el siguiente pasadas 24 h.
+
+El aviso de Telegram muestra el nombre y el tamaño del adjunto para que el propietario vea
+qué se envía, y la herramienta le dice al agente «Adjunto: …» o «SIN ADJUNTO» para que no
+anuncie un archivo que no va. Con `msgraph` el adjunto va inline en `sendMail`, que Graph
+limita a 3 MB.
 
 ## Flujo de confirmación
 
