@@ -31,6 +31,7 @@ Perfiles opcionales en `COMPOSE_PROFILES` (`.env`):
 | `vault` | Historial del vault de Obsidian en un repositorio git privado | `docs/MEMORY.md` |
 | `monitoring` | Panel de Grafana (servicios, API, GPU, servidor) y alertas por Telegram | `docs/MONITORING.md` |
 | `printcraft` | Editor de PDF en el navegador por Tailscale: organizar, unir, dividir, comentar, formularios y contraseñas | `docs/EDITORES.md` |
+| `vectorcraft` | Ilustración vectorial en el navegador por Tailscale: SVG, PDF, EPS y DXF | `docs/EDITORES.md` |
 
 ## Qué hace desde Telegram
 
