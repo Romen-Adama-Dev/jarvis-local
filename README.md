@@ -30,6 +30,7 @@ Perfiles opcionales en `COMPOSE_PROFILES` (`.env`):
 | `livesync` | Memoria de Jarvis en Obsidian del iPhone y el portátil | `docs/OBSIDIAN.md` |
 | `vault` | Historial del vault de Obsidian en un repositorio git privado | `docs/MEMORY.md` |
 | `monitoring` | Panel de Grafana (servicios, API, GPU, servidor) y alertas por Telegram | `docs/MONITORING.md` |
+| `printcraft` | Editor de PDF en el navegador por Tailscale: organizar, unir, dividir, comentar, formularios y contraseñas | `docs/EDITORES.md` |
 
 ## Qué hace desde Telegram
 

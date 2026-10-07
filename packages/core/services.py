@@ -88,6 +88,16 @@ CATALOG: tuple[Service, ...] = (
         "/run/jarvis/couchdb_password",
     ),
     Service(
+        "PrintCraft",
+        "Editor de PDF en el navegador: leer, organizar, unir, dividir, comentar, rellenar "
+        "formularios y proteger (los PDF no salen del dispositivo)",
+        "PRINTCRAFT_PORT",
+        8097,
+        profile="printcraft",
+        tailscale_https_port_env="PRINTCRAFT_HTTPS_PORT",
+        tailscale_https_default=8446,
+    ),
+    Service(
         "API de Jarvis",
         "RAG, documentos, actas, correo y calendario (documentación interactiva en /docs)",
         "JARVIS_API_PORT",

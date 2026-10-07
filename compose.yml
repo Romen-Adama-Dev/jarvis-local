@@ -9,7 +9,8 @@
 #
 # ollama, openclaw, api y worker usan network_mode: host y se hablan por 127.0.0.1; el
 # resto publica sus puertos solo en 127.0.0.1. Perfiles opcionales (COMPOSE_PROFILES):
-# tailscale, livesync, pm, vault, backup, admin, assistant, automation, webui, monitoring.
+# tailscale, livesync, pm, vault, backup, admin, assistant, automation, webui, monitoring,
+# printcraft.
 name: jarvis-local
 
 x-logging: &logging
@@ -61,6 +62,28 @@ x-openproject: &openproject
     - openproject_assets:/var/openproject/assets
     - jarvis_runtime:/run/jarvis:ro
     - tailscale_info:/var/run/tailscale-info:ro
+  logging: *logging
+
+# Editores de ArtCraft en el navegador (docs/EDITORES.md): la web estática de cada app,
+# servida con nginx sin privilegios; los documentos se abren y se guardan en el navegador
+# y nunca pasan por el servidor. Un perfil por app; con tailscale, en
+# https://<nombre>.ts.net:<puerto HTTPS de la app>.
+x-craft-web: &craft-web
+  restart: unless-stopped
+  networks:
+    - jarvis_internal
+  read_only: true
+  tmpfs:
+    - /tmp
+  cap_drop:
+    - ALL
+  security_opt:
+    - no-new-privileges:true
+  healthcheck:
+    test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:8080/"]
+    interval: 30s
+    timeout: 5s
+    retries: 3
   logging: *logging
 
 networks:
@@ -474,6 +497,8 @@ services:
       COUCHDB_PORT: ${COUCHDB_PORT:-5984}
       OPENPROJECT_HTTPS_PORT: ${OPENPROJECT_HTTPS_PORT:-8445}
       OPENPROJECT_PORT: ${OPENPROJECT_PORT:-8090}
+      PRINTCRAFT_HTTPS_PORT: ${PRINTCRAFT_HTTPS_PORT:-8446}
+      PRINTCRAFT_PORT: ${PRINTCRAFT_PORT:-8097}
     volumes:
       - ./infra/docker/tailscale-entrypoint.sh:/opt/jarvis/tailscale-entrypoint.sh:ro
       - tailscale_state:/var/lib/tailscale
@@ -680,6 +705,22 @@ services:
       openproject-setup:
         condition: service_completed_successfully
 
+  # PrintCraft (github.com/storytold/printcraft): leer, organizar, unir, dividir, comentar,
+  # rellenar formularios y proteger PDF. COMPOSE_PROFILES=printcraft (con tailscale, en
+  # https://<nombre>.ts.net:8446).
+  printcraft:
+    <<: *craft-web
+    build:
+      context: infra/docker/craft-web
+      args:
+        APP: printcraft
+        VERSION: "0.2.1"
+        SHA256: 47cda2075ee79dbe8729b630f3bc559e6dd1bb37834ba5c592bcce50309a0a7f
+    image: jarvis-printcraft:0.2.1
+    profiles: ["printcraft"]
+    ports:
+      - "127.0.0.1:${PRINTCRAFT_PORT:-8097}:8080"
+
   changedetection:
     image: ghcr.io/dgtlmoon/changedetection.io@sha256:5438423d5e906eff4e8f7886823482ad23f472bf7b8530ccaca89fb48c337882
     restart: unless-stopped
@@ -751,6 +792,7 @@ services:
       SEARXNG_PORT: ${SEARXNG_PORT:-8888}
       COUCHDB_PORT: ${COUCHDB_PORT:-5984}
       OPENPROJECT_PORT: ${OPENPROJECT_PORT:-8090}
+      PRINTCRAFT_PORT: ${PRINTCRAFT_PORT:-8097}
       POSTGRES_PORT: ${POSTGRES_PORT:-5432}
       REDIS_PORT: ${REDIS_PORT:-6379}
       QDRANT_PORT: ${QDRANT_PORT:-6333}
