@@ -22,18 +22,22 @@ def test_editors_only_with_their_profile(monkeypatch):
         "PRINTCRAFT_HTTPS_PORT",
         "VECTORCRAFT_PORT",
         "VECTORCRAFT_HTTPS_PORT",
+        "PHOTOCRAFT_PORT",
+        "PHOTOCRAFT_HTTPS_PORT",
     ):
         monkeypatch.delenv(env, raising=False)
     monkeypatch.setattr(services, "_is_up", lambda s: True)
-    monkeypatch.setenv("COMPOSE_PROFILES", "tailscale,printcraft,vectorcraft")
+    monkeypatch.setenv("COMPOSE_PROFILES", "tailscale,printcraft,vectorcraft,photocraft")
     items = {s.service.name: s for s in services.statuses("jarvis.example.ts.net")}
     assert items["PrintCraft"].tailnet_url == "https://jarvis.example.ts.net:8446"
     assert items["PrintCraft"].local_url == "http://127.0.0.1:8097"
     assert items["VectorCraft"].tailnet_url == "https://jarvis.example.ts.net:8447"
     assert items["VectorCraft"].local_url == "http://127.0.0.1:8098"
+    assert items["PhotoCraft"].tailnet_url == "https://jarvis.example.ts.net:8448"
+    assert items["PhotoCraft"].local_url == "http://127.0.0.1:8099"
     monkeypatch.setenv("COMPOSE_PROFILES", "tailscale,printcraft")
     names = {s.service.name for s in services.statuses("jarvis.example.ts.net")}
-    assert "PrintCraft" in names and "VectorCraft" not in names
+    assert "PrintCraft" in names and not {"VectorCraft", "PhotoCraft"} & names
 
 
 def test_without_tailscale_everything_is_local(monkeypatch):

@@ -32,6 +32,7 @@ Perfiles opcionales en `COMPOSE_PROFILES` (`.env`):
 | `monitoring` | Panel de Grafana (servicios, API, GPU, servidor) y alertas por Telegram | `docs/MONITORING.md` |
 | `printcraft` | Editor de PDF en el navegador por Tailscale: organizar, unir, dividir, comentar, formularios y contraseñas | `docs/EDITORES.md` |
 | `vectorcraft` | Ilustración vectorial en el navegador por Tailscale: SVG, PDF, EPS y DXF | `docs/EDITORES.md` |
+| `photocraft` | Edición de imagen en el navegador por Tailscale: capas, ajustes, filtros y PSD | `docs/EDITORES.md` |
 
 ## Qué hace desde Telegram
 

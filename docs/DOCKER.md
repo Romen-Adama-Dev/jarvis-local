@@ -55,6 +55,7 @@ Perfiles opcionales (`COMPOSE_PROFILES` en `.env`, separados por comas):
 | `webui` | Open WebUI (habla con Ollama directamente, sin RAG ni herramientas de Jarvis) |
 | `printcraft` | PrintCraft, editor de PDF en el navegador (los PDF no salen del dispositivo); con `tailscale`, en `https://<nombre>.ts.net:8446` (`docs/EDITORES.md`) |
 | `vectorcraft` | VectorCraft, ilustración vectorial en el navegador (SVG, PDF, EPS, DXF); con `tailscale`, en `https://<nombre>.ts.net:8447` (`docs/EDITORES.md`) |
+| `photocraft` | PhotoCraft, edición de imagen en el navegador (capas, ajustes, filtros, PSD); con `tailscale`, en `https://<nombre>.ts.net:8448` (`docs/EDITORES.md`) |
 
 Orden de arranque: `init` → `postgres`/`searxng`/`ollama` → `ollama-pull` y `api` →
 `worker` y `openclaw`.
