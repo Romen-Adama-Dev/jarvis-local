@@ -124,6 +124,17 @@
           "JARVIS_OUTBOX_DIR": "__HOME__/.openclaw/workspace-jarvis/outbox"
         }
       },
+      "jarvis-pdf": {
+        "command": "__REPO_DIR__/.venv/bin/python",
+        "args": [
+          "__REPO_DIR__/integrations/openclaw/skills/jarvis-pdf/server.py"
+        ],
+        "env": {
+          "JARVIS_OUTBOX_DIR": "__HOME__/.openclaw/workspace-jarvis/outbox",
+          "JARVIS_DATA_ROOT": "/srv/jarvis"
+        },
+        "requestTimeoutMs": 300000
+      },
       "jarvis-email": {
         "command": "__REPO_DIR__/.venv/bin/python",
         "args": [
@@ -191,6 +202,7 @@
           "jarvis-calendar__*",
           "jarvis-email__*",
           "jarvis-office__*",
+          "jarvis-pdf__*",
           "wiki_apply",
           "wiki_get",
           "wiki_lint",

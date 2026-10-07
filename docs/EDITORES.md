@@ -84,12 +84,43 @@ versiones casi a diario. Conserva el original de cualquier documento importante.
 Límites: editar el texto que ya tiene un PDF todavía no es fiable, el OCR solo reconoce
 alfabeto latino y no importa ni exporta Office.
 
-**Jarvis aún no lo usa.** `printcraft-cli` (en las releases para Linux) trae un servidor
-MCP (`printcraft-cli mcp --root <carpeta>`) con 123 herramientas: unir, dividir, extraer
-texto, rellenar formularios, proteger, marcas de agua, OCR... Funciona en el servidor,
-pero sus esquemas ocupan unos 27 000 tokens, demasiados para Gemma con 64k de contexto
-(el mismo problema que con los MCP de OpenProject de la comunidad, `docs/OPENPROJECT.md`).
-Para integrarlo hace falta un servidor MCP propio con pocas herramientas que llame al CLI.
+### Jarvis y los PDF (`jarvis-pdf`)
+
+Por Telegram, Jarvis hace lo mismo con los PDF que le mandas, sin abrir el navegador: le
+envías los adjuntos y le pides «únelos», «sácame las páginas 3 a 5», «quita la 4», «gira
+la primera», «ponle la contraseña …», «¿qué campos tiene este formulario?» y «rellénalo
+con …», «ponle BORRADOR» o «hazlo más ligero». Devuelve un PDF nuevo (o varios, o un ZIP
+si al dividir salen más de 10) y el original no cambia. No depende del perfil
+`printcraft`: funciona siempre.
+
+| Herramienta | Qué hace |
+|---|---|
+| `jarvis_pdf_combine(files)` | Une varios PDF en el orden dado |
+| `jarvis_pdf_split(file, every)` | Divide cada `every` páginas |
+| `jarvis_pdf_extract_pages(file, pages)` | PDF nuevo con esas páginas (`"3-5, 8"`) |
+| `jarvis_pdf_edit_pages(file, delete, rotate, degrees)` | Borra y gira páginas |
+| `jarvis_pdf_protect(file, password)` | Contraseña para abrirlo (AES-256) |
+| `jarvis_pdf_form(file, values)` | Lista los campos o, con `values`, rellena el formulario |
+| `jarvis_pdf_watermark(file, text)` | Marca de agua de texto en diagonal |
+| `jarvis_pdf_compress(file)` | Copia más ligera (imágenes a 150 ppp) |
+
+Cómo está hecho:
+
+* `printcraft-cli` va en la imagen de OpenClaw (`integrations/openclaw/Dockerfile`, versión
+  y SHA-256 fijados para x86_64 y ARM64).
+* `integrations/openclaw/skills/jarvis-pdf` es un servidor MCP propio con 8 herramientas
+  (unos 800 tokens de esquemas). El MCP que trae PrintCraft (`printcraft-cli mcp`) tiene
+  123 herramientas y unos 27 000 tokens, demasiado para Gemma con 64k de contexto: el
+  mismo problema que con los MCP de OpenProject de la comunidad (`docs/OPENPROJECT.md`).
+* `packages/pdf` copia cada PDF a un directorio temporal, ejecuta un guion de
+  `printcraft-cli run --script` encerrado en él (`--root`) y deja el resultado en el
+  outbox. Solo lee adjuntos del chat, `~/jarvis-inbox`, los documentos del RAG y el
+  outbox, y hasta 100 MiB por PDF.
+* Los tests de `tests/unit/test_pdf.py` que usan el CLI de verdad corren en CI (que lo
+  descarga) y se saltan si no está instalado.
+
+Al actualizar PrintCraft, cambia la versión y los SHA-256 en el Dockerfile de OpenClaw y
+en `.github/workflows/ci.yml`.
 
 ## VectorCraft (ilustración vectorial)
 

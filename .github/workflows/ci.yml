@@ -37,6 +37,17 @@ jobs:
           enable-cache: true
       - name: Dependencias
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libmagic1
+      - name: printcraft-cli (tests de jarvis-pdf; misma versión que la imagen de OpenClaw)
+        env:
+          PRINTCRAFT_VERSION: "0.2.1"
+          PRINTCRAFT_SHA256: 73b2977330d73716971237f68f89cba6ad52cbfb563ad0ab6d9ad18f44d45192
+        run: |
+          name="printcraft-${PRINTCRAFT_VERSION}-linux-x86_64"
+          curl -fsSL -o /tmp/pc.tar.gz \
+            "https://github.com/storytold/printcraft/releases/download/v${PRINTCRAFT_VERSION}/${name}.tar.gz"
+          echo "${PRINTCRAFT_SHA256}  /tmp/pc.tar.gz" | sha256sum -c -
+          tar -xzf /tmp/pc.tar.gz -C /tmp "${name}/bin/printcraft-cli"
+          sudo install -m 755 "/tmp/${name}/bin/printcraft-cli" /usr/local/bin/printcraft-cli
       - run: uv sync --frozen
       - name: ruff check
         run: uv run --frozen ruff check --output-format=github .
