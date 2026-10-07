@@ -108,8 +108,9 @@ operaciones sobre el PDF unido sin volver a adjuntarlo.
 | 5 | `Divide el PDF unido en páginas sueltas.` | Tres PDF | 15 s |
 | 6 | *Adjunta* `solicitud-acceso.pdf` con `¿Qué campos tiene este formulario?` | Nombre, Empresa, Correo y la casilla Acepto | 6 s |
 | 7 | `Rellénalo: Ana Pérez, de Talleres Norte, ana.perez@demo.invalid, y marca que acepta las condiciones.` | El formulario relleno | 11 s |
+| 8 | *Adjunta* `presupuesto-app-citas.pdf` con `Sácame la página 2 de este presupuesto y mándasela por correo a Ana Pérez, ana.perez@demo.invalid, con un texto corto.` | Borrador con la página en PDF adjunta (nombre y tamaño en el aviso de Telegram); pulsa *Descartar* | 28 s |
 
-Unos 1,5 minutos de espera en total. En el navegador, el mismo PDF se abre en PrintCraft
+Unos 2 minutos de espera en total. En el navegador, el mismo PDF se abre en PrintCraft
 (`https://<nombre>.ts.net:8446`, `docs/EDITORES.md`).
 
 ## Qué enseñar fuera de Telegram

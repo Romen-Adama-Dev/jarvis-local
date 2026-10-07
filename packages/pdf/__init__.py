@@ -8,7 +8,6 @@ al outbox. Los originales nunca se modifican.
 """
 
 import datetime
-import html
 import json
 import os
 import re
@@ -20,7 +19,8 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
-from packages.core.errors import JarvisError, NotFoundError, ValidationFailedError
+from packages.core.errors import JarvisError, ValidationFailedError
+from packages.core.files import resolve_local_file, stored_stem
 from packages.office import safe_filename
 
 __all__ = [
@@ -53,47 +53,10 @@ class PdfToolError(JarvisError):
 # --- Ficheros de entrada ---------------------------------------------------------------
 
 
-def _stored_stem(path: Path) -> str:
-    """OpenClaw guarda los adjuntos como `[input-]<nombre saneado>---<uuid>.<ext>`."""
-    return path.stem.removeprefix("input-").split("---", 1)[0]
-
-
-def _find_by_name(name: str, roots: Sequence[Path]) -> Path | None:
-    wanted = Path(name)
-    wanted_stem = re.sub(r"[^A-Za-z0-9._-]", "_", wanted.stem)
-    matches: list[Path] = []
-    for root in roots:
-        if not root.is_dir():
-            continue
-        for path in root.rglob("*.pdf"):
-            stored = _stored_stem(path)
-            truncated = len(stored) >= 8 and wanted_stem.startswith(stored)
-            if path.name == wanted.name or (stored and (stored == wanted_stem or truncated)):
-                matches.append(path)
-    if not matches:
-        return None
-    return max(matches, key=lambda p: p.stat().st_mtime).resolve()
-
-
 def resolve_pdf(name: str, roots: Sequence[Path]) -> Path:
     """Ruta absoluta o nombre de un PDF recibido por el chat o creado antes por Jarvis
     (outbox), siempre dentro de `roots`."""
-    raw = html.unescape(name.strip())
-    if not raw:
-        raise ValidationFailedError("Falta el nombre del PDF.")
-    candidate = Path(raw).expanduser()
-    path = candidate.resolve() if candidate.is_absolute() else _find_by_name(raw, roots)
-    if path is None:
-        raise NotFoundError(f"No encuentro ningún PDF recibido con el nombre «{name}».")
-    if not any(path.is_relative_to(root.resolve()) for root in roots):
-        raise ValidationFailedError(f"No puedo usar esa ruta: {name}.")
-    if not path.is_file():
-        raise NotFoundError(f"No existe el archivo «{name}».")
-    if path.suffix.lower() != ".pdf":
-        raise ValidationFailedError(f"«{path.name}» no es un PDF.")
-    if path.stat().st_size > MAX_BYTES:
-        raise ValidationFailedError(f"«{path.name}» pasa de {MAX_BYTES // 1024**2} MiB.")
-    return path
+    return resolve_local_file(name, roots, suffixes={".pdf"}, max_bytes=MAX_BYTES, what="PDF")
 
 
 def parse_pages(spec: str, page_count: int) -> list[int]:
@@ -195,7 +158,7 @@ def _page_count(workdir: Path, name: str) -> int:
 
 def _out_path(out_dir: Path, source: Path, label: str, suffix: str = ".pdf") -> Path:
     # Sin la hora de una operación anterior: «x-unido-0950» → «x-unido-protegido-0951».
-    stem = re.sub(r"-\d{4}(-\d+)?$", "", safe_filename(_stored_stem(source), max_len=40))
+    stem = re.sub(r"-\d{4}(-\d+)?$", "", safe_filename(stored_stem(source), max_len=40))
     stamp = datetime.datetime.now().strftime("%H%M")
     base = f"{stem}-{label}-{stamp}"
     out_dir.mkdir(parents=True, exist_ok=True)
