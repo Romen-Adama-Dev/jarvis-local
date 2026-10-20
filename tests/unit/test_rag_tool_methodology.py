@@ -1,4 +1,5 @@
 import importlib.util
+import sys
 from pathlib import Path
 
 import pytest
@@ -139,3 +140,25 @@ def test_sources_are_cited_by_document_and_page(rag_server):
         }
     )
     assert "- PMBOK-7Ed (pág. 34)" in text and "Cita en tu respuesta" in text
+
+
+class _ListingApi:
+    def get(self, path: str) -> _Response:
+        if path == "/v1/documents/projects":
+            return _Response({"scopes": [{"company": "Acme", "project": "ERP", "documents": 1}]})
+        return _Response(
+            {"documents": [{"filename": "pmbok.pdf", "doc_metadata": {"methodology": "PMI"}}]}
+        )
+
+
+def test_list_projects_imports_packages_on_its_own(rag_server, monkeypatch):
+    """En el contenedor de OpenClaw el repo no está en sys.path hasta que la herramienta lo
+    añade: antes fallaba con «No module named 'packages'» si era la primera en usarse."""
+    root = _SERVER.parents[4].resolve()
+    monkeypatch.setattr(sys, "path", [p for p in sys.path if p and Path(p).resolve() != root])
+    for name in [m for m in sys.modules if m == "packages" or m.startswith("packages.")]:
+        monkeypatch.delitem(sys.modules, name)
+    monkeypatch.setattr(rag_server, "_client", _ListingApi())
+    listing = rag_server.jarvis_list_projects()
+    assert "- Acme › ERP: 1 documentos" in listing
+    assert "- PMI: pmbok.pdf" in listing
