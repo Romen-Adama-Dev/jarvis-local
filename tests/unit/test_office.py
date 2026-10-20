@@ -127,3 +127,17 @@ def test_opendocument_files_are_valid(tmp_path: Path, fmt: str):
         cells = doc.getElementsByType(table.TableCell)
         formulas = [c.getAttribute("formula") for c in cells if c.getAttribute("formula")]
         assert formulas == ["of:=SUM([.B2:.B4])", "of:=SUM([.C2:.C4])"]
+
+
+def test_bullets_accept_model_shapes_and_strip_markers():
+    """El 20-10 el Word y el PowerPoint fallaron a la primera: el modelo mandó viñetas como
+    `blocks` con `text` y con «• » delante."""
+    from packages.office.spec import parse_blocks
+
+    shapes = [
+        {"type": "bullets", "items": ["• Uno", "- Dos"]},
+        {"type": "bullets", "blocks": [{"type": "bullet", "text": "• Uno"}, {"text": "Dos"}]},
+        {"type": "bullets", "text": "• Uno\n• Dos"},
+    ]
+    for raw in shapes:
+        assert parse_blocks([raw])[0].items == ["Uno", "Dos"]
