@@ -214,3 +214,48 @@ def test_meeting_falls_back_to_cpu_when_the_gpu_is_full(monkeypatch, tmp_path):
     )
     assert _FakeWhisper.devices == ["cuda/int8_float16", "cpu/int8"]
     assert transcript.text == "Buenos días." and transcript.duration_seconds == 86.0
+
+
+async def test_deadlines_never_fall_before_the_meeting():
+    """«Antes del viernes 29 de enero» dicho el 1-12-2026 es 2027, aunque el modelo ponga
+    2026 (el 20-10 el acta salió con 29-01-2026 y 18-12-2025)."""
+    model = FakeModel(
+        [
+            _part(
+                acciones=[
+                    {
+                        "tarea": "Análisis GAP",
+                        "responsable": "Javier",
+                        "fecha_limite": "2026-01-29",
+                    },
+                    {
+                        "tarea": "Datos maestros",
+                        "responsable": "Nuria",
+                        "fecha_limite": "2025-12-18",
+                    },
+                    {
+                        "tarea": "Cobertura wifi",
+                        "responsable": "Andrés",
+                        "fecha_limite": "2026-12-11",
+                    },
+                    {"tarea": "Sin fecha", "responsable": "David", "fecha_limite": ""},
+                ],
+                proxima_reunion="2025-12-11 10:00",
+            )
+        ]
+    )
+    minutes = await build_minutes(model, "texto", meeting_date=datetime.date(2026, 12, 1))
+    assert [a.fecha_limite for a in minutes.acciones] == [
+        "2027-01-29",
+        "2026-12-18",
+        "2026-12-11",
+        "",
+    ]
+    assert minutes.proxima_reunion == "2026-12-11 10:00"
+    assert "siempre posterior a la reunión" in model.prompts[0][0]
+
+
+async def test_next_meeting_in_words_is_kept():
+    model = FakeModel([_part(proxima_reunion="El viernes a las 10:00")])
+    minutes = await build_minutes(model, "texto", meeting_date=datetime.date(2026, 12, 1))
+    assert minutes.proxima_reunion == "El viernes a las 10:00"
