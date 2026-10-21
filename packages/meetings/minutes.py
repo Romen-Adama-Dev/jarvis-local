@@ -132,7 +132,7 @@ EXTRACT_SCHEMA: dict = {
 
 _EXTRACT_PROMPT = """Eres el secretario de una reunión de proyecto. Te paso {part} de la \
 transcripción automática (puede tener errores de reconocimiento: corrígelos por contexto).
-La reunión fue el {weekday} {date}.{project_line}
+La reunión fue el {weekday} {date}.{project_line}{vocabulary_line}
 
 Extrae en JSON, en español y solo con lo que se dice de verdad (no inventes):
 - titulo: título corto de la reunión.
@@ -223,13 +223,25 @@ def _parse(raw: str) -> dict:
 
 
 async def _extract(
-    model: ChatModel, text: str, part: str, date: datetime.date, project: str
+    model: ChatModel,
+    text: str,
+    part: str,
+    date: datetime.date,
+    project: str,
+    vocabulary: list[str] | None = None,
 ) -> dict:
+    vocabulary_line = (
+        "\nNombres propios que pueden salir (si en la transcripción suena algo parecido, "
+        f"escríbelo así): {', '.join(vocabulary)}."
+        if vocabulary
+        else ""
+    )
     prompt = _EXTRACT_PROMPT.format(
         part=part,
         weekday=_WEEKDAYS[date.weekday()],
         date=date.isoformat(),
         project_line=f"\nProyecto: {project}." if project else "",
+        vocabulary_line=vocabulary_line,
         text=text,
     )
     result = await model.generate(prompt, format=EXTRACT_SCHEMA, temperature=0.1)
@@ -243,6 +255,7 @@ async def build_minutes(
     meeting_date: datetime.date,
     title: str = "",
     project: str = "",
+    vocabulary: list[str] | None = None,
     concurrency: int = 2,
     on_progress=None,
 ) -> Minutes:
@@ -258,7 +271,7 @@ async def build_minutes(
             else (f"la parte {index + 1} de {len(chunks)}")
         )
         async with semaphore:
-            data = await _extract(model, chunk, part, meeting_date, project)
+            data = await _extract(model, chunk, part, meeting_date, project, vocabulary)
         done += 1
         if on_progress:
             await on_progress(done, len(chunks))

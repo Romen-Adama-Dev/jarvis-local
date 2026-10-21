@@ -15,6 +15,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from packages.core.logging import get_logger
+from packages.meetings.vocabulario import prompt_whisper
 
 logger = get_logger(__name__)
 
@@ -59,7 +60,8 @@ def format_timestamp(seconds: float) -> str:
 
 
 # Lo que whisper confunde si no se lo enseñan («pemboquet» por PMBOK, «Aplecitas» por App
-# de citas): va como contexto previo (initial_prompt) junto a STT_VOCABULARY.
+# de citas): va como contexto previo (initial_prompt) con los topónimos canarios del
+# diccionario (packages/meetings/vocabulario.py), STT_VOCABULARY y el vocabulario del proyecto.
 BASE_VOCABULARY = (
     "Jarvis, OpenProject, Obsidian, Telegram, PMBOK, PMI, Scrum, Kanban, Gantt, sprint, hito, "
     "Excel, Word, PowerPoint, PDF"
@@ -67,7 +69,7 @@ BASE_VOCABULARY = (
 
 
 def vocabulary_prompt(extra: str = "") -> str:
-    return ", ".join(x for x in (BASE_VOCABULARY, extra.strip(" ,")) if x) + "."
+    return prompt_whisper(extra=extra, base=BASE_VOCABULARY)
 
 
 def _cuda_available() -> bool:
