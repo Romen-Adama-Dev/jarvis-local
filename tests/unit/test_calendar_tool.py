@@ -31,3 +31,16 @@ def calendar_server(monkeypatch):
 )
 def test_names_with_spaces_stay_whole(calendar_server, attendees, split):
     assert calendar_server._split_attendees(attendees) == split
+
+
+@pytest.mark.parametrize(
+    ("given", "local"),
+    [
+        ("2026-12-18T09:00:00Z", "2026-12-18T09:00:00"),
+        ("2026-12-18T09:00:00+00:00", "2026-12-18T09:00:00"),
+        ("2026-12-18T09:00:00", "2026-12-18T09:00:00"),
+        ("2026-12-18T09:00:00+01:00", "2026-12-18T09:00:00+01:00"),
+    ],
+)
+def test_times_are_the_owner_local_time(calendar_server, given, local):
+    assert calendar_server._local(given) == local

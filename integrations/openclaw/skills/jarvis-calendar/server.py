@@ -28,6 +28,17 @@ def _split_attendees(attendees: str) -> list[str]:
     return [a for a in split if a]
 
 
+def _local(timestamp: str) -> str:
+    """La hora tal como la dice el propietario: la de su zona (CALENDAR_TIMEZONE). El modelo
+    a veces añade «Z» a «el viernes a las 9:00» y la reunión acababa una hora más tarde en
+    la península; una «Z» o «+00:00» final se ignora. Otro desfase explícito se respeta."""
+    text = timestamp.strip()
+    for utc in ("Z", "z", "+00:00", "+0000"):
+        if text.endswith(utc) and "T" in text:
+            return text[: -len(utc)]
+    return text
+
+
 def _api_error(response: httpx.Response, action: str) -> str | None:
     """Mensaje legible de la API (p. ej. "Calendario sin configurar...") en vez de una
     excepción."""
@@ -43,8 +54,10 @@ def _api_error(response: httpx.Response, action: str) -> str | None:
 @mcp.tool()
 def jarvis_calendar_availability(start: str, end: str) -> str:
     """Consulta los eventos del calendario del propietario entre `start` y `end`.
-    Las fechas van en ISO 8601, p. ej. 2026-09-15T09:00:00."""
-    response = _client.get("/v1/calendar/events", params={"start": start, "end": end})
+    Las fechas van en ISO 8601 y en hora local del propietario, sin «Z»: 2026-09-15T09:00:00."""
+    response = _client.get(
+        "/v1/calendar/events", params={"start": _local(start), "end": _local(end)}
+    )
     if error := _api_error(response, "consultar el calendario"):
         return error
     events = response.json()
@@ -81,7 +94,8 @@ def jarvis_calendar_propose_event(
     location: str = "",
 ) -> str:
     """Propone (NO crea todavía) un evento de calendario (una reunión en OpenProject).
-    `start`/`end` en ISO 8601, p. ej. 2026-09-15T09:00:00. `attendees`: invitados separados
+    `start`/`end` en ISO 8601 y en hora local del propietario, sin «Z»: 2026-09-15T09:00:00
+    es a las 9:00 en su zona. `attendees`: invitados separados
     por comas, con su correo o con el nombre de un usuario de OpenProject (opcional).
     `project`: proyecto de OpenProject al que pertenece la reunión, si el usuario lo nombra
     (vacío = "Agenda"). `location`: sala o enlace de videollamada.
@@ -93,8 +107,8 @@ def jarvis_calendar_propose_event(
         "/v1/calendar/draft",
         json={
             "subject": subject,
-            "start": start,
-            "end": end,
+            "start": _local(start),
+            "end": _local(end),
             "attendees": _split_attendees(attendees),
             "body": body,
             "project": project,
