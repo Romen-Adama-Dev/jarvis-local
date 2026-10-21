@@ -1,0 +1,12 @@
+{
+  "id": "jarvis-formato",
+  "name": "Jarvis: formato de las respuestas",
+  "description": "Pasa a texto plano las fórmulas en LaTeX de las respuestas (Telegram y el panel no lo dibujan)",
+  "activation": {
+    "onStartup": true
+  },
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false
+  }
+}
