@@ -10,6 +10,7 @@ from packages.glossary import translation_hints
 from packages.inference.base import ChatMessage, Role
 from packages.inference.router import InferenceMode, InferenceRouter
 from packages.rag.embeddings import EmbeddingProvider, SparseVector
+from packages.rag.formulas import latex_to_text
 from packages.rag.reranker import RerankerProvider
 from packages.rag.store import RetrievedChunk, hybrid_search
 
@@ -41,7 +42,9 @@ _SYSTEM_PROMPT = (
     "Si el contexto no contiene suficiente información para responder, dilo explícitamente "
     "en vez de inventar una respuesta: si no puedes responder nada de lo que se pregunta, "
     "empieza tu respuesta exactamente con «SIN_EVIDENCIA:» seguido de una frase que lo "
-    "explique. Responde en español, cita las fuentes cuando sea posible."
+    "explique. Responde en español, cita las fuentes cuando sea posible. Escribe las "
+    "fórmulas en texto plano (SPI = EV / PV, con ×, ≥ o ≤), nunca en LaTeX: la respuesta "
+    "se lee en un chat que no lo dibuja."
 )
 
 # Marca con la que el modelo se abstiene (ver _SYSTEM_PROMPT). Por si no la pone, también
@@ -377,7 +380,7 @@ class HybridRagOrchestrator:
             for chunk in budgeted
         ]
 
-        abstained, answer = _abstention(result.text)
+        abstained, answer = _abstention(latex_to_text(result.text))
         if abstained:
             # Hubo candidatos, pero el modelo no ve en ellos la respuesta: sin fuentes que
             # citar, igual que cuando la recuperación no encuentra nada.
