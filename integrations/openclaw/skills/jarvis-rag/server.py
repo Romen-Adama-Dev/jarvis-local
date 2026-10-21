@@ -455,6 +455,7 @@ def jarvis_list_projects() -> str:
 
 def _methodology_lines() -> list[str]:
     """Metodologías de MEMORY.md, sus documentos y la de cada proyecto."""
+    sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
     from packages.core.directives import methodology_id
 
     directives = _directives()
