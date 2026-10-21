@@ -293,14 +293,20 @@ def pm_create_task(
     proyecto (MEMORY.md): en uno ágil, historias y épicos, no hitos de fase. Fechas en
     AAAA-MM-DD; si la tarea tiene un periodo ("del 21 al 23"), pasa `start_date` y
     `due_date` para que salga como barra en el Gantt.
-    Un hito solo lleva `due_date`. `assignee` es el nombre de una persona; si aún no
-    tiene cuenta, la tarea queda a su nombre y se le asigna al darla de alta
-    (pm_add_people). `after`: lo que tiene que terminar antes de que empiece: el #id de un
-    paquete o el nombre de otro proyecto ("Talleres Norte › App de citas"), cuyo hito final
-    se usa. Para un riesgo, pon en `description` probabilidad, impacto y mitigación."""
+    Un hito solo lleva `due_date`; una fase o lo que dura varios días es una Tarea (con
+    `start_date` y `due_date` distintos nunca se crea como hito). `assignee` es el nombre
+    de una persona; si aún no tiene cuenta, la tarea queda a su nombre y se le asigna al
+    darla de alta (pm_add_people). `after`: lo que tiene que terminar antes de que empiece:
+    el #id de un paquete o el nombre de otro proyecto ("Talleres Norte › App de citas"),
+    cuyo hito final se usa. Para un riesgo, pon en `description` probabilidad, impacto y
+    mitigación."""
     op = _op()
     proj = op.find_project(project)
     predecessor = _predecessor(op, after) if str(after).strip() else 0
+    if _is_milestone(kind) and start_date.strip() and due_date.strip() and start_date != due_date:
+        # Un periodo («del 1 de diciembre al 29 de enero») no es un hito, que es un instante
+        # (en el Gantt, un rombo sin duración): es una fase o una tarea, con su barra.
+        kind = "Tarea"
     pending = ""
     if assignee.strip() and not any(
         _normalize(a.get("name", "")) == _normalize(assignee) for a in op.assignees(proj["id"])
@@ -326,6 +332,10 @@ def pm_create_task(
         op.create_relation(predecessor, wp["id"])
         note += f"\nEmpieza después de #{predecessor} (dependencia en el Gantt)."
     return f"Creado {describe_work_package(wp)}\n{op.work_package_url(wp)}{note}"
+
+
+def _is_milestone(kind: str) -> bool:
+    return _normalize(kind) in {"hito", "milestone"}
 
 
 def _predecessor(op: OpenProjectClient, ref: int | str) -> int:
