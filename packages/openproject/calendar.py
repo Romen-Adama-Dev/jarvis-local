@@ -98,6 +98,31 @@ def _agenda_project(op: OpenProjectClient, name: str) -> dict:
         return op.create_project(name, description="Reuniones y citas creadas por Jarvis.")
 
 
+def attendee_emails(op: OpenProjectClient | None, attendees: list[str]) -> list[str]:
+    """El correo de cada invitado: quien llega por su nombre («Nuria Castro») se busca entre
+    los usuarios de OpenProject. Si de alguno no hay correo, falla ya al proponer la reunión,
+    para que Jarvis lo pida, y no al confirmarla (antes: «Dirección de invitado inválida»)."""
+    emails, missing = [], []
+    for attendee in (a.strip() for a in attendees if a.strip()):
+        if _EMAIL_RE.fullmatch(attendee):
+            emails.append(attendee)
+            continue
+        try:
+            email = str(op.find_user(attendee).get("email") or "") if op else ""
+        except ValidationFailedError:  # no es usuario de OpenProject
+            email = ""
+        if email:
+            emails.append(email)
+        else:
+            missing.append(attendee)
+    if missing:
+        raise ValidationFailedError(
+            f"No tengo el correo de {', '.join(missing)}: pídeselo a quien convoca la reunión "
+            "o créala sin ese invitado."
+        )
+    return list(dict.fromkeys(emails))
+
+
 def _create_sync(
     op: OpenProjectClient,
     subject: str,

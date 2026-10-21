@@ -17,7 +17,10 @@ servidor CalDAV o Microsoft Graph) de forma segura y auditada.
   `project` a `jarvis_calendar_propose_event` para que la reunión quede en ese proyecto
   de OpenProject; si no, va al proyecto "Agenda". `location` para sala o enlace.
 * `jarvis_calendar_propose_event`: **propone** un evento (asunto, horario,
-  invitados opcionales) pero NO lo crea todavía. Devuelve un token de
+  invitados opcionales) pero NO lo crea todavía. Invitados separados por comas, con su
+  correo o con el nombre de alguien del equipo (usuario de OpenProject): la propuesta
+  devuelve su correo. Si de alguien no hay correo, la herramienta lo dice: pídeselo al
+  usuario antes de volver a proponer. Devuelve un token de
   confirmación con caducidad (`CONFIRMATION_TTL_SECONDS`, 10 minutos por defecto).
 * `jarvis_calendar_confirm_event`: crea de verdad el evento a partir del token de
   una propuesta. **Si la propuesta incluía invitados, confirmar puede enviar
