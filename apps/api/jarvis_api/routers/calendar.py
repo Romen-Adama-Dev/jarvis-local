@@ -1,3 +1,4 @@
+import asyncio
 from typing import Any
 
 from fastapi import APIRouter
@@ -16,7 +17,9 @@ from apps.api.jarvis_api.schemas import (
 from packages.core.attachments import Attachment
 from packages.core.errors import JarvisError, ValidationFailedError
 from packages.core.logging import get_logger
-from packages.openproject.calendar import invitation_ics
+from packages.openproject.calendar import attendee_emails, invitation_ics
+from packages.openproject.client import OpenProjectClient
+from packages.openproject.config import config_from_env as openproject_config
 
 logger = get_logger(__name__)
 
@@ -37,24 +40,34 @@ async def draft_event(
 ) -> CalendarDraftResponse:
     if not payload.subject or not payload.start or not payload.end:
         raise ValidationFailedError("subject, start y end son obligatorios")
+    attendees = await _with_emails(payload.attendees)
 
     summary = f"Evento '{payload.subject}' de {payload.start} a {payload.end}"
     if payload.project:
         summary += f" en el proyecto {payload.project}"
     if payload.location:
         summary += f" ({payload.location})"
-    if payload.attendees:
-        summary += f", invita a {', '.join(payload.attendees)}"
+    if attendees:
+        summary += f", invita a {', '.join(attendees)}"
 
     pending = await confirmation_service.request(
         payload.telegram_user_id,
         action="create_event",
         summary=summary,
-        payload=payload.model_dump(),
+        payload={**payload.model_dump(), "attendees": attendees},
     )
     return CalendarDraftResponse(
         token=pending.token, summary=pending.summary, expires_at=pending.expires_at
     )
+
+
+async def _with_emails(attendees: list[str]) -> list[str]:
+    """Invitados con su correo (los nombres se buscan en OpenProject, si está activo)."""
+    if not attendees:
+        return []
+    config = openproject_config()
+    op = OpenProjectClient(config) if config else None
+    return await asyncio.to_thread(attendee_emails, op, attendees)
 
 
 @router.post("/draft/{token}/confirm")

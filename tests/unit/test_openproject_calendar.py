@@ -9,7 +9,7 @@ from apps.api.jarvis_api.adapters.calendar_backends import (
     OpenProjectCalendarBackend,
     calendar_backend_from_settings,
 )
-from packages.core.errors import ProviderUnavailableError
+from packages.core.errors import ProviderUnavailableError, ValidationFailedError
 from packages.core.settings import Settings
 from packages.msgraph.client import MsGraphClient
 from packages.openproject import calendar as op_calendar
@@ -37,15 +37,15 @@ def _collection(elements: list[dict]) -> dict:
     return {"_embedded": {"elements": elements}}
 
 
-def _user(id_: int, login: str, email: str) -> dict:
-    return {"id": id_, "login": login, "email": email, "status": "active",
+def _user(id_: int, login: str, email: str, name: str = "") -> dict:
+    return {"id": id_, "login": login, "email": email, "name": name or login, "status": "active",
             "_links": {"self": _link("users", id_, login)}}  # fmt: skip
 
 
 USERS = [
     _user(4, "admin", "romen@example.com"),
     _user(5, "jarvis", "jarvis@jarvis.invalid"),
-    _user(9, "ana", "ana@example.com"),
+    _user(9, "ana", "ana@example.com", "Ana Pérez"),
 ]
 PROJECTS = [
     {"id": 6, "identifier": "web-corporativa", "name": "Web corporativa", "_links": {}},
@@ -171,6 +171,19 @@ def test_create_event_invites_users_and_returns_externals(op, fake):
     assert hrefs == ["/api/v3/users/9", "/api/v3/users/4"]
     assert result["external_attendees"] == ["cliente@panaderia.es"]
     assert result["project"] == "Web corporativa"
+
+
+def test_attendees_by_name_get_their_openproject_email(op):
+    emails = op_calendar.attendee_emails(op, ["Ana Perez", "cliente@panaderia.es", "ana"])
+    assert emails == ["ana@example.com", "cliente@panaderia.es"]
+
+
+def test_attendee_without_email_fails_when_proposing(op):
+    with pytest.raises(ValidationFailedError, match="No tengo el correo de Marcos Peña"):
+        op_calendar.attendee_emails(op, ["Ana Pérez", "Marcos Peña"])
+    with pytest.raises(ValidationFailedError, match="Ana Pérez"):
+        op_calendar.attendee_emails(None, ["Ana Pérez"])  # sin OpenProject, solo correos
+    assert op_calendar.attendee_emails(None, [" ana@example.com ", ""]) == ["ana@example.com"]
 
 
 def test_create_event_without_project_goes_to_agenda(op, fake):
