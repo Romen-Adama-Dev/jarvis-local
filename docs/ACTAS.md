@@ -5,6 +5,11 @@ decisiones, acciones con responsable y fecha, y riesgos con probabilidad, impact
 mitigación. Si le dices que sí, crea esas acciones y riesgos en OpenProject
 (`docs/OPENPROJECT.md`). Todo se procesa en el servidor, sin servicios externos.
 
+Las fechas dichas sin año («antes del viernes 29 de enero») se resuelven con la fecha de la
+reunión, y una fecha límite nunca cae antes de ella: si el modelo pone un año de menos, pasa
+al siguiente. Si la grabación no es de hoy, di cuándo fue al mandarla («es la reunión del
+martes 1 de diciembre»): si no, se toma la fecha del día.
+
 ## Flujo
 
 ```
