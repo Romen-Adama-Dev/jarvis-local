@@ -143,7 +143,8 @@ Extrae en JSON, en español y solo con lo que se dice de verdad (no inventes):
 - acciones: tareas encargadas a alguien. "responsable": nombre de quien la hará (también
   si "se encarga", "se ofrece" o se le asigna) o "" si no se dice.
   "fecha_limite": AAAA-MM-DD (convierte "el viernes", "el 25", "fin de mes" usando la
-  fecha de la reunión) o "" si no hay. "detalle": contexto útil para quien la haga.
+  fecha de la reunión; siempre posterior a la reunión: si no se dice el año, es el de la
+  próxima vez que llega esa fecha) o "" si no hay. "detalle": contexto útil para quien la haga.
 - riesgos: amenazas o problemas que pueden afectar al proyecto, con probabilidad (alta,
   media, baja), impacto (alto, medio, bajo), mitigación acordada y responsable, o "" si
   no se dice.
@@ -187,6 +188,30 @@ def _valid_date(value: str) -> str:
         return datetime.date.fromisoformat(value.strip()).isoformat()
     except (ValueError, AttributeError):
         return ""
+
+
+def _not_before(value: str, meeting: datetime.date) -> str:
+    """Una fecha límite no cae antes de la reunión: si el modelo puso un año de menos
+    («antes del viernes 29 de enero» dicho en diciembre), pasa al año siguiente."""
+    if not value:
+        return value
+    day = datetime.date.fromisoformat(value)
+    for _ in range(2):
+        if day >= meeting:
+            break
+        try:
+            day = day.replace(year=day.year + 1)
+        except ValueError:  # 29 de febrero
+            return value
+    return day.isoformat()
+
+
+def _next_meeting(text: str, meeting: datetime.date) -> str:
+    """La próxima reunión, si empieza por AAAA-MM-DD, tampoco cae antes de esta."""
+    match = re.match(r"\s*(\d{4}-\d{2}-\d{2})", text)
+    if not match or not _valid_date(match.group(1)):
+        return text
+    return text[: match.start(1)] + _not_before(match.group(1), meeting) + text[match.end(1) :]
 
 
 def _parse(raw: str) -> dict:
@@ -246,7 +271,7 @@ async def build_minutes(
         Action(
             tarea=a.get("tarea", "").strip(),
             responsable=a.get("responsable", "").strip(),
-            fecha_limite=_valid_date(a.get("fecha_limite", "")),
+            fecha_limite=_not_before(_valid_date(a.get("fecha_limite", "")), meeting_date),
             detalle=a.get("detalle", "").strip(),
         )
         for p in parts
@@ -278,7 +303,7 @@ async def build_minutes(
         summary = summaries[0] if summaries else ""
 
     next_meetings = [p["proxima_reunion"] for p in parts if p.get("proxima_reunion")]
-    next_meeting = next_meetings[-1] if next_meetings else ""
+    next_meeting = _next_meeting(next_meetings[-1], meeting_date) if next_meetings else ""
     return Minutes(
         titulo=title or next((p["titulo"] for p in parts if p.get("titulo")), "Reunión"),
         fecha=meeting_date.isoformat(),
