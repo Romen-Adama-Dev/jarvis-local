@@ -15,7 +15,8 @@ martes 1 de diciembre»): si no, se toma la fecha del día.
 ```
 audio (Telegram, Obsidian o ~/jarvis-inbox)
   └─► jarvis_meeting_minutes (MCP) ─► POST /v1/meetings ─► worker
-        1. faster-whisper large-v3-turbo en la GPU → transcripción con marcas de tiempo
+        1. faster-whisper large-v3-turbo en la GPU → transcripción con marcas de tiempo,
+           con los nombres del proyecto y el diccionario canario como contexto
         2. Gemma extrae el acta en JSON por bloques de ~5.000 palabras y los une
         3. acta en Markdown (con la transcripción como anexo) → PDF / Word con pandoc
   ◄── acta adjunta en el chat
@@ -56,13 +57,35 @@ El modelo de transcripción (~1,6 GB) se descarga la primera vez en
 `/srv/jarvis/models/whisper` (volumen `jarvis_srv`). El worker usa la GPU (`gpus: all`) y
 libera la VRAM al terminar de transcribir, antes de que Gemma redacte el acta.
 
+## Nombres propios y vocabulario canario
+
+Whisper escribe bien un nombre si lo ha «oído» antes en su contexto previo; si no, inventa
+(«Haringa» por Arinaga, «pemboquet» por PMBOK). Por eso cada acta se transcribe con un
+vocabulario de tres capas (`packages/meetings/vocabulario.py`):
+
+1. **El proyecto**, leído de OpenProject al empezar: empresa, proyecto, miembros del
+   equipo y los nombres propios de sus tareas e hitos (sedes, sistemas, clientes). Va al
+   final del contexto, donde whisper no lo recorta.
+2. **Canarias**: islas, municipios, polígonos y puertos (El Sebadal, Arinaga, Las
+   Chafiras, Güímar, Argana…) y el léxico que sale en una reunión normal (guagua, millo,
+   cholas, enyesque…).
+3. **Empresa en España**: IGIC, AIEM, DUA, ZEC, RIC, albarán, licitación, acta de
+   constitución, valor ganado…
+
+Luego, dos correcciones: las palabras que suenan casi igual que un nombre del proyecto se
+sustituyen (con seseo, h muda, b/v y ll/y: «Cebadal» → Sebadal; solo palabras con
+mayúscula y muy parecidas), y Gemma recibe la lista al redactar el acta para escribir los
+nombres como son. `STT_VOCABULARY` del `.env` sigue sumándose para lo que no esté en
+OpenProject. Las notas de voz de Telegram usan el mismo diccionario
+([OPENCLAW.md](OPENCLAW.md)). Para ampliarlo, añade términos a las listas del módulo.
+
 ## Límites conocidos
 
 * **Sin separación de hablantes**: la transcripción no dice quién habla. El modelo deduce
   asistentes y responsables por el contenido ("Luis comenta...", "Ana se encarga...").
   Diarización local (pyannote) queda como mejora.
-* Los nombres propios pueden salir mal transcritos; el acta se marca como "revísala antes
-  de distribuirla".
+* Un nombre que no esté en OpenProject, en `STT_VOCABULARY` ni en el diccionario puede
+  salir mal transcrito; el acta se marca como "revísala antes de distribuirla".
 * Para asignar tareas en OpenProject, el responsable tiene que ser miembro del proyecto;
   si no, queda en la descripción.
 

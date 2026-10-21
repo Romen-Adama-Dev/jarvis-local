@@ -32,7 +32,10 @@ from packages.meetings.minutes import (
     render_docx_via_pandoc,
     render_minutes_markdown,
 )
-from packages.meetings.transcribe import format_timestamp, transcribe
+from packages.meetings.transcribe import Segment, Transcript, format_timestamp, transcribe
+from packages.meetings.vocabulario import contexto_proyecto, corregir_nombres, vocabulario_acta
+from packages.openproject.client import OpenProjectClient
+from packages.openproject.config import config_from_env
 from packages.rag.chunking import chunk_blocks
 from packages.rag.store import (
     ChunkPoint,
@@ -268,6 +271,24 @@ async def generate_document(
         logger.info("generate_document_completed", job_id=job_id, kind=kind, format=fmt)
 
 
+def _meeting_context(company: str, project: str) -> list[str]:
+    """Nombres del proyecto en OpenProject (empresa, equipo, sedes de los hitos…) para que
+    la transcripción y el acta los escriban bien. Sin OpenProject, solo empresa y proyecto."""
+    config = config_from_env()
+    client = OpenProjectClient(config) if config else None
+    return contexto_proyecto(client, company, project)
+
+
+def _fix_names(transcript: Transcript, names: list[str]) -> Transcript:
+    return Transcript(
+        language=transcript.language,
+        duration_seconds=transcript.duration_seconds,
+        segments=[
+            Segment(s.start, s.end, corregir_nombres(s.text, names)) for s in transcript.segments
+        ],
+    )
+
+
 def _render_minutes_file(markdown_path: Path, fmt: str, out_path: Path) -> None:
     if fmt == "pdf":
         render_pdf_via_pandoc(markdown_path, out_path)
@@ -303,6 +324,7 @@ async def meeting_minutes(
         await mark_running(session, job)
         meeting_dir = Path(audio_path).parent
         try:
+            context = await asyncio.to_thread(_meeting_context, company, project)
             transcript = await asyncio.to_thread(
                 transcribe,
                 Path(audio_path),
@@ -310,8 +332,9 @@ async def meeting_minutes(
                 models_dir=settings.jarvis_models_dir,
                 device=settings.meetings_whisper_device,
                 language=settings.meetings_language,
-                vocabulary=settings.stt_vocabulary,
+                vocabulary=", ".join(x for x in (settings.stt_vocabulary, *context) if x),
             )
+            transcript = _fix_names(transcript, context)
             if not transcript.segments:
                 await mark_failed(session, job, "No se ha reconocido voz en la grabación.")
                 return
@@ -329,6 +352,7 @@ async def meeting_minutes(
                 meeting_date=datetime.date.fromisoformat(meeting_date),
                 title=title,
                 project=project,
+                vocabulary=vocabulario_acta(context),
                 concurrency=max(1, settings.docgen_concurrency // 2),
                 on_progress=progress,
             )
