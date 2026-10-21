@@ -1,0 +1,11 @@
+{
+  "name": "jarvis-formato",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Plugin de OpenClaw de jarvis-local: fórmulas en texto plano en las respuestas",
+  "license": "MIT",
+  "openclaw": {
+    "extensions": ["./index.js"]
+  }
+}
