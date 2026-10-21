@@ -151,6 +151,18 @@ def test_task_for_someone_without_account_stays_in_their_name(pm):
     assert pm.fake.wps[1]["assignee"] == "diego sanz"
 
 
+def test_a_period_is_never_created_as_a_milestone(pm):
+    pm.pm_create_task(
+        "Talleres Norte", "Análisis", kind="Hito", start_date="2027-01-11", due_date="2027-04-30"
+    )
+    pm.pm_create_task("Talleres Norte", "Arranque", kind="Hito", due_date="2027-09-20")
+    pm.pm_create_task(
+        "Talleres Norte", "Firma", kind="hito", start_date="2026-12-18", due_date="2026-12-18"
+    )
+    assert [wp["type"] for wp in pm.fake.wps] == ["Tarea", "Hito", "hito"]
+    assert pm.fake.wps[0]["start_date"] == "2027-01-11"
+
+
 def test_pm_add_people_asks_for_approval_through_the_api(pm, monkeypatch):
     sent = {}
 
