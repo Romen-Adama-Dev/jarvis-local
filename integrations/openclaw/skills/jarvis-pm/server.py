@@ -258,7 +258,9 @@ def pm_list_tasks(
 ) -> str:
     """Lista paquetes de trabajo de un proyecto, ordenados por fecha de vencimiento.
     `kind` filtra por tipo (Tarea, Hito, Riesgo...). `due_within_days` >= 0 limita a
-    los que vencen en esos días; `overdue_only` solo los vencidos."""
+    los que vencen en esos días; `overdue_only` solo los vencidos. Cada riesgo trae su
+    descripción (probabilidad, impacto, mitigación y origen): cuéntala tal cual; si a un
+    riesgo le falta algún dato, dilo, no lo inventes."""
     op = _op()
     proj = op.find_project(project)
     wps = op.work_packages(
@@ -270,7 +272,7 @@ def pm_list_tasks(
     )
     if not wps:
         return f"Nada que mostrar en «{proj['name']}» con ese filtro."
-    lines = [describe_work_package(wp) for wp in wps]
+    lines = [_with_risk_details(wp) for wp in wps]
     lines.append(f"Tablero: {op.project_url(proj, 'work_packages')}")
     return "\n".join(lines)
 
@@ -332,6 +334,20 @@ def pm_create_task(
         op.create_relation(predecessor, wp["id"])
         note += f"\nEmpieza después de #{predecessor} (dependencia en el Gantt)."
     return f"Creado {describe_work_package(wp)}\n{op.work_package_url(wp)}{note}"
+
+
+def _with_risk_details(wp: dict) -> str:
+    """La línea del paquete y, si es un riesgo, su evaluación (probabilidad, impacto,
+    mitigación y origen están en la descripción): sin ella, el modelo los inventaba."""
+    line = describe_work_package(wp)
+    if wp["_links"]["type"]["title"] != "Riesgo":
+        return line
+    details = " ".join(description_of(wp).split())
+    return (
+        f"{line}\n   {details[:400]}"
+        if details
+        else f"{line}\n   (sin probabilidad, impacto ni mitigación)"
+    )
 
 
 def _is_milestone(kind: str) -> bool:

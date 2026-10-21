@@ -62,3 +62,32 @@ def test_pm_export_tasks_writes_xlsx_with_literal_subjects(pm_server, monkeypatc
 def test_pm_export_tasks_rejects_unknown_format(pm_server, monkeypatch):
     monkeypatch.setattr(pm_server, "_op", lambda: _FakeOpenProject())
     assert pm_server.pm_export_tasks("app", format="pdf").startswith("No se pudo")
+
+
+def test_pm_list_tasks_gives_each_risk_its_assessment(pm_server, monkeypatch):
+    class Risks(_FakeOpenProject):
+        def work_packages(self, project: dict, **kwargs) -> list[dict]:
+            risk = {"type": {"title": "Riesgo"}, "status": {"title": "Nuevo"}}
+            return [
+                {
+                    "id": 346,
+                    "subject": "Datos maestros incompletos",
+                    "description": {
+                        "raw": "Probabilidad: alta. Impacto: alto.\nMitigación: limpiar familias"
+                    },
+                    "_links": {**risk, "assignee": {"title": "David Rivas"}},
+                },
+                {"id": 347, "subject": "Sin evaluar", "description": {"raw": ""}, "_links": risk},
+                *super().work_packages(project),
+            ]
+
+        def project_url(self, project: dict, page: str = "") -> str:
+            return "https://openproject.example/projects/x"
+
+    monkeypatch.setattr(pm_server, "_op", lambda: Risks())
+    reply = pm_server.pm_list_tasks("app de reservas", kind="Riesgo")
+    lines = reply.splitlines()
+    assert lines[0].startswith("#346 [Riesgo] Datos maestros incompletos")
+    assert lines[1] == "   Probabilidad: alta. Impacto: alto. Mitigación: limpiar familias"
+    assert lines[3] == "   (sin probabilidad, impacto ni mitigación)"
+    assert lines[4].startswith("#41 [Tarea]") and not lines[5].startswith("   ")
