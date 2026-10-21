@@ -91,13 +91,20 @@ fi
 
 # Notas de voz: whisper.cpp en CPU va mejor con un hilo por núcleo físico (con todos los
 # hilos lógicos, si Ollama también tira de CPU, OpenMP se atasca: 12 s → 40 s por nota), y
-# el vocabulario en --prompt le enseña los nombres que si no confunde (PMBOK → «pemboquet»;
-# el mismo que BASE_VOCABULARY de packages/meetings/transcribe.py, más STT_VOCABULARY).
+# el vocabulario en --prompt le enseña los nombres que si no confunde (PMBOK → «pemboquet»,
+# «Haringa» → Arinaga): el mismo de las actas (vocabulary_prompt de
+# packages/meetings/transcribe.py: base, topónimos canarios y STT_VOCABULARY).
 WHISPER_THREADS=$(($(nproc) / 2))
 [[ "$WHISPER_THREADS" -ge 1 ]] || WHISPER_THREADS=1
-STT_PROMPT="Jarvis, OpenProject, Obsidian, Telegram, PMBOK, PMI, Scrum, Kanban, Gantt, sprint, hito, Excel, Word, PowerPoint, PDF"
-[[ -z "${STT_VOCABULARY:-}" ]] || STT_PROMPT="$STT_PROMPT, $STT_VOCABULARY"
-STT_PROMPT="$(sed_escape "$(printf '%s' "$STT_PROMPT" | tr -d '"\\')")."
+STT_PROMPT="$(cd "$APP_DIR" && STT_VOCABULARY="${STT_VOCABULARY:-}" .venv/bin/python -c \
+  'import os; from packages.meetings.transcribe import vocabulary_prompt; print(vocabulary_prompt(os.environ["STT_VOCABULARY"]))' \
+  2>/dev/null)" || STT_PROMPT=""
+if [[ -z "$STT_PROMPT" ]]; then
+  STT_PROMPT="Jarvis, OpenProject, Obsidian, Telegram, PMBOK, PMI, Scrum, Kanban, Gantt, sprint, hito, Excel, Word, PowerPoint, PDF"
+  [[ -z "${STT_VOCABULARY:-}" ]] || STT_PROMPT="$STT_PROMPT, $STT_VOCABULARY"
+  STT_PROMPT="$STT_PROMPT."
+fi
+STT_PROMPT="$(sed_escape "$(printf '%s' "$STT_PROMPT" | tr -d '"\\')")"
 
 echo "== Generando $CONFIG desde la plantilla =="
 sed -e "s/__TELEGRAM_USER_ID__/${TELEGRAM_USER_ID}/g" \
