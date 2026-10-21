@@ -94,6 +94,11 @@ Del despliegue original y del incidente de septiembre (detalle y mediciones en
   de engordar el prompt, inyectan en cada turno un bloque de sesiones activas que un
   modelo local toma por el tema de la conversación.
 * **`heartbeat.target: "none"`**: si no, el heartbeat escribe avisos en el chat.
+* **Fórmulas en texto plano**: el plugin propio `jarvis-formato`
+  (`integrations/openclaw/plugins/jarvis-formato`) pasa a texto las fórmulas en LaTeX de
+  las respuestas, en lo que se guarda y enseña el panel (`before_message_write`) y en lo que
+  sale por Telegram (`message_sending`): ninguno de los dos dibuja LaTeX, y Gemma a veces
+  reescribe «≥ 99,5 %» como `$\ge$ 99,5 %` aunque AGENTS.md pida texto.
 * **Adjuntos**: el plugin `document-extract` va activado; sin él el modelo solo ve
   `[Attachment could not be read]`. Nunca ve la ruta en disco, así que `jarvis_upload`
   acepta el nombre del adjunto y lo localiza en `media/inbound/`.
