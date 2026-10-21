@@ -89,6 +89,14 @@ correo) y los invitados como `ATTENDEE` con `RSVP=TRUE`.
   `jarvis_calendar_propose_event` (llama a `POST /draft`) y
   `jarvis_calendar_confirm_event` (llama a `POST /draft/{token}/confirm`).
 
+## Invitados por nombre
+
+Los invitados pueden ir por correo o por nombre («convoca a Nuria Castro y a Marcos
+Peña»). Al proponer la reunión, cada nombre se busca entre los usuarios de OpenProject
+(si el perfil `pm` está activo) y la propuesta ya lleva su correo; si de alguien no hay
+correo, la propuesta falla con «No tengo el correo de …» y Jarvis lo pide, en vez de
+fallar al confirmarla.
+
 ## Aviso: confirmar con invitados envía invitaciones reales
 
 Si la propuesta incluye `attendees`, confirmarla puede enviar invitaciones de verdad:

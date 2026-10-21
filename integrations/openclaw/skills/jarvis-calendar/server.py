@@ -19,7 +19,13 @@ _client = httpx.Client(
 
 
 def _split_attendees(attendees: str) -> list[str]:
-    return [a for a in re.split(r"[,\s]+", attendees.strip()) if a]
+    """Invitados separados por comas, punto y coma o «y» («Marcos Peña y Nuria Castro»). Un
+    nombre lleva espacios, así que el espacio solo separa correos (antes «Marcos Peña» se
+    partía en «Marcos» y «Peña» y la reunión fallaba al confirmarla)."""
+    split = []
+    for part in re.split(r"\s*(?:[,;\n]|\by\b)\s*", attendees.strip()):
+        split += part.split() if "@" in part else [part.strip()]
+    return [a for a in split if a]
 
 
 def _api_error(response: httpx.Response, action: str) -> str | None:
@@ -75,10 +81,10 @@ def jarvis_calendar_propose_event(
     location: str = "",
 ) -> str:
     """Propone (NO crea todavía) un evento de calendario (una reunión en OpenProject).
-    `start`/`end` en ISO 8601, p. ej. 2026-09-15T09:00:00. `attendees` es una lista de
-    emails separados por comas o espacios (opcional). `project`: proyecto de OpenProject
-    al que pertenece la reunión, si el usuario lo nombra (vacío = "Agenda"). `location`:
-    sala o enlace de videollamada.
+    `start`/`end` en ISO 8601, p. ej. 2026-09-15T09:00:00. `attendees`: invitados separados
+    por comas, con su correo o con el nombre de un usuario de OpenProject (opcional).
+    `project`: proyecto de OpenProject al que pertenece la reunión, si el usuario lo nombra
+    (vacío = "Agenda"). `location`: sala o enlace de videollamada.
 
     Si hay `attendees`, esto invitará a terceros al confirmarse — nunca llames a
     jarvis_calendar_confirm_event sin que el usuario lo haya pedido explícitamente.
