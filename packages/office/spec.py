@@ -115,10 +115,10 @@ def parse_blocks(raw_blocks: object, *, allow_formulas: bool = True) -> list[Blo
         elif kind == "paragraph":
             blocks.append(Block("paragraph", text=_text(raw, "text")))
         elif kind == "bullets":
-            items = raw.get("items")
-            if not isinstance(items, list) or not items:
+            items = _bullet_items(raw)
+            if not items:
                 raise ValidationFailedError(f"El bloque {index} (bullets) necesita «items».")
-            blocks.append(Block("bullets", items=[str(i)[:MAX_TEXT] for i in items[:MAX_ROWS]]))
+            blocks.append(Block("bullets", items=[i[:MAX_TEXT] for i in items[:MAX_ROWS]]))
         elif kind == "table":
             blocks.append(_parse_table(raw, index, allow_formulas=allow_formulas))
         else:
@@ -127,6 +127,18 @@ def parse_blocks(raw_blocks: object, *, allow_formulas: bool = True) -> list[Blo
                 "Usa heading, paragraph, bullets o table."
             )
     return blocks
+
+
+def _bullet_items(raw: dict) -> list[str]:
+    """Viñetas en `items`, o como las manda a veces el modelo: `blocks` con `text` o un
+    `text` con una por línea. Sin la viñeta que ya traiga cada una («• …»)."""
+    found = raw.get("items") or raw.get("blocks") or raw.get("text") or []
+    if isinstance(found, str):
+        found = found.splitlines()
+    if not isinstance(found, list):
+        return []
+    texts = [str(i.get("text", "")) if isinstance(i, dict) else str(i) for i in found]
+    return [t for t in (re.sub(r"^\s*[•\-*·]\s*", "", x).strip() for x in texts) if t]
 
 
 def _parse_table(raw: dict, index: int, *, allow_formulas: bool) -> Block:
