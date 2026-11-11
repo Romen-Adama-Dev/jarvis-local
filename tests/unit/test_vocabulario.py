@@ -61,22 +61,22 @@ def test_names_skip_the_capital_at_the_start_of_a_sentence():
 
 def test_project_context_has_company_team_and_places():
     client = FakeOpenProject()
-    contexto = contexto_proyecto(client, "Dielca", "SGA")
-    assert client.searched == ["Dielca › SGA"]
-    assert contexto[:4] == ["Dielca", "SGA", "Laura Méndez", "David Rivas"]
+    contexto = contexto_proyecto(client, "Acme", "SGA")
+    assert client.searched == ["Acme › SGA"]
+    assert contexto[:4] == ["Acme", "SGA", "Laura Méndez", "David Rivas"]
     assert {"Arinaga", "Gran Canaria", "Las Chafiras", "Business Central"} <= set(contexto)
     assert "Formación" not in contexto and "Migración" not in contexto
 
 
 def test_project_context_without_openproject_keeps_what_it_knows():
-    assert contexto_proyecto(None, "Dielca", "SGA") == ["Dielca", "SGA"]
-    assert contexto_proyecto(FakeOpenProject(fail_find=True), "Dielca", "SGA") == ["Dielca", "SGA"]
+    assert contexto_proyecto(None, "Acme", "SGA") == ["Acme", "SGA"]
+    assert contexto_proyecto(FakeOpenProject(fail_find=True), "Acme", "SGA") == ["Acme", "SGA"]
 
 
 def test_whisper_prompt_puts_the_project_last_and_fits_the_window():
-    prompt = prompt_whisper(["Dielca", "Arinaga", "Laura Méndez"], "Pablo Vidal", BASE_VOCABULARY)
+    prompt = prompt_whisper(["Acme", "Arinaga", "Laura Méndez"], "Pablo Vidal", BASE_VOCABULARY)
     assert prompt.startswith("Jarvis, OpenProject")
-    assert prompt.endswith("Dielca, Arinaga, Laura Méndez, Pablo Vidal.")
+    assert prompt.endswith("Acme, Arinaga, Laura Méndez, Pablo Vidal.")
     assert prompt.count("Arinaga") == 1  # el topónimo fijo no se repite
     assert "Las Chafiras" in prompt and "IGIC" in prompt and "guagua" in prompt
 
@@ -115,7 +115,7 @@ def test_vocabulary_prompt_keeps_the_base_and_the_owner_names():
     ],
 )
 def test_misheard_project_names_are_fixed(oido, correcto):
-    nombres = ["Dielca", "Arinaga", "El Sebadal", "Las Chafiras", "Laura Méndez"]
+    nombres = ["Acme", "Arinaga", "El Sebadal", "Las Chafiras", "Laura Méndez"]
     assert corregir_nombres(f"El lunes arrancamos en {oido} con Laura.", nombres) == (
         f"El lunes arrancamos en {correcto} con Laura."
     )
@@ -123,7 +123,7 @@ def test_misheard_project_names_are_fixed(oido, correcto):
 
 def test_normal_words_and_other_places_are_left_alone():
     nombres = [
-        "Dielca",
+        "Acme",
         "Arinaga",
         "El Sebadal",
         "Las Chafiras",
@@ -139,8 +139,8 @@ def test_normal_words_and_other_places_are_left_alone():
 
 
 def test_minutes_vocabulary_starts_with_the_project():
-    vocabulario = vocabulario_acta(["Dielca", "Arinaga"], limite=10)
-    assert vocabulario[:3] == ["Dielca", "Arinaga", "Gran Canaria"] and len(vocabulario) == 10
+    vocabulario = vocabulario_acta(["Acme", "Arinaga"], limite=10)
+    assert vocabulario[:3] == ["Acme", "Arinaga", "Gran Canaria"] and len(vocabulario) == 10
 
 
 class FakeModel:
@@ -166,8 +166,8 @@ async def test_minutes_prompt_lists_the_names_to_spell():
         model,
         "[00:00] Arrancamos en Arinaga el lunes.",
         meeting_date=datetime.date(2026, 10, 21),
-        project="Dielca › SGA",
-        vocabulary=["Dielca", "Arinaga", "Las Chafiras"],
+        project="Acme › SGA",
+        vocabulary=["Acme", "Arinaga", "Las Chafiras"],
     )
     assert "Nombres propios que pueden salir" in model.prompts[0]
-    assert "Dielca, Arinaga, Las Chafiras." in model.prompts[0]
+    assert "Acme, Arinaga, Las Chafiras." in model.prompts[0]
