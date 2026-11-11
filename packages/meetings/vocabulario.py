@@ -1,7 +1,7 @@
 """Vocabulario para que la transcripción no se equivoque con los nombres.
 
 Whisper acierta mucho mejor un nombre propio si lo ha «oído» antes en el contexto previo
-(`initial_prompt`), y lo que aun así confunda («Haringa» por Arinaga, «Yelca» por Dielca) se
+(`initial_prompt`), y lo que aun así confunda («Haringa» por Arinaga, «Ácmez» por Acme) se
 arregla después. Tres fuentes, de más a menos específica:
 
 1. **El proyecto** (`contexto_proyecto`): empresa, proyecto, personas del equipo y los
