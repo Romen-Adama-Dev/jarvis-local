@@ -14,6 +14,10 @@ independientemente de su calidad técnica.
   propuesta ya está prevista (o descartada) ahí.
 * Para cambios de seguridad (autenticación, exposición de red, ejecución de
   comandos, allowlists de Telegram), lee primero `docs/SECURITY.md`.
+* La gestión del proyecto (WBS, registro RAID, plan y decisiones) está en
+  `docs/gestion/`. Si tu cambio cierra un paquete de trabajo, abre o mitiga un riesgo o
+  toma una decisión duradera, actualiza el archivo que toque en la misma PR.
+* Si trabajas con un agente de IA, sus reglas están en `AGENTS.md`.
 
 ## Entorno de desarrollo
 
