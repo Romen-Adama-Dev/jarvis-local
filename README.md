@@ -180,6 +180,16 @@ Fases 0 a 6 hechas (la 6 —monitorización, copias de seguridad y CI— cerrada
 Estado detallado y lo que queda en `docs/ROADMAP.md`; criterios de aceptación en
 `docs/ACCEPTANCE.md`; arquitectura en `docs/ARCHITECTURE.md`.
 
+## Hacia dónde va
+
+Quiero seguir profundizando en el proyecto después del TFM. Lo siguiente:
+
+- Evaluación formal del RAG con un conjunto etiquetado (recall@k, fidelidad y abstención), con resultados publicados en `docs/`.
+- Comparar los modelos locales con modelos de referencia en la misma batería, para saber cuándo compensa cada uno.
+- Usar Codex como parte del mantenimiento: revisión de PR, triaje de issues y tareas de mantenimiento con aprobación humana. También quiero dominar el ecosistema de OpenAI y Codex a fondo, y este repo es donde lo pruebo y lo documento.
+
+Las ideas y las PR son bienvenidas (ver `CONTRIBUTING.md`).
+
 ## Estructura
 
 ```text
